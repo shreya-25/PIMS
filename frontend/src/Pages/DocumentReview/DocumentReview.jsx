@@ -1,5 +1,4 @@
-import { useMemo, useContext, useState, useEffect, useRef, memo } from "react";
-import { createPortal } from "react-dom";
+import { useMemo, useContext, useState, useEffect, useRef } from "react";
 import Navbar from '../../components/Navbar/Navbar';
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import { Document, Page, pdfjs } from "react-pdf";
@@ -13,83 +12,6 @@ import { useLeadStatus } from '../../hooks/useLeadStatus';
 pdfjs.GlobalWorkerOptions.workerSrc =
   `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`;
 
-const CLOSE_REASON_CHIPS = [
-  "Investigation completed - all leads exhausted",
-  "Insufficient evidence to proceed",
-  "Case resolved through other means",
-  "Duplicate of another lead",
-  "No longer relevant to case objectives",
-];
-
-// Close Reason Modal Component
-const CloseReasonModal = memo(function CloseReasonModal({ open, onCancel, onSubmit }) {
-  const [text, setText] = useState("");
-
-  useEffect(() => {
-    if (open) setText("");
-  }, [open]);
-
-  if (!open) return null;
-
-  const canSubmit = (text || "").trim().length >= 5;
-
-  const body = (
-    <div className={s.clModalBackdrop} onClick={onCancel}>
-      <div className={s.clModalBox} onClick={(e) => e.stopPropagation()}>
-
-        {/* Header */}
-        <div className={s.clModalHeader}>
-          <h3 className={s.clModalTitle}>Close Lead</h3>
-          <button onClick={onCancel} aria-label="Close" className={s.clModalClose}>✕</button>
-        </div>
-
-        {/* Body */}
-        <div className={s.clModalBody}>
-          <div className={s.clModalSubtitle}>Please provide a reason for closing</div>
-
-          {/* Preset chips */}
-          <div className={s.clChipGroup}>
-            {CLOSE_REASON_CHIPS.map((chip) => {
-              const active = text === chip;
-              return (
-                <button
-                  key={chip}
-                  onClick={() => setText(active ? "" : chip)}
-                  className={`${s.clChip}${active ? ` ${s.clChipActive}` : ""}`}
-                >
-                  {chip}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Free-text */}
-          <textarea
-            className={s.clModalTextarea}
-            placeholder="Type a brief reason for closing this lead (required)…"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-          />
-
-          {/* Actions */}
-          <div className={s.clModalActions}>
-            <button onClick={onCancel} className={s.clModalCancelBtn}>Cancel</button>
-            <button
-              onClick={() => { const reason = text.trim(); if (reason.length < 5) return; onSubmit(reason); }}
-              disabled={!canSubmit}
-              className={`${s.clModalSubmitBtn}${!canSubmit ? ` ${s.clModalSubmitBtnDisabled}` : ""}`}
-            >
-              Close Lead
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const root = document.getElementById("modal-root") || document.body;
-  return createPortal(body, root);
-});
 
 export function DocumentReview({ pdfUrl = "/test1.pdf" }) {
   const { state } = useLocation();
@@ -109,8 +31,6 @@ export function DocumentReview({ pdfUrl = "/test1.pdf" }) {
     message: '',
     onConfirm: () => {}
   });
-  const [showCloseModal, setShowCloseModal] = useState(false);
-  const [closing, setClosing] = useState(false);
   const currentUser = localStorage.getItem("loggedInUser");
   const [leadData, setLeadData] = useState({});
   const [dsSupervisors, setDsSupervisors] = useState([]);
@@ -124,7 +44,7 @@ export function DocumentReview({ pdfUrl = "/test1.pdf" }) {
     return selectedCase.role === "Investigator" ? "/Investigator" : "/CasePageManager";
   };
           
-  const { status, isReadOnly, setLocalStatus } = useLeadStatus({
+  const { status, setLocalStatus } = useLeadStatus({
     caseId: selectedCase._id || selectedCase.id,
     leadNo: selectedLead.leadNo,
     leadName: selectedLead.leadName,
@@ -137,10 +57,34 @@ export function DocumentReview({ pdfUrl = "/test1.pdf" }) {
   const LOCKED_STATUSES = new Set(["completed", "closed", "returned"]);
   const isCommentsLocked = LOCKED_STATUSES.has(String(status || "").toLowerCase());
 
-  const normStatus = String(status || "").toLowerCase();
-  const isReturned = normStatus === "returned";
-  const isCompleted = normStatus === "completed";
-  const isClosed = normStatus === "closed";
+  const isPrivileged = ["Case Manager", "Detective Supervisor", "Admin"].includes(selectedCase?.role);
+
+  const normStatus         = String(status || "").toLowerCase();
+  const isInReview         = normStatus === "in review";
+  const isCompleted        = normStatus === "completed";
+  const isClosed           = normStatus === "closed";
+  const isApprovedOrBeyond = isCompleted || isClosed || normStatus === "approved";
+
+  const canApprove = isPrivileged && isInReview;
+  const approveDisabledReason = !isPrivileged
+    ? "Only Case Managers, Detective Supervisors, or Admins can approve"
+    : !isInReview
+    ? "Lead must be In Review to approve"
+    : "";
+
+  const canReturn = isPrivileged && isInReview;
+  const returnDisabledReason = !isPrivileged
+    ? "Only Case Managers, Detective Supervisors, or Admins can return"
+    : !isInReview
+    ? "Lead must be In Review to return for changes"
+    : "";
+
+  const canReopen = isPrivileged && isApprovedOrBeyond;
+  const reopenDisabledReason = !isPrivileged
+    ? "Only Case Managers, Detective Supervisors, or Admins can reopen"
+    : !isApprovedOrBeyond
+    ? "Lead must be Approved or Closed to reopen"
+    : "";
 
   const handleApprove = () => {
     confirmActionRef.current = () => submitReturnAndUpdate('complete');
@@ -172,43 +116,6 @@ export function DocumentReview({ pdfUrl = "/test1.pdf" }) {
     });
   };
 
-  const handleConfirmClose = async (reason) => {
-    if (!reason || !reason.trim()) {
-      setAlertMessage("Please provide a reason before closing the lead.");
-      setNotifyOpen(true);
-      return;
-    }
-
-    setClosing(true);
-    try {
-      const token = localStorage.getItem("token");
-      await api.put(
-        `/api/lead/lead/status/close`,
-        {
-          leadNo: selectedLead.leadNo,
-          description: selectedLead.leadName,
-          caseId: selectedCase._id || selectedCase.id,
-          reason: reason
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      setLeadStatus("Closed");
-      setSelectedLead(prev => ({ ...prev, leadStatus: "Closed" }));
-      setShowCloseModal(false);
-      setLocalStatus("Closed");
-      setAlertMessage("Lead closed successfully.");
-      await sendLeadNotification("closed the lead");
-      setNotifyOpen(true);
-      navigate(getCasePageRoute(), { replace: true });
-    } catch (err) {
-      console.error("Error closing lead:", err);
-      setAlertMessage("Error closing lead. See console for details.");
-      setNotifyOpen(true);
-    } finally {
-      setClosing(false);
-    }
-  };
 
   const handleDownload = () => {
     try {
@@ -414,20 +321,32 @@ export function DocumentReview({ pdfUrl = "/test1.pdf" }) {
             <div aria-live="polite" style={styles.zoomLabel}>{(scale * 100).toFixed(0)}%</div>
             <button onClick={() => setScale((s) => Math.min(2, +(s + 0.1).toFixed(2)))}>+</button>
           </div>
-          {(isCompleted || isClosed) ? (
-            <button className={s.approveBtnLr} onClick={handleReopen}>Reopen</button>
-          ) : isReturned ? (
-            <div className={s.btnSecDr}>
-              <button className={s.approveBtnLr} onClick={handleApprove}>Approve</button>
-              <button className={s.closeBtnLr} onClick={() => setShowCloseModal(true)}>Close</button>
-            </div>
-          ) : (
-            <div className={s.btnSecDr}>
-              <button className={s.approveBtnLr} onClick={handleApprove}>Approve</button>
-              <button className={s.returnBtnLr} onClick={handleReturn}>Return</button>
-              <button className={s.closeBtnLr} onClick={() => setShowCloseModal(true)}>Close</button>
-            </div>
-          )}
+          <div className={s.btnGroup}>
+            <button
+              className={s.approveBtn}
+              disabled={!canApprove}
+              title={!canApprove ? approveDisabledReason : "Approve this lead return"}
+              onClick={canApprove ? handleApprove : undefined}
+            >
+              Approve
+            </button>
+            <button
+              className={s.returnBtn}
+              disabled={!canReturn}
+              title={!canReturn ? returnDisabledReason : "Return lead for changes"}
+              onClick={canReturn ? handleReturn : undefined}
+            >
+              Return
+            </button>
+            <button
+              className={s.reopenBtn}
+              disabled={!canReopen}
+              title={!canReopen ? reopenDisabledReason : "Reopen this lead"}
+              onClick={canReopen ? handleReopen : undefined}
+            >
+              Reopen
+            </button>
+          </div>
         </header>
 
         <div className={s.drPdfArea}>
@@ -494,14 +413,6 @@ export function DocumentReview({ pdfUrl = "/test1.pdf" }) {
         onClose={() => setNotifyOpen(false)}
       />
 
-      <CloseReasonModal
-        open={showCloseModal}
-        onCancel={() => setShowCloseModal(false)}
-        onSubmit={async (reason) => {
-          await handleConfirmClose(reason);
-          setShowCloseModal(false);
-        }}
-      />
     </div>
   );
 }

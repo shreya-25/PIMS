@@ -106,6 +106,45 @@ async function mergeWithAnotherPDF(pdfKitBuffer, otherPdfBuffer) {
   return Buffer.from(merged);
 }
 
+/**
+ * Scale every page of a PDF so its content fits within a Letter page.
+ * Pages that already fit are never upscaled.
+ *
+ * isPicture = true  → smaller box (420×315) so images don't overwhelm the report
+ * isPicture = false → near-full page (512×692) so documents remain readable
+ */
+async function scalePdfPagesToFit(pdfBuffer, { isPicture = false } = {}) {
+  const PAGE_W = 612;
+  const PAGE_H = 792;
+  const MARGIN = 50;
+
+  const maxContentW = isPicture ? 420 : PAGE_W - 2 * MARGIN;
+  const maxContentH = isPicture ? 315 : PAGE_H - 2 * MARGIN;
+
+  const srcDoc = await PDFLibDocument.load(pdfBuffer);
+  const dstDoc = await PDFLibDocument.create();
+
+  for (let i = 0; i < srcDoc.getPageCount(); i++) {
+    const [embedded] = await dstDoc.embedPages([srcDoc.getPage(i)]);
+    const srcW = embedded.width;
+    const srcH = embedded.height;
+
+    const scale = Math.min(maxContentW / srcW, maxContentH / srcH, 1);
+    const dW    = srcW * scale;
+    const dH    = srcH * scale;
+
+    const page = dstDoc.addPage([PAGE_W, PAGE_H]);
+    page.drawPage(embedded, {
+      x:      (PAGE_W - dW) / 2,
+      y:      PAGE_H - MARGIN - dH,
+      width:  dW,
+      height: dH,
+    });
+  }
+
+  return Buffer.from(await dstDoc.save());
+}
+
 function startSection(doc, title, currentY) {
   const bottom = doc.page.height - doc.page.margins.bottom;
   const minNeeded = 60; // need room for header + at least one row of content
@@ -961,10 +1000,21 @@ async function generateReport(req, res) {
         ).map(e => e.s3Key)
       : [];
 
-       for (const key of [...enclosurePdfKeys, ...evidencePdfKeys, ...picturePdfKeys]) {
+       for (const key of [...enclosurePdfKeys, ...evidencePdfKeys]) {
       try {
-        const otherPdf = await getObjectBuffer(key);
-        pdfBuffer = await mergeWithAnotherPDF(pdfBuffer, otherPdf);
+        const rawBuf    = await getObjectBuffer(key);
+        const scaledBuf = await scalePdfPagesToFit(rawBuf, { isPicture: false });
+        pdfBuffer = await mergeWithAnotherPDF(pdfBuffer, scaledBuf);
+      } catch (e) {
+        console.warn("Skipping merge for key:", key, e.message);
+      }
+    }
+
+       for (const key of picturePdfKeys) {
+      try {
+        const rawBuf    = await getObjectBuffer(key);
+        const scaledBuf = await scalePdfPagesToFit(rawBuf, { isPicture: true });
+        pdfBuffer = await mergeWithAnotherPDF(pdfBuffer, scaledBuf);
       } catch (e) {
         console.warn("Skipping merge for key:", key, e.message);
       }
@@ -1513,17 +1563,26 @@ for (const enc of leadEnclosures) {
     const rawEncBuf = await getObjectBuffer(enc.s3Key);
     const imgBuf = await toPdfSafeBuffer(rawEncBuf);
 
-    const imageMaxHeight = 300;
-    if (currentY + imageMaxHeight > doc.page.height - doc.page.margins.bottom) {
+    const availW = doc.page.width - 100; // 612 - 2×50 margin
+    let renderedH = 300;
+    try {
+      const meta = await sharp(imgBuf).metadata();
+      const srcW = meta.width || 300;
+      const srcH = meta.height || 300;
+      const scale = Math.min(availW / srcW, 300 / srcH, 1);
+      renderedH = Math.round(srcH * scale);
+    } catch (_) { /* use default */ }
+
+    if (currentY + renderedH > doc.page.height - doc.page.margins.bottom) {
       doc.addPage();
       currentY = doc.page.margins.top;
     }
 
-    doc.image(imgBuf, 50, currentY, { fit: [300, 300] });
-    currentY += 310;
+    doc.image(imgBuf, 50, currentY, { fit: [availW, 300], align: "center", valign: "top" });
+    currentY += renderedH + 10;
 
     doc.font("Helvetica").fontSize(9).fillColor("#555")
-       .text(enc.filename, 50, currentY, { width: 300, align: "left" });
+       .text(enc.filename, 50, currentY, { width: availW, align: "center" });
     currentY += 20;
     doc.fillColor("black");
   } catch (e) {
@@ -1587,17 +1646,26 @@ for (const enc of leadEvidence) {
     const rawEncBuf = await getObjectBuffer(enc.s3Key);
     const imgBuf = await toPdfSafeBuffer(rawEncBuf);
 
-    const imageMaxHeight = 300;
-    if (currentY + imageMaxHeight > doc.page.height - doc.page.margins.bottom) {
+    const availW = doc.page.width - 100; // 612 - 2×50 margin
+    let renderedH = 300;
+    try {
+      const meta = await sharp(imgBuf).metadata();
+      const srcW = meta.width || 300;
+      const srcH = meta.height || 300;
+      const scale = Math.min(availW / srcW, 300 / srcH, 1);
+      renderedH = Math.round(srcH * scale);
+    } catch (_) { /* use default */ }
+
+    if (currentY + renderedH > doc.page.height - doc.page.margins.bottom) {
       doc.addPage();
       currentY = doc.page.margins.top;
     }
 
-    doc.image(imgBuf, 50, currentY, { fit: [300, 300] });
-    currentY += 310;
+    doc.image(imgBuf, 50, currentY, { fit: [availW, 300], align: "center", valign: "top" });
+    currentY += renderedH + 10;
 
     doc.font("Helvetica").fontSize(9).fillColor("#555")
-       .text(enc.filename, 50, currentY, { width: 300, align: "left" });
+       .text(enc.filename, 50, currentY, { width: availW, align: "center" });
     currentY += 20;
     doc.fillColor("black");
   } catch (e) {
@@ -1658,17 +1726,26 @@ for (const enc of leadPictures) {
     const rawEncBuf = await getObjectBuffer(enc.s3Key);
     const imgBuf = await toPdfSafeBuffer(rawEncBuf);
 
-    const imageMaxHeight = 300;
-    if (currentY + imageMaxHeight > doc.page.height - doc.page.margins.bottom) {
+    const availW = doc.page.width - 100; // 612 - 2×50 margin
+    let renderedH = 300;
+    try {
+      const meta = await sharp(imgBuf).metadata();
+      const srcW = meta.width || 300;
+      const srcH = meta.height || 300;
+      const scale = Math.min(availW / srcW, 300 / srcH, 1);
+      renderedH = Math.round(srcH * scale);
+    } catch (_) { /* use default */ }
+
+    if (currentY + renderedH > doc.page.height - doc.page.margins.bottom) {
       doc.addPage();
       currentY = doc.page.margins.top;
     }
 
-    doc.image(imgBuf, 50, currentY, { fit: [300, 300] });
-    currentY += 310;
+    doc.image(imgBuf, 50, currentY, { fit: [availW, 300], align: "center", valign: "top" });
+    currentY += renderedH + 10;
 
     doc.font("Helvetica").fontSize(9).fillColor("#555")
-       .text(enc.filename, 50, currentY, { width: 300, align: "left" });
+       .text(enc.filename, 50, currentY, { width: availW, align: "center" });
     currentY += 20;
     doc.fillColor("black");
   } catch (e) {

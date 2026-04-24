@@ -277,6 +277,7 @@ export const CaseInformation = () => {
       await api.put(`/api/cases/${caseNo}/reopen`);
       setCaseDoc((prev) => ({ ...prev, status: 'ONGOING' }));
       setSelectedCase((prev) => ({ ...prev, status: 'ONGOING' }));
+      showAlert('Case reopened successfully. Status is now ONGOING.');
     } catch (err) {
       showAlert(err?.response?.data?.message || 'Failed to reopen case.');
     } finally {
@@ -737,9 +738,11 @@ export const CaseInformation = () => {
                   closeTitle = 'Case is already closed';
                 }
 
-                // ── Reopen Case button (visible to DS/Admin only) ─────────
-                const reopenDisabled = reopeningCase || isOngoing;
-                const reopenTitle = isOngoing
+                // ── Reopen Case button (visible to all, disabled for non-DS/Admin) ──
+                const reopenDisabled = reopeningCase || isOngoing || !isDS;
+                const reopenTitle = !isDS
+                  ? 'Only Detective Supervisors and Admins can reopen cases'
+                  : isOngoing
                   ? 'Case is still ongoing — close it first before reopening'
                   : '';
 
@@ -753,16 +756,14 @@ export const CaseInformation = () => {
                     >
                       {closingCase ? 'Closing…' : 'Close Case'}
                     </button>
-                    {isDS && (
-                      <button
-                        className={styles['reopen-case-btn']}
-                        onClick={() => { if (!reopenDisabled) setConfirmReopenOpen(true); }}
-                        disabled={reopenDisabled}
-                        title={reopenTitle}
-                      >
-                        {reopeningCase ? 'Reopening…' : 'Reopen Case'}
-                      </button>
-                    )}
+                    <button
+                      className={styles['reopen-case-btn']}
+                      onClick={() => { if (!reopenDisabled) setConfirmReopenOpen(true); }}
+                      disabled={reopenDisabled}
+                      title={reopenTitle}
+                    >
+                      {reopeningCase ? 'Reopening…' : 'Reopen Case'}
+                    </button>
                   </>
                 );
               })()}

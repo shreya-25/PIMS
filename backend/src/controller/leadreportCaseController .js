@@ -49,8 +49,8 @@ async function scalePdfPagesToFit(pdfBuffer, { isPicture = false } = {}) {
 
     const page = dstDoc.addPage([PAGE_W, PAGE_H]);
     page.drawPage(embedded, {
-      x:      MARGIN,                   // left-aligned
-      y:      PAGE_H - MARGIN - dH,    // top-aligned
+      x:      (PAGE_W - dW) / 2,
+      y:      PAGE_H - MARGIN - dH,
       width:  dW,
       height: dH,
     });
@@ -303,12 +303,13 @@ async function embedImagesFromS3List(doc, items, currentY, labelGetter = (x) => 
     try {
       const rawBuf = await getObjectBuffer(item.s3Key);
       const buf = await toPdfSafeBuffer(rawBuf);
+      const availW = doc.page.width - 100; // 612 - 2×50 margin
       let renderedH = 300;
       try {
         const meta = await sharp(buf).metadata();
         const srcW = meta.width || 300;
         const srcH = meta.height || 300;
-        const scale = Math.min(300 / srcW, 300 / srcH, 1);
+        const scale = Math.min(availW / srcW, 300 / srcH, 1);
         renderedH = Math.round(srcH * scale);
       } catch (_) { /* use default */ }
       const bottom = doc.page.height - doc.page.margins.bottom;
@@ -317,10 +318,10 @@ async function embedImagesFromS3List(doc, items, currentY, labelGetter = (x) => 
         currentY = doc.page.margins.top;
       }
 
-      doc.image(buf, 50, currentY, { fit: [300, 300] });
+      doc.image(buf, 50, currentY, { fit: [availW, 300], align: "center", valign: "top" });
       currentY += renderedH + 10;
       doc.font("Helvetica").fontSize(9).fillColor("#555")
-         .text(labelGetter(item), 50, currentY, { width: 300, align: "left" });
+         .text(labelGetter(item), 50, currentY, { width: availW, align: "center" });
       doc.fillColor("black");
       currentY += 20;
     } catch (e) {
@@ -370,19 +371,20 @@ async function embedAttachments(doc, items, currentY, fileLabel = "File") {
         const rawBuf = await getObjectBuffer(item.s3Key);
         const buf = await toPdfSafeBuffer(rawBuf);
         // Calculate actual rendered height so currentY advances correctly
+        const availW = doc.page.width - 100; // 612 - 2×50 margin
         let renderedH = 300;
         try {
           const meta = await sharp(buf).metadata();
           const srcW = meta.width || 300;
           const srcH = meta.height || 300;
-          const scale = Math.min(300 / srcW, 300 / srcH, 1);
+          const scale = Math.min(availW / srcW, 300 / srcH, 1);
           renderedH = Math.round(srcH * scale);
         } catch (_) { /* use default */ }
         currentY = ensureSpace(doc, currentY, renderedH + 30);
-        doc.image(buf, 50, currentY, { fit: [300, 300] });
+        doc.image(buf, 50, currentY, { fit: [availW, 300], align: "center", valign: "top" });
         currentY += renderedH + 10;
         doc.font("Helvetica").fontSize(9).fillColor("#555")
-           .text(item.originalName || item.filename || "Image", 50, currentY, { width: 300 });
+           .text(item.originalName || item.filename || "Image", 50, currentY, { width: availW, align: "center" });
         doc.fillColor("#000");
         currentY += 20;
       } catch (e) {

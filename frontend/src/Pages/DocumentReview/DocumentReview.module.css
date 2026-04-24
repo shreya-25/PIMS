@@ -150,34 +150,52 @@
   color: black;
 }
 
-.approveBtnLr, .returnBtnLr, .closeBtnLr {
-  font-size: 20px;
-  width: 105px;
-  height: 40px;
-  color: black;
-  border-radius: 0.5;
-  border: 2px solid black;
+.btnGroup {
   display: flex;
-  text-align: center;
-  justify-content: center;
-  padding: 5px 0px;
-  margin: 0px;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: nowrap;
 }
 
-.approveBtnLr {
-  color: green;
-  border: 2px solid green;
+.approveBtn,
+.returnBtn,
+.reopenBtn {
+  padding: 6px 16px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: Arial, sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, opacity 0.15s;
 }
 
-.returnBtnLr {
-  color: rgba(122, 12, 12, 0.874);
-  border: 2px solid rgba(122, 12, 12, 0.874);
+.approveBtn {
+  background: #fff;
+  color: #166534;
+  border: 2px solid #166534;
 }
+.approveBtn:hover:not(:disabled) { background: #f0fdf4; }
 
-.btnSecDr {
-  width: 26%;
-  display: flex;
-  justify-content: space-between;
+.returnBtn {
+  background: #fff;
+  color: rgba(122, 12, 12, 0.9);
+  border: 2px solid rgba(122, 12, 12, 0.9);
+}
+.returnBtn:hover:not(:disabled) { background: #fff5f5; }
+
+.reopenBtn {
+  background: rgba(25, 58, 73, 0.8);
+  color: #fff;
+  border: 2px solid transparent;
+}
+.reopenBtn:hover:not(:disabled) { background: rgba(25, 58, 73, 0.6); }
+
+.approveBtn:disabled,
+.returnBtn:disabled,
+.reopenBtn:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
 }
 
 /* ===== Close Lead Modal ===== */

@@ -170,33 +170,37 @@ export const ManageLeadReturn = () => {
   // ── role flags ──
   const isReadOnly = selectedCase?.role === "Read Only";
 
-  // ── status flags ──
-  const normStatus       = String(status || "").toLowerCase();
-  const isInReview       = normStatus === "in review";
-  const isReturned       = normStatus === "returned";
-  const isCompleted      = normStatus === "completed";
-  const isClosed         = normStatus === "closed";
-  const isClosedOrCompleted = isCompleted || isClosed;
+  // ── role / status flags ──
+  const isPrivileged = ["Case Manager", "Detective Supervisor", "Admin"].includes(selectedCase?.role);
+
+  const normStatus          = String(status || "").toLowerCase();
+  const isInReview          = normStatus === "in review";
+  const isReturned          = normStatus === "returned";
+  const isCompleted         = normStatus === "completed";
+  const isClosed            = normStatus === "closed";
+  const isApprovedOrBeyond  = isCompleted || isClosed || normStatus === "approved";
 
   // ── button enable / disable ──
-  const canApprove = isInReview && !isReadOnly;
-  const approveDisabledReason = isReadOnly
-    ? "Read-only access"
-    : isClosedOrCompleted
-    ? "Lead is already completed or closed"
-    : "Lead must be submitted (In Review) to approve";
+  const canApprove = isPrivileged && isInReview;
+  const approveDisabledReason = !isPrivileged
+    ? "Only Case Managers, Detective Supervisors, or Admins can approve"
+    : !isInReview
+    ? "Lead must be In Review to approve"
+    : "";
 
-  const canReturn = isInReview && !isReadOnly;
-  const returnDisabledReason = isReadOnly
-    ? "Read-only access"
-    : isClosedOrCompleted
-    ? "Lead is already completed or closed"
-    : "Lead must be In Review to return for changes";
+  const canReturn = isPrivileged && isInReview;
+  const returnDisabledReason = !isPrivileged
+    ? "Only Case Managers, Detective Supervisors, or Admins can return"
+    : !isInReview
+    ? "Lead must be In Review to return for changes"
+    : "";
 
-  const canReopen = isClosedOrCompleted && !isReadOnly;
-  const reopenDisabledReason = isReadOnly
-    ? "Read-only access"
-    : "Lead must be Completed or Closed to reopen";
+  const canReopen = isPrivileged && isApprovedOrBeyond;
+  const reopenDisabledReason = !isPrivileged
+    ? "Only Case Managers, Detective Supervisors, or Admins can reopen"
+    : !isApprovedOrBeyond
+    ? "Lead must be Approved or Closed to reopen"
+    : "";
 
   // ── read-only link helper — renders a plain span instead of navigating ──
   const SectionLink = ({ className, to, state: linkState, children }) =>

@@ -47,7 +47,7 @@ export function useLeadStatus({ caseId, leadNo, leadName, initialStatus }) {
   });
 
   const userRole = localStorage.getItem('role') || '';
-  const canEditInReview = userRole === 'Case Manager' || userRole === 'Detective Supervisor';
+  const canEditInReview = ['Case Manager', 'Detective Supervisor', 'Admin'].includes(userRole);
   const isReadOnly = status === 'In Review'
     ? !canEditInReview
     : ['Approved', 'Completed', 'Closed', 'Deleted'].includes(status);
