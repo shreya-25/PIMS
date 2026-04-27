@@ -1556,7 +1556,12 @@ useEffect(() => {
       {leadsLoading && (
         <div className={styles.reportModalOverlay}>
           <div className={styles.reportModalBox}>
-            <div className={styles.reportModalHeader}>Loading Leads</div>
+            <div className={styles.reportModalHeader}>
+              Loading Leads
+              <button className={styles.reportModalCloseBtn} onClick={() => navigate(-1)} aria-label="Cancel loading">
+                &times;
+              </button>
+            </div>
             <div className={styles.reportModalBody}>
               <p className={styles.reportModalMessage}>
                 Please wait while leads are loading.

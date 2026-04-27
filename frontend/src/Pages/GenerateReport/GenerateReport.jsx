@@ -1,5 +1,5 @@
 import { useRef, useContext } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar/Navbar";
 import Pagination from "../../components/Pagination/Pagination";
 import { AlertModal } from "../../components/AlertModal/AlertModal";
@@ -13,6 +13,7 @@ import styles from "./GenerateReport.module.css";
 
 export const GenerateReport = () => {
   const pdfRef = useRef();
+  const navigate = useNavigate();
   const { selectedCase } = useContext(CaseContext);
 
   const {
@@ -88,7 +89,12 @@ export const GenerateReport = () => {
       {leadsLoading && (
         <div className={styles.reportModalOverlay}>
           <div className={styles.reportModalBox}>
-            <div className={styles.reportModalHeader}>Loading Leads</div>
+            <div className={styles.reportModalHeader}>
+              Loading Leads
+              <button className={styles.reportModalCloseBtn} onClick={() => navigate(-1)} aria-label="Cancel loading">
+                &times;
+              </button>
+            </div>
             <div className={styles.reportModalBody}>
               <p className={styles.reportModalMessage}>
                 Please wait while leads are loading.
