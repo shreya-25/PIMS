@@ -1,14 +1,15 @@
 /**
  * System-level roles — matches the backend userModel.js role enum.
  * Use these when checking localStorage.getItem("role").
+ *
+ * Admin, Detective Supervisor, and Detective can create cases.
+ * Case Specific users have case-level roles only (Case Manager, Investigator, or Read Only).
  */
 export const ROLES = {
   ADMIN: "Admin",
   DETECTIVE_SUPERVISOR: "Detective Supervisor",
-  CASE_MANAGER: "CaseManager",
-  INVESTIGATOR: "Detective/Investigator",
-  EXTERNAL_CONTRIBUTOR: "External Contributor",
-  READ_ONLY: "Read Only",
+  DETECTIVE: "Detective",
+  CASE_SPECIFIC: "Case Specific",
 };
 
 /**
@@ -19,6 +20,8 @@ export const CASE_ROLES = {
   DETECTIVE_SUPERVISOR: "Detective Supervisor",
   CASE_MANAGER: "Case Manager",
   INVESTIGATOR: "Investigator",
+  OFFICER: "Officer",
+  READ_ONLY: "Read Only",
 };
 
 /**

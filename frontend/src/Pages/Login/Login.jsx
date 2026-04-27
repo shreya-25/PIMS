@@ -34,7 +34,7 @@ export function Login() {
     localStorage.setItem("role", role);
     localStorage.setItem("systemRole", role);
     if (role === "Admin") {
-      navigate("/AdminCM");
+      navigate("/AdminTeam");
     } else {
       navigate("/HomePage");
     }

@@ -12,11 +12,12 @@ import Pagination from "../../components/Pagination/Pagination";
 import { AlertModal } from "../../components/AlertModal/AlertModal";
 import api from "../../api";
 import { ROLES, isDetectiveSupervisor } from "../../constants/roles";
+import { TeamModal } from "../Admin/AdminTeam";
 
 export const HomePage = () => {
   const location = useLocation();
   const systemRoleInit = localStorage.getItem("role");
-  const isReadOnlyUser = systemRoleInit === "Read Only";
+  const isReadOnlyUser = systemRoleInit === ROLES.CASE_SPECIFIC;
   const [activeTab, setActiveTab] = useState(location.state?.activeTab || (isReadOnlyUser ? "cases" : "notifications"));
   const isCaseMgmt = activeTab !== "notifications";
 
@@ -48,6 +49,8 @@ export const HomePage = () => {
 
   const [cases, setCases] = useState([]);
   const [treatAsDS, setTreatAsDS] = useState(false);
+  const [allUsers, setAllUsers] = useState([]);
+  const [managingCase, setManagingCase] = useState(null);
   const [leads, setLeads] = useState({
     assignedLeads: [],
     pendingLeads: [],
@@ -70,9 +73,11 @@ export const HomePage = () => {
   useEffect(() => {
     api.get("/api/users/usernames")
       .then(({ data }) => {
+        const users = data.users || [];
         const map = {};
-        (data.users || []).forEach((u) => { if (u.username) map[u.username] = u; });
+        users.forEach((u) => { if (u.username) map[u.username] = u; });
         setUserMap(map);
+        setAllUsers(users);
       })
       .catch(() => {});
   }, []);
@@ -106,6 +111,8 @@ export const HomePage = () => {
       role = "Case Manager";
     } else if (Array.isArray(c.investigatorUserIds) && c.investigatorUserIds.some(matchUser)) {
       role = "Investigator";
+    } else if (Array.isArray(c.officerUserIds) && c.officerUserIds.some(matchUser)) {
+      role = "Officer";
     } else if (Array.isArray(c.readOnlyUserIds) && c.readOnlyUserIds.some(matchUser)) {
       role = "Read Only";
     } else if (sysRole === ROLES.ADMIN) {
@@ -222,10 +229,11 @@ export const HomePage = () => {
             // Admin and Detective Supervisors see all ongoing cases
             if (isAdmin || treatAsDSLocal) return true;
             // Case Managers and Investigators only see cases they are assigned to
-            const isCM = Array.isArray(c.caseManagerUserIds) && c.caseManagerUserIds.some(matchUser);
-            const isInv = Array.isArray(c.investigatorUserIds) && c.investigatorUserIds.some(matchUser);
-            const isRO = Array.isArray(c.readOnlyUserIds) && c.readOnlyUserIds.some(matchUser);
-            return isCM || isInv || isRO;
+            const isCM  = Array.isArray(c.caseManagerUserIds)  && c.caseManagerUserIds.some(matchUser);
+            const isInv = Array.isArray(c.investigatorUserIds)  && c.investigatorUserIds.some(matchUser);
+            const isOff = Array.isArray(c.officerUserIds)        && c.officerUserIds.some(matchUser);
+            const isRO  = Array.isArray(c.readOnlyUserIds)       && c.readOnlyUserIds.some(matchUser);
+            return isCM || isInv || isOff || isRO;
           })
           .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
           .map((c) => mapCaseForOfficer(c, signedInOfficer, signedInUserId, isAdmin ? ROLES.ADMIN : treatAsDSLocal ? ROLES.DETECTIVE_SUPERVISOR : systemRole));
@@ -606,7 +614,9 @@ export const HomePage = () => {
 
   // ─── Cases table: columns, filter/sort ───────────────────────────────────
 
-  const columnWidths = { "Case No.": "6%", "Case Name": "17%", "Created At": "6%", "Case Managers": "10%" };
+  const columnWidths = treatAsDS
+    ? { "Case No.": "12%", "Case Name": "32%", "Created At": "12%", "Case Managers": "20%" }
+    : { "Case No.": "14%", "Case Name": "36%", "Created At": "14%", "Case Managers": "22%" };
   const colKey = { "Case No.": "id", "Case Name": "title", "Created At": "createdAt", "Case Managers": "caseManagers" };
 
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
@@ -685,10 +695,10 @@ export const HomePage = () => {
     "Assigned Officers": "assignedOfficers",
   };
   const assignedColWidths = {
-    "Lead No.": "6%",
-    "Lead Name": "18%",
-    "Case Name": "14%",
-    "Assigned Officers": "12%",
+    "Lead No.": "14%",
+    "Lead Name": "26%",
+    "Case Name": "26%",
+    "Assigned Officers": "20%",
   };
 
   const [assignedFilterConfig, setAssignedFilterConfig] = useState({
@@ -860,6 +870,15 @@ export const HomePage = () => {
           isDS={treatAsDS}
         />
 
+        {managingCase && (
+          <TeamModal
+            caseData={managingCase}
+            allUsers={allUsers}
+            onClose={() => setManagingCase(null)}
+            onSaved={() => setManagingCase(null)}
+          />
+        )}
+
         {/* Add case slide-bar (shown when triggered from sidebar) */}
         {showAddCase && (
           <SlideBar
@@ -889,27 +908,27 @@ export const HomePage = () => {
               <div className={styles["main-page-belowpart"]}>
                 {/* Tab navigation bar */}
                 <div className={styles["stats-bar"]}>
-                  <span
+                  <button
                     className={`${styles.hoverable} ${activeTab === "cases" ? styles.active : ""}`}
                     onClick={() => setActiveTab("cases")}
                   >
-                    {isAdmin ? `All Ongoing Cases: ${cases.length}` : treatAsDS ? `All Ongoing Cases: ${cases.length}` : `My Ongoing Cases: ${cases.length}`}
-                  </span>
+                    {isAdmin || treatAsDS ? `All Ongoing Cases: ${cases.length}` : `My Ongoing Cases: ${cases.length}`}
+                  </button>
                   {!isReadOnlyUser && (
-                    <span
+                    <button
                       className={`${styles.hoverable} ${activeTab === "assignedLeads" ? styles.active : ""}`}
                       onClick={() => setActiveTab("assignedLeads")}
                     >
                       Assigned Leads: {leads.assignedLeads.length}
-                    </span>
+                    </button>
                   )}
                   {!isReadOnlyUser && (
-                    <span
+                    <button
                       className={`${styles.hoverable} ${activeTab === "pendingLeadReturns" ? styles.active : ""}`}
                       onClick={() => setActiveTab("pendingLeadReturns")}
                     >
                       Lead Returns for Review: {leads.pendingLeadReturns.length}
-                    </span>
+                    </button>
                   )}
                 </div>
 
@@ -959,7 +978,7 @@ export const HomePage = () => {
                                 </th>
                               );
                             })}
-                            <th style={{ width: "5%", textAlign: "left" }}>Actions</th>
+                            <th style={{ width: treatAsDS ? "24%" : "14%", textAlign: "center" }}>Actions</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -976,25 +995,31 @@ export const HomePage = () => {
                                       ))
                                     : "—"}
                                 </td>
-                                <td style={{ width: "5%", textAlign: "left" }}>
+                                <td style={{ textAlign: "left" }}>
                                   <div className={styles["btn-sec-HP"]}>
-                                    <button
-                                      className={styles["manage-btn"]}
-                                      onClick={() => handleCaseClick(c)}
-                                    >
-                                      Manage
-                                    </button>
-                                    {/* {isAdmin && (
+                                    {treatAsDS ? (
+                                      <>
+                                        <button
+                                          className={styles["ds-manage-btn"]}
+                                          onClick={() => setManagingCase({ _id: c._id, caseNo: c.id, caseName: c.title })}
+                                        >
+                                          Manage Team
+                                        </button>
+                                        <button
+                                          className={styles["ds-open-case-btn"]}
+                                          onClick={() => handleCaseClick(c)}
+                                        >
+                                          Open Case
+                                        </button>
+                                      </>
+                                    ) : (
                                       <button
-                                        className={styles["case-close-btn"]}
-                                        onClick={() => {
-                                          setCaseToClose({ caseNo: c.id, caseName: c.title });
-                                          setCloseConfirmOpen(true);
-                                        }}
+                                        className={styles["ds-open-case-btn"]}
+                                        onClick={() => handleCaseClick(c)}
                                       >
-                                        Close
+                                        Open Case
                                       </button>
-                                    )} */}
+                                    )}
                                   </div>
                                 </td>
                               </tr>
@@ -1062,7 +1087,7 @@ export const HomePage = () => {
                                   </th>
                                 );
                               })}
-                              <th style={{ width: "6%", textAlign: "center" }}>Actions</th>
+                              <th style={{ width: "14%", textAlign: "center" }}>Actions</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1103,13 +1128,7 @@ export const HomePage = () => {
                   {activeTab === "pendingLeadReturns" && (
                     <div className={styles["pending-lead-returns"]}>
                       <div className={styles["table-scroll-container"]}>
-                        <table className={styles["leads-table"]} style={{ minWidth: "1000px" }}>
-                          <colgroup>
-                            <col style={{ width: "6%" }} />
-                            <col style={{ width: "28%" }} />
-                            <col style={{ width: "24%" }} />
-                            <col style={{ width: "8%" }} />
-                          </colgroup>
+                        <table className={styles["leads-table"]}>
                           <thead>
                             <tr>
                               {["Lead No.", "Lead Name", "Case Name"].map((col) => {
@@ -1120,7 +1139,7 @@ export const HomePage = () => {
                                 };
                                 const dataKey = keyMap[col];
                                 return (
-                                  <th key={col} className={styles["column-header1"]}>
+                                  <th key={col} className={styles["column-header1"]} style={{ width: col === "Lead No." ? "14%" : "36%" }}>
                                     <div className={styles["header-title"]}>
                                       {col}
                                       <span ref={(el) => (popupPendingRefs.current[col] = el)}>
@@ -1182,7 +1201,7 @@ export const HomePage = () => {
                                   </th>
                                 );
                               })}
-                              <th style={{ width: "6%", textAlign: "center" }}>Actions</th>
+                              <th style={{ width: "14%", textAlign: "center" }}>Actions</th>
                             </tr>
                           </thead>
                           <tbody>

@@ -92,7 +92,7 @@ useEffect(() => {
   };
 });
 
-const OFFICER_ROLES = new Set(["Detective Supervisor", "CaseManager", "Detective/Investigator"]);
+const OFFICER_ROLES = new Set(["Detective Supervisor", "Detective", "Case Specific"]);
 
 const filteredOfficers = React.useMemo(() => {
   const eligible = (usernames || []).filter((u) => OFFICER_ROLES.has(u.role));

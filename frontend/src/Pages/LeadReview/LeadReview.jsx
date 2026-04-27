@@ -1488,7 +1488,7 @@ const declinedSet = new Set(
 // filtered users (exclude declined)
 const filteredUsersAO = React.useMemo(() => {
   const q = aoQuery.trim().toLowerCase();
-  const OFFICER_ROLES = new Set(["Detective Supervisor", "CaseManager", "Detective/Investigator"]);
+  const OFFICER_ROLES = new Set(["Detective Supervisor", "Detective", "Case Specific"]);
   const pool = (allUsers || []).filter(u => OFFICER_ROLES.has(u.role) && !declinedSet.has(u.username));
   if (!q) return pool;
   return pool.filter(u => {

@@ -70,12 +70,6 @@
   padding: 10px;
 }
 
-/* Each tab item */
-.stats-bar span {
-  flex: 1 1 30%;
-  text-align: center;
-}
-
 .hoverable {
   cursor: pointer;
   font-weight: bold;
@@ -85,6 +79,10 @@
   border-radius: 5px;
   font-size: 18px;
   transition: background-color 0.3s ease-in-out;
+  background: none;
+  border: none;
+  font-family: Arial, sans-serif;
+  flex: 1 1 30%;
 }
 
 .hoverable:hover {
@@ -95,7 +93,7 @@
   background-color: rgb(96, 96, 179);
   color: white;
   font-weight: bold;
-  padding: 5px 10px;
+  padding: 5px 24px;
   border-radius: 5px;
 }
 
@@ -111,21 +109,26 @@
 
 /* ─── Table ───────────────────────────────────────────────────────────────── */
 
-/* Horizontally scrollable table wrapper — only scroll zone on the page */
 .table-scroll-container {
   width: 100%;
-  max-height: calc(100dvh - 340px);
-  overflow-x: auto;
+  max-height: 520px;
   overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  overflow-x: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
 }
 
 .table-scroll-container::-webkit-scrollbar {
-  height: 8px;
+  width: 6px;
 }
 
 .table-scroll-container::-webkit-scrollbar-thumb {
-  background-color: #ccc;
+  background-color: #cbd5e1;
+  border-radius: 4px;
+}
+
+.table-scroll-container::-webkit-scrollbar-track {
+  background: #f8fafc;
   border-radius: 4px;
 }
 
@@ -134,35 +137,69 @@
   width: 100%;
   table-layout: fixed;
   border-collapse: collapse;
-  margin-top: 8px;
-  min-width: 1000px;
 }
 
-.leads-table th,
-.leads-table td {
-  padding: 4px;
-  text-align: left;
-  border: 1px solid #ddd;
+.leads-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #fff;
+}
+
+.leads-table tbody::-webkit-scrollbar {
+  width: 6px;
+}
+
+.leads-table tbody::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 4px;
+}
+
+.leads-table tbody::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 4px;
+}
+
+.leads-table th {
+  background-color: #fff;
+  font-weight: 700;
+  color: #000;
   font-size: 18px;
-  white-space: normal;
+  font-family: Arial, sans-serif;
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+  border-right: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.leads-table th:last-child {
+  border-right: none;
+}
+
+.leads-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+  border-right: 1px solid #e2e8f0;
+  font-size: 18px;
+  font-family: Arial, sans-serif;
+  color: #000;
+  vertical-align: middle;
   word-wrap: break-word;
   overflow-wrap: break-word;
 }
 
-.leads-table th {
-  background-color: #f2f2f2;
-  font-weight: bold;
-  color: #333;
-  position: sticky;
-  top: 0;
+.leads-table td:last-child {
+  border-right: none;
 }
 
-.leads-table tr:nth-child(even) {
-  background-color: #f9f9f9;
+.leads-table tbody tr:nth-child(even) {
+  background-color: #f8fafc;
 }
 
-.leads-table tr:hover {
-  background-color: rgba(87, 95, 95, 0.1);
+.leads-table tbody tr:hover {
+  background-color: #eff6ff;
 }
 
 /* ─── Column headers with filter buttons ─────────────────────────────────── */
@@ -175,7 +212,8 @@
 .header-title {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 4px;
   position: relative;
 }
 
@@ -192,7 +230,7 @@
   height: 14px;
   width: 14px;
   filter: brightness(0) saturate(100%);
-  opacity: 0.6;
+  opacity: 1;
 }
 
 /* ─── Action buttons ──────────────────────────────────────────────────────── */
@@ -200,7 +238,58 @@
 /* Container for multiple buttons in one cell */
 .btn-sec-HP {
   display: flex;
+  flex-direction: row;
+  gap: 6px;
+  align-items: center;
   justify-content: center;
+}
+
+/* DS case table action buttons — matches AdminTeam exactly */
+.ds-manage-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 500;
+  font-family: Arial, sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+  line-height: 1.4;
+  border: 1.5px solid #1a73e8;
+  color: #374151;
+  background: #fff;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  box-sizing: border-box;
+}
+
+.ds-manage-btn:hover {
+  background: #eff6ff;
+  border-color: #1558b0;
+}
+
+.ds-open-case-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: Arial, sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+  line-height: 1.4;
+  border: none;
+  color: #fff;
+  background: #1a73e8;
+  transition: background 0.2s ease;
+  box-sizing: border-box;
+}
+
+.ds-open-case-btn:hover {
+  background: #1558b0;
 }
 
 .manage-btn,

@@ -49,17 +49,20 @@ const mapCase = (c) => {
 
 const ONGOING_COLS   = ["Case No.", "Case Name", "Created At", "Case Managers"];
 const ONGOING_KEY    = { "Case No.": "caseNo", "Case Name": "caseName", "Created At": "createdAtFmt", "Case Managers": "caseManagers" };
-const ONGOING_WIDTHS = { "Case No.": "12%", "Case Name": "33%", "Created At": "12%", "Case Managers": "22%" };
+const ONGOING_WIDTHS = { "Case No.": "10%", "Case Name": "35%", "Created At": "12%", "Case Managers": "25%" };
 
 const ARCHIVED_COLS   = ["Case No.", "Case Name", "Closed At", "Case Managers"];
 const ARCHIVED_KEY    = { "Case No.": "caseNo", "Case Name": "caseName", "Closed At": "closedAtFmt", "Case Managers": "caseManagers" };
-const ARCHIVED_WIDTHS = { "Case No.": "12%", "Case Name": "33%", "Closed At": "12%", "Case Managers": "22%" };
+const ARCHIVED_WIDTHS = { "Case No.": "10%", "Case Name": "35%", "Closed At": "12%", "Case Managers": "25%" };
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export const AdminCM = () => {
   const navigate = useNavigate();
   const { setSelectedCase } = useContext(CaseContext);
+
+  const systemRole = localStorage.getItem("role");
+  const isAdminOrDS = systemRole === "Admin" || systemRole === "Detective Supervisor";
 
   const [showAddCase, setShowAddCase]   = useState(false);
   const [rawCases, setRawCases]         = useState([]);
@@ -258,6 +261,14 @@ export const AdminCM = () => {
                   {label}: {counts[key]}
                 </button>
               ))}
+              {isAdminOrDS && (
+                <button
+                  className={styles["hoverable"]}
+                  onClick={() => navigate("/AdminTeam")}
+                >
+                  AdminTeam
+                </button>
+              )}
             </div>
 
             {/* ── Table + Pagination ── */}
@@ -315,7 +326,7 @@ export const AdminCM = () => {
                               </th>
                             );
                           })}
-                          <th style={{ width: "10%", textAlign: "left" }}>Actions</th>
+                          <th style={{ width: "18%", textAlign: "center" }}>Actions</th>
                         </tr>
                       </thead>
                       <tbody>
