@@ -14,7 +14,7 @@ const caseSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["ONGOING", "COMPLETED", "ARCHIVED"],
+      enum: ["ONGOING", "SUBMITTED", "COMPLETED", "ARCHIVED"],
       default: "ONGOING",
     },
 

@@ -225,8 +225,8 @@ export const HomePage = () => {
 
         const assignedCases = response.data
           .filter((c) => {
-            if (c.status !== "ONGOING") return false;
-            // Admin and Detective Supervisors see all ongoing cases
+            if (c.status !== "ONGOING" && c.status !== "SUBMITTED") return false;
+            // Admin and Detective Supervisors see all ongoing + submitted cases
             if (isAdmin || treatAsDSLocal) return true;
             // Case Managers and Investigators only see cases they are assigned to
             const isCM  = Array.isArray(c.caseManagerUserIds)  && c.caseManagerUserIds.some(matchUser);
@@ -618,23 +618,24 @@ export const HomePage = () => {
   // ─── Cases table: columns, filter/sort ───────────────────────────────────
 
   const columnWidths = treatAsDS
-    ? { "Case No.": "12%", "Case Name": "32%", "Created At": "12%", "Case Managers": "20%" }
-    : { "Case No.": "14%", "Case Name": "36%", "Created At": "14%", "Case Managers": "22%" };
-  const colKey = { "Case No.": "id", "Case Name": "title", "Created At": "createdAt", "Case Managers": "caseManagers" };
+    ? { "Case No.": "11%", "Case Name": "28%", "Created At": "11%", "Case Managers": "18%", "Status": "10%" }
+    : { "Case No.": "12%", "Case Name": "32%", "Created At": "12%", "Case Managers": "20%", "Status": "10%" };
+  const colKey = { "Case No.": "id", "Case Name": "title", "Created At": "createdAt", "Case Managers": "caseManagers", "Status": "status" };
 
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
-  const [filterConfig, setFilterConfig] = useState({ id: [], title: [], createdAt: [], role: [], caseManagers: [] });
+  const [filterConfig, setFilterConfig] = useState({ id: [], title: [], createdAt: [], role: [], caseManagers: [], status: [] });
   const [openFilter, setOpenFilter] = useState(null);
   const [filterSearch, setFilterSearch] = useState({});
   const [tempFilterSelections, setTempFilterSelections] = useState({});
 
   const distinctValues = useMemo(() => {
-    const map = { id: new Set(), title: new Set(), createdAt: new Set(), role: new Set(), caseManagers: new Set() };
+    const map = { id: new Set(), title: new Set(), createdAt: new Set(), role: new Set(), caseManagers: new Set(), status: new Set() };
     cases.forEach((c) => {
       map.id.add(String(c.id));
       map.title.add(c.title);
       map.createdAt.add(formatDate(c.createdAt));
       map.role.add(c.role);
+      if (c.status) map.status.add(c.status);
       if (Array.isArray(c.caseManagerNames)) {
         c.caseManagerNames.forEach((name) => { if (name) map.caseManagers.add(name); });
       }
@@ -942,7 +943,7 @@ export const HomePage = () => {
                       <table className={styles["leads-table"]}>
                         <thead>
                           <tr>
-                            {["Case No.", "Case Name", "Created At", "Case Managers"].map((col) => {
+                            {["Case No.", "Case Name", "Created At", "Case Managers", "Status"].map((col) => {
                               const dataKey = colKey[col];
                               return (
                                 <th
@@ -981,7 +982,7 @@ export const HomePage = () => {
                                 </th>
                               );
                             })}
-                            <th style={{ width: treatAsDS ? "24%" : "14%", textAlign: "center" }}>Actions</th>
+                            <th style={{ width: treatAsDS ? "22%" : "14%", textAlign: "center" }}>Actions</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -997,6 +998,11 @@ export const HomePage = () => {
                                         <div key={i}>{m}</div>
                                       ))
                                     : "—"}
+                                </td>
+                                <td>
+                                  <span className={`${styles["status-badge"]} ${c.status === "SUBMITTED" ? styles["status-submitted"] : styles["status-ongoing"]}`}>
+                                    {c.status === "SUBMITTED" ? "Submitted" : "Ongoing"}
+                                  </span>
                                 </td>
                                 <td style={{ textAlign: "left" }}>
                                   <div className={styles["btn-sec-HP"]}>

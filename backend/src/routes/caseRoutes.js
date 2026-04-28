@@ -42,6 +42,18 @@ router.put(
 
 
 router.put(
+  "/:caseNo/submit",
+  verifyToken,
+  async (req, res) => {
+    try {
+      await caseController.submitCase(req, res);
+    } catch (error) {
+      res.status(500).json({ message: "Internal Server Error", error: error.message });
+    }
+  }
+);
+
+router.put(
   "/:caseNo/close",
   verifyToken,
   async (req, res) => {

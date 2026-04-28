@@ -35,11 +35,16 @@ export const ViewTimeline = () => {
   const { caseDetails } = location.state || {};
   const { selectedCase, setSelectedLead } = useContext(CaseContext);
 
-  // Format a date as "Mon DD, YYYY"
+  // Format a date as "Mon DD, YYYY" — parses date-only strings as local time
+  // to avoid UTC-offset shifts (e.g. "2024-01-01" becoming Dec 31 in US timezones)
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    const options = { month: "short", day: "numeric", year: "numeric" };
-    return date.toLocaleDateString("en-US", options);
+    if (!dateString) return "";
+    const parts = String(dateString).split("T")[0].split("-");
+    if (parts.length === 3) {
+      const [y, m, d] = parts.map(Number);
+      return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    }
+    return new Date(dateString).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   };
 
   // Dummy timeline entries for testing (if needed)
@@ -190,10 +195,11 @@ export const ViewTimeline = () => {
     });
   };
 
-    const formatTimeRange = (startTime, endTime) => {
+  const formatTimeRange = (startTime24, endTime24) => {
     const options = { hour: "2-digit", minute: "2-digit", hour12: true };
-    const start = new Date(startTime).toLocaleTimeString([], options);
-    const end = new Date(endTime).toLocaleTimeString([], options);
+    // Construct a local-time Date so toLocaleTimeString respects the user's timezone
+    const start = new Date(`1970-01-01T${startTime24}:00`).toLocaleTimeString([], options);
+    const end   = new Date(`1970-01-01T${endTime24}:00`).toLocaleTimeString([], options);
     return `${start} to ${end}`;
   };
 

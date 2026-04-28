@@ -24,7 +24,7 @@ import { CaseContext } from '../../CaseContext';
 import api from '../../../api';
 import { useLeadStatus } from '../../../hooks/useLeadStatus';
 import { useLeadReport } from '../useLeadReport';
-import { formatDate, normalizeId, alphabetToNumber } from '../lrUtils';
+import { normalizeId, alphabetToNumber } from '../lrUtils';
 
 // Merge shared LR stylesheet with component-specific overrides
 import lrStyles    from '../LR.module.css';
@@ -279,15 +279,14 @@ export const LRTimeline = () => {
     isEditing,
   ]);
 
-  // ── Format a start/end time pair for table display (New York timezone) ────
+  // ── Format a start/end time pair for table display (local timezone) ──────
 
-  const formatTimeRangeNY = (startTime, endTime) => {
+  const formatTimeRange = (startTime, endTime) => {
     if (!startTime || !endTime) return '';
-    const opts  = { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'America/New_York' };
     const start = new Date(startTime);
     const end   = new Date(endTime);
     if (isNaN(start) || isNaN(end)) return '';
-    return `${start.toLocaleTimeString('en-US', opts)} - ${end.toLocaleTimeString('en-US', opts)}`;
+    return `${start.toLocaleTimeString()} - ${end.toLocaleTimeString()}`;
   };
 
   // ── Fetch timeline entries from the API, applying access-level filtering ───
@@ -308,14 +307,14 @@ export const LRTimeline = () => {
     accessLevel:      e.accessLevel || 'Everyone',
     enteredBy:        e.enteredBy,
     enteredByUserId:  e.enteredByUserId ? String(e.enteredByUserId) : null,
-    dateEntered:      formatDate(e.enteredDate),
-    date:             formatDate(e.eventDate),
-    eventStartDate:   formatDate(e.eventStartDate),
-    eventEndDate:     formatDate(e.eventEndDate),
-    timeRange:        formatTimeRangeNY(e.eventStartTime, e.eventEndTime),
+    dateEntered:      e.enteredDate ? new Date(e.enteredDate).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }) : '',
+    date:             e.eventDate     ? new Date(e.eventDate).toLocaleDateString()     : '',
+    eventStartDate:   e.eventStartDate ? new Date(e.eventStartDate).toLocaleDateString() : '',
+    eventEndDate:     e.eventEndDate   ? new Date(e.eventEndDate).toLocaleDateString()   : '',
+    timeRange:        formatTimeRange(e.eventStartTime, e.eventEndTime),
     location:         e.eventLocation,
     description:      e.eventDescription,
-  }), [formatTimeRangeNY]);
+  }), [formatTimeRange]);
 
   const fetchTimelineEntries = useCallback(async () => {
     const caseId  = selectedCase?._id || selectedCase?.id;
@@ -502,7 +501,7 @@ export const LRTimeline = () => {
     const e = timelineEntries[idx];
     setEditingIndex(idx);
     const toDateStr = (val) => { const d = new Date(val); return isNaN(d) ? '' : d.toISOString().slice(0, 10); };
-    const toTimeStr = (val) => { const d = new Date(val); return isNaN(d) ? '' : d.toISOString().slice(11, 16); };
+    const toTimeStr = (val) => { const d = new Date(val); return isNaN(d) ? '' : `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
     setNewEntry({
       date:           toDateStr(e.rawEventDate),
       leadReturnId:   e.leadReturnId,
@@ -807,14 +806,14 @@ export const LRTimeline = () => {
                   <thead>
                     <tr>
                       <th style={{ width: '5%' }}>Id</th>
-                      <th style={{ width: '8%' }}>Date</th>
-                      <th style={{ width: '12%' }}>Entered By</th>
-                      <th style={{ width: '12%' }}>Event Start</th>
-                      <th style={{ width: '12%' }}>Event End</th>
-                      <th style={{ width: '12%' }}>Location</th>
+                      <th style={{ width: '9%' }}>Date</th>
+                      <th style={{ width: '13%' }}>Entered By</th>
+                      <th style={{ width: '11%' }}>Event Start</th>
+                      <th style={{ width: '11%' }}>Event End</th>
+                      <th style={{ width: isCaseManager ? '18%' : '24%' }}>Location</th>
                       <th style={{ width: '7%' }}>More</th>
-                      <th style={{ width: '10%' }}>Actions</th>
-                      {isCaseManager && <th style={{ width: '15%' }}>Access</th>}
+                      <th style={{ width: isCaseManager ? '10%' : '20%' }}>Actions</th>
+                      {isCaseManager && <th style={{ width: '16%' }}>Access</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -930,14 +929,18 @@ export const LRTimeline = () => {
               </tbody>
             </table>
 
-            {/* Row 3: Time Range */}
+            {/* Row 3: Start Time / End Time */}
             <table className={styles.entryGroupTable}>
               <thead>
-                <tr><th>Time Range</th></tr>
+                <tr>
+                  <th>Start Time</th>
+                  <th>End Time</th>
+                </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td>{selectedEntry.timeRange || ''}</td>
+                  <td>{selectedEntry.rawStartTime ? new Date(selectedEntry.rawStartTime).toLocaleTimeString() : ''}</td>
+                  <td>{selectedEntry.rawEndTime   ? new Date(selectedEntry.rawEndTime).toLocaleTimeString()   : ''}</td>
                 </tr>
               </tbody>
             </table>

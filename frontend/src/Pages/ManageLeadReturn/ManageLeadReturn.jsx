@@ -110,6 +110,7 @@ export const ManageLeadReturn = () => {
         leadVideos:       videos,
         leadScratchpad:   notes,
         leadTimeline:     timeline,
+        timezone:         Intl.DateTimeFormat().resolvedOptions().timeZone,
       };
 
       const resp = await api.post("/api/report/generate", reportBody, {

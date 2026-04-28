@@ -157,14 +157,13 @@ function startSection(doc, title, currentY) {
 }
 
 
-// helper to format just the time portion
-function formatTime(dateString) {
+// helper to format just the time portion (tz = IANA timezone from client)
+function formatTime(dateString, tz) {
   if (!dateString) return "";
   const d = new Date(dateString);
-  return d.toLocaleTimeString("en-US", {
-    hour:   "2-digit",
-    minute: "2-digit"
-  });
+  const opts = { hour: "2-digit", minute: "2-digit" };
+  if (tz) opts.timeZone = tz;
+  return d.toLocaleTimeString("en-US", opts);
 }
 
 function formatFromUser(u) {
@@ -943,7 +942,7 @@ async function generateReport(req, res) {
   const {
     leadInstruction, leadReturn, leadPersons, leadVehicles,
     leadEnclosures, leadEvidence, leadPictures, leadAudio,
-    leadVideos, leadScratchpad, leadTimeline, selectedReports
+    leadVideos, leadScratchpad, leadTimeline, selectedReports, timezone
   } = req.body;
 
   console.log('📦  req.body =', JSON.stringify(req.body, null, 2));
@@ -1836,7 +1835,7 @@ let currentY = headerHeight + 20;
         const widths  = [80,100,100, 80, 152];
         const rows    = leadTimeline.map(t => ({
           "Event Date":   formatDate(t.eventDate),
-         "Time Range":  `${formatTime(t.eventStartTime)} – ${formatTime(t.eventEndTime)}`,
+         "Time Range":  `${formatTime(t.eventStartTime, timezone)} – ${formatTime(t.eventEndTime, timezone)}`,
 
           "Location":     t.eventLocation || "",
           "Flags":        Array.isArray(t.timelineFlag) ? t.timelineFlag.join(", ") : "",

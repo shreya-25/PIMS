@@ -72,6 +72,10 @@ export const CasePageManager = () => {
   const invRef = useRef(null);
   const offRef = useRef(null);
 
+  // ─── Case status / submit state ───────────────────────────────────────────
+  const [caseStatus, setCaseStatus] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+
   // ─── Collapsible section state ────────────────────────────────────────────
   const [isCaseSummaryOpen, setIsCaseSummaryOpen] = useState(true);
   const [isCaseTeamOpen, setIsCaseTeamOpen] = useState(true);
@@ -88,6 +92,8 @@ export const CasePageManager = () => {
   // ─── Alert / confirm modal state ──────────────────────────────────────────
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
+  const [confirmSubmitOpen, setConfirmSubmitOpen] = useState(false);
+  const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
   const [confirmOfficersOpen, setConfirmOfficersOpen] = useState(false);
   const [confirmConfig, setConfirmConfig] = useState({ isOpen: false, lead: null });
 
@@ -224,12 +230,16 @@ export const CasePageManager = () => {
     fetchUsers();
   }, []);
 
-  // ─── Effect: fetch current case team ─────────────────────────────────────
+  // ─── Effect: fetch current case team + status ────────────────────────────
   useEffect(() => {
     if (!selectedCase?.caseNo) return;
+    const token = localStorage.getItem("token");
     api.get(`/api/cases/${selectedCase.caseNo}/team`)
       .then(({ data }) => setTeam(data))
       .catch(console.error);
+    api.get(`/api/cases/caseNo/${selectedCase.caseNo}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(({ data }) => setCaseStatus(data.status || null))
+      .catch(() => {});
   }, [selectedCase?.caseNo]);
 
   // ─── Effect: sync fetched team into selection state ───────────────────────
@@ -305,6 +315,79 @@ export const CasePageManager = () => {
       console.error('Case summary save failed', err);
       setAlertMessage("Failed to save case summary. Please try again.");
       setAlertOpen(true);
+    }
+  };
+
+  // ─── Close case (DS / Admin only, when SUBMITTED) ────────────────────────
+  const confirmCloseCase = async () => {
+    setConfirmCloseOpen(false);
+    if (!selectedCase?.caseNo) return;
+    try {
+      const token = localStorage.getItem("token");
+      await api.put(
+        `/api/cases/${encodeURIComponent(selectedCase.caseNo)}/close`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      await api.put(
+        `/api/notifications/close/${encodeURIComponent(selectedCase.caseNo)}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setCaseStatus("COMPLETED");
+      setAlertMessage("Case has been closed and moved to Archived Cases.");
+      setAlertOpen(true);
+    } catch (err) {
+      setAlertMessage(err?.response?.data?.message || "Failed to close case.");
+      setAlertOpen(true);
+    }
+  };
+
+  // ─── Submit case for DS review ───────────────────────────────────────────
+  const confirmSubmitCase = async () => {
+    setConfirmSubmitOpen(false);
+    if (!selectedCase?.caseNo) return;
+    setSubmitting(true);
+    try {
+      const token = localStorage.getItem("token");
+      const { data } = await api.put(
+        `/api/cases/${encodeURIComponent(selectedCase.caseNo)}/submit`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setCaseStatus("SUBMITTED");
+
+      // Notify each DS on the case
+      const dsUsers = data.detectiveSupervisors || [];
+      await Promise.allSettled(
+        dsUsers.map((ds) =>
+          api.post(
+            "/api/notifications",
+            {
+              notificationId: `${Date.now()}-${ds.username}`,
+              assignedBy: signedInOfficer,
+              assignedTo: [{ username: ds.username, role: "Detective Supervisor", status: "pending", unread: true }],
+              action1: "has submitted the case for your review",
+              post1: `${selectedCase.caseNo}: ${selectedCase.caseName}`,
+              caseId: selectedCase._id,
+              caseNo: selectedCase.caseNo,
+              caseName: selectedCase.caseName,
+              caseStatus: "SUBMITTED",
+              type: "Case",
+              time: new Date().toISOString(),
+            },
+            { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` } }
+          )
+        )
+      );
+
+      setAlertMessage("Case submitted for Detective Supervisor review.");
+      setAlertOpen(true);
+    } catch (err) {
+      setAlertMessage(err?.response?.data?.message || "Failed to submit case.");
+      setAlertOpen(true);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -847,6 +930,24 @@ export const CasePageManager = () => {
     <div className={styles['case-page-manager']}>
       <Navbar />
 
+      {/* Confirm submit for review */}
+      <AlertModal
+        isOpen={confirmSubmitOpen}
+        title="Submit Case for Review"
+        message={`Are you sure you want to submit Case ${selectedCase?.caseNo}: ${selectedCase?.caseName} for Detective Supervisor review? The case status will change to Submitted.`}
+        onClose={() => setConfirmSubmitOpen(false)}
+        onConfirm={confirmSubmitCase}
+      />
+
+      {/* Confirm close case */}
+      <AlertModal
+        isOpen={confirmCloseOpen}
+        title="Close Case"
+        message={`Are you sure you want to close Case ${selectedCase?.caseNo}: ${selectedCase?.caseName}? This will archive the case.`}
+        onClose={() => setConfirmCloseOpen(false)}
+        onConfirm={confirmCloseCase}
+      />
+
       {/* Confirm case officers update */}
       <AlertModal
         isOpen={confirmOfficersOpen}
@@ -891,6 +992,33 @@ export const CasePageManager = () => {
             <div className={styles['cp-head']}>
               <h2>Case: {selectedCase?.caseName ? toTitleCase(selectedCase.caseName) : "Unknown Case"}</h2>
             </div>
+            {/* Status + actions — visible to CM / DS / Admin only */}
+            {(selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor" || isAdmin) && (
+              <div className={styles['case-status-bar']}>
+                {caseStatus && (
+                  <span className={`${styles['case-status-badge']} ${styles[`status-${caseStatus.toLowerCase()}`]}`}>
+                    {caseStatus === "SUBMITTED" ? "Submitted for Review" : caseStatus === "ONGOING" ? "Ongoing" : caseStatus}
+                  </span>
+                )}
+                {caseStatus === "ONGOING" && (
+                  <button
+                    className={styles['submit-case-btn']}
+                    onClick={() => setConfirmSubmitOpen(true)}
+                    disabled={submitting}
+                  >
+                    {submitting ? "Submitting…" : "Submit for Review"}
+                  </button>
+                )}
+                {caseStatus === "SUBMITTED" && (selectedCase?.role === "Detective Supervisor" || isAdmin) && (
+                  <button
+                    className={styles['close-case-btn']}
+                    onClick={() => setConfirmCloseOpen(true)}
+                  >
+                    Close Case
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* ── Case Summary ────────────────────────────────────────────── */}
