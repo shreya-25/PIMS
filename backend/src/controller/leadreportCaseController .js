@@ -283,64 +283,81 @@ function drawTable(doc, startX, startY, headers, rows, colWidths, padding = 5) {
 
 // Reuse your drawTextBox (you already have a robust version). If not, keep your newest one.
 
-// Embed any image files in a list of items that carry { filename, s3Key }
+// Embed any image files in a list of items that carry { filename, s3Key } — two per row
 async function embedImagesFromS3List(doc, items, currentY, labelGetter = (x) => x.filename) {
   if (!Array.isArray(items) || items.length === 0) return currentY;
 
-  for (const item of items) {
-    const fnameLower = (item?.filename || "").toLowerCase();
-    const isImage = /\.(jpe?g|png|heic|heif|webp)$/i.test(fnameLower);
-    if (!isImage) continue;
+  const pageW  = doc.page.width;
+  const gap    = 10;
+  const slotW  = Math.floor((pageW - gap) / 2);
+  const maxH   = 180;
+  const bottom = () => doc.page.height - doc.page.margins.bottom;
 
-    if (!item?.s3Key) {
-      doc.font("Helvetica-Oblique").fontSize(10).fillColor("red")
-         .text(`(No S3 key for: ${item?.filename || "Unknown"})`, 50, currentY);
-      doc.fillColor("black");
-      currentY += 18;
-      continue;
-    }
+  const imageItems = items.filter(item => {
+    const f = (item?.filename || "").toLowerCase();
+    return /\.(jpe?g|png|heic|heif|webp)$/i.test(f) && item?.s3Key;
+  });
+
+  for (let i = 0; i < imageItems.length; i += 2) {
+    const item1 = imageItems[i];
+    const item2 = imageItems[i + 1] || null;
+
+    let buf1 = null, buf2 = null, h1 = maxH, h2 = maxH;
 
     try {
-      const rawBuf = await getObjectBuffer(item.s3Key);
-      const buf = await toPdfSafeBuffer(rawBuf);
-      const availW = doc.page.width - 100; // 612 - 2×50 margin
-      let renderedH = 300;
-      try {
-        const meta = await sharp(buf).metadata();
-        const srcW = meta.width || 300;
-        const srcH = meta.height || 300;
-        const scale = Math.min(availW / srcW, 300 / srcH, 1);
-        renderedH = Math.round(srcH * scale);
-      } catch (_) { /* use default */ }
-      const bottom = doc.page.height - doc.page.margins.bottom;
-      if (currentY + renderedH > bottom) {
-        doc.addPage();
-        currentY = doc.page.margins.top;
-      }
+      const raw1 = await getObjectBuffer(item1.s3Key);
+      buf1 = await toPdfSafeBuffer(raw1);
+      const m1 = await sharp(buf1).metadata();
+      const s1 = Math.min(slotW / (m1.width || slotW), maxH / (m1.height || maxH), 1);
+      h1 = Math.round((m1.height || maxH) * s1);
+    } catch (_) {}
 
-      doc.image(buf, 50, currentY, { fit: [availW, 300], align: "center", valign: "top" });
-      currentY += renderedH + 10;
-      doc.font("Helvetica").fontSize(9).fillColor("#555")
-         .text(labelGetter(item), 50, currentY, { width: availW, align: "center" });
-      doc.fillColor("black");
-      currentY += 20;
-    } catch (e) {
-      doc.font("Helvetica-Oblique").fontSize(10).fillColor("red")
-         .text(`(S3 fetch failed: ${item?.filename || "Unknown"})`, 50, currentY);
-      doc.fillColor("black");
-      currentY += 18;
+    if (item2) {
+      try {
+        const raw2 = await getObjectBuffer(item2.s3Key);
+        buf2 = await toPdfSafeBuffer(raw2);
+        const m2 = await sharp(buf2).metadata();
+        const s2 = Math.min(slotW / (m2.width || slotW), maxH / (m2.height || maxH), 1);
+        h2 = Math.round((m2.height || maxH) * s2);
+      } catch (_) { buf2 = null; }
     }
+
+    const rowH = item2 && buf2 ? Math.max(h1, h2) : h1;
+    if (currentY + rowH + 18 > bottom()) {
+      doc.addPage();
+      currentY = doc.page.margins.top;
+    }
+
+    if (buf1) doc.image(buf1, 0, currentY, { fit: [slotW, maxH], align: "center", valign: "top" });
+    doc.font("Helvetica").fontSize(8).fillColor("#555")
+       .text(labelGetter(item1), 0, currentY + rowH + 3, { width: slotW, align: "center" });
+
+    if (item2 && buf2) {
+      doc.image(buf2, slotW + gap, currentY, { fit: [slotW, maxH], align: "center", valign: "top" });
+      doc.font("Helvetica").fontSize(8).fillColor("#555")
+         .text(labelGetter(item2), slotW + gap, currentY + rowH + 3, { width: slotW, align: "center" });
+    }
+
+    doc.fillColor("black");
+    currentY += rowH + 18;
   }
 
   return currentY + 10;
 }
 
 // Embed attachments (links, images, or non-image file notes) for enclosures/evidence/pictures/audio/video
+// Images are rendered two-per-row to save vertical space.
 async function embedAttachments(doc, items, currentY, fileLabel = "File") {
   if (!Array.isArray(items) || items.length === 0) return currentY;
 
+  const pageW = doc.page.width;
+  const gap   = 10;
+  const slotW = Math.floor((pageW - gap) / 2);
+  const maxH  = 180;
+  const pageBottom = () => doc.page.height - doc.page.margins.bottom;
+
+  // First pass: links and non-image files (rendered in-order)
   for (const item of items) {
-    // Handle external links
     if (item.isLink && item.link) {
       currentY = ensureSpace(doc, currentY, 30);
       doc.font("Helvetica-Bold").fontSize(10).fillColor("#000")
@@ -353,7 +370,6 @@ async function embedAttachments(doc, items, currentY, fileLabel = "File") {
     }
 
     if (!item.s3Key) {
-      // No file stored — show a note so the user knows the attachment exists but has no file
       const label = item.originalName || item.filename || "(no filename)";
       currentY = ensureSpace(doc, currentY, 20);
       doc.font("Helvetica-Oblique").fontSize(9).fillColor("#888")
@@ -365,43 +381,66 @@ async function embedAttachments(doc, items, currentY, fileLabel = "File") {
 
     const fname = (item.originalName || item.filename || "").toLowerCase();
     const isImage = /\.(jpe?g|png|heic|heif|webp|gif|bmp|tiff?|avif)$/i.test(fname);
-
-    if (isImage) {
-      try {
-        const rawBuf = await getObjectBuffer(item.s3Key);
-        const buf = await toPdfSafeBuffer(rawBuf);
-        // Calculate actual rendered height so currentY advances correctly
-        const availW = doc.page.width - 100; // 612 - 2×50 margin
-        let renderedH = 300;
-        try {
-          const meta = await sharp(buf).metadata();
-          const srcW = meta.width || 300;
-          const srcH = meta.height || 300;
-          const scale = Math.min(availW / srcW, 300 / srcH, 1);
-          renderedH = Math.round(srcH * scale);
-        } catch (_) { /* use default */ }
-        currentY = ensureSpace(doc, currentY, renderedH + 30);
-        doc.image(buf, 50, currentY, { fit: [availW, 300], align: "center", valign: "top" });
-        currentY += renderedH + 10;
-        doc.font("Helvetica").fontSize(9).fillColor("#555")
-           .text(item.originalName || item.filename || "Image", 50, currentY, { width: availW, align: "center" });
-        doc.fillColor("#000");
-        currentY += 20;
-      } catch (e) {
-        currentY = ensureSpace(doc, currentY, 20);
-        doc.font("Helvetica-Oblique").fontSize(10).fillColor("red")
-           .text(`(Could not load image: ${item.originalName || item.filename || "Unknown"})`, 50, currentY);
-        doc.fillColor("#000");
-        currentY += 18;
-      }
-    } else {
-      // Non-image file — list filename
+    if (!isImage) {
       currentY = ensureSpace(doc, currentY, 25);
       doc.font("Helvetica").fontSize(10).fillColor("#555")
          .text(`Attached ${fileLabel}: ${item.originalName || item.filename || "Document"}`, 50, currentY);
       doc.fillColor("#000");
       currentY += 18;
     }
+  }
+
+  // Second pass: images rendered two-per-row
+  const imageItems = items.filter(item => {
+    if (!item.s3Key) return false;
+    const fname = (item.originalName || item.filename || "").toLowerCase();
+    return /\.(jpe?g|png|heic|heif|webp|gif|bmp|tiff?|avif)$/i.test(fname);
+  });
+
+  for (let i = 0; i < imageItems.length; i += 2) {
+    const item1 = imageItems[i];
+    const item2 = imageItems[i + 1] || null;
+
+    let buf1 = null, buf2 = null, h1 = maxH, h2 = maxH;
+
+    try {
+      const raw1 = await getObjectBuffer(item1.s3Key);
+      buf1 = await toPdfSafeBuffer(raw1);
+      const m1 = await sharp(buf1).metadata();
+      const s1 = Math.min(slotW / (m1.width || slotW), maxH / (m1.height || maxH), 1);
+      h1 = Math.round((m1.height || maxH) * s1);
+    } catch (_) {}
+
+    if (item2) {
+      try {
+        const raw2 = await getObjectBuffer(item2.s3Key);
+        buf2 = await toPdfSafeBuffer(raw2);
+        const m2 = await sharp(buf2).metadata();
+        const s2 = Math.min(slotW / (m2.width || slotW), maxH / (m2.height || maxH), 1);
+        h2 = Math.round((m2.height || maxH) * s2);
+      } catch (_) { buf2 = null; }
+    }
+
+    const rowH = item2 && buf2 ? Math.max(h1, h2) : h1;
+    if (currentY + rowH + 18 > pageBottom()) {
+      doc.addPage();
+      currentY = doc.page.margins.top;
+    }
+
+    const label1 = item1.originalName || item1.filename || "Image";
+    if (buf1) doc.image(buf1, 0, currentY, { fit: [slotW, maxH], align: "center", valign: "top" });
+    doc.font("Helvetica").fontSize(8).fillColor("#555")
+       .text(label1, 0, currentY + rowH + 3, { width: slotW, align: "center" });
+
+    if (item2 && buf2) {
+      const label2 = item2.originalName || item2.filename || "Image";
+      doc.image(buf2, slotW + gap, currentY, { fit: [slotW, maxH], align: "center", valign: "top" });
+      doc.font("Helvetica").fontSize(8).fillColor("#555")
+         .text(label2, slotW + gap, currentY + rowH + 3, { width: slotW, align: "center" });
+    }
+
+    doc.fillColor("#000");
+    currentY += rowH + 18;
   }
 
   return currentY;

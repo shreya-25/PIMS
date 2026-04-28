@@ -29,7 +29,7 @@ export const SideBar = ({
   const signedInOfficer = localStorage.getItem("loggedInUser");
   const signedInUserId  = localStorage.getItem("userId");
   const signedInRole = selectedCase?.role;
-  const systemRole = localStorage.getItem("role");
+  const systemRole = localStorage.getItem("systemRole") || localStorage.getItem("role");
 
   const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
   const [caseList, setCaseList] = useState(initialCases);
@@ -330,14 +330,18 @@ export const SideBar = ({
     );
   }
 
-  // Officer variant — minimal: Home + Case page only
+  // Officer variant — Home + Case page + Other Ongoing Cases
   if (selectedCase?.role === "Officer") {
     return (
       <aside className="sidebar">
         <ul className="sidebar-list">
           <li
-            className={`sidebar-item ${activePage === "HomePage" ? "active" : ""}`}
-            onClick={() => navigate("/HomePage", { state: { caseDetails, activeTab: "cases" } })}
+            className={`sidebar-item ${activePage === "HomePage" || activePage === "AdminTeam" ? "active" : ""}`}
+            onClick={() =>
+              systemRole === "Admin"
+                ? navigate("/AdminTeam")
+                : navigate("/HomePage", { state: { caseDetails, activeTab: "cases" } })
+            }
           >
             <img src={homeIcon} className="sidebar-icon" alt="" />
             <span>PIMS Home</span>
@@ -349,6 +353,34 @@ export const SideBar = ({
             <img src={folderIcon} className="sidebar-icon" alt="" />
             <span>Case: {selectedCase?.caseNo || "-"}</span>
           </li>
+
+          {/* Other Ongoing Cases */}
+          <li className="sidebar-item" onClick={() => setCaseDropdownOpen((o) => !o)}>
+            <img src={folderIcon} className="sidebar-icon" alt="" />
+            <span>Other Ongoing Cases {caseDropdownOpen ? "▲" : "▼"}</span>
+          </li>
+          {caseDropdownOpen && (
+            <ul className="dropdown-list1">
+              {caseList
+                .filter((c) => String(c._id) !== String(selectedCase?._id || selectedCase?.id))
+                .map((c) => {
+                  const count = getCaseBadgeCount(c._id);
+                  const isActive = String(selectedCase?._id || selectedCase?.id) === String(c._id);
+                  return (
+                    <li
+                      key={String(c._id)}
+                      className={`sidebar-item${isActive ? " active" : ""}`}
+                      onClick={() => handleCaseSelect(c)}
+                    >
+                      <div className="case-headerSB">
+                        <span>Case: {c.caseNo}</span>
+                        <span className="sidebar-number">{count}</span>
+                      </div>
+                    </li>
+                  );
+                })}
+            </ul>
+          )}
         </ul>
       </aside>
     );
@@ -359,10 +391,10 @@ export const SideBar = ({
     <aside className="sidebar">
       <ul className="sidebar-list">
         <li
-          className={`sidebar-item ${activePage === "HomePage" || activePage === "AdminCM" ? "active" : ""}`}
+          className={`sidebar-item ${activePage === "HomePage" || activePage === "AdminCM" || activePage === "AdminTeam" ? "active" : ""}`}
           onClick={() =>
             systemRole === "Admin"
-              ? navigate("/AdminCM")
+              ? navigate("/AdminTeam")
               : navigate("/HomePage", { state: { caseDetails, activeTab: "cases" } })
           }
         >

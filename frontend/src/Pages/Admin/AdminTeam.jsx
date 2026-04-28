@@ -130,12 +130,19 @@ export const TeamModal = ({ caseData, allUsers, onClose, onSaved }) => {
   };
 
   const add = (roleKey, username) => {
+    // Check conflict using current team state before any setState
+    const conflictKey = roleKey === "officers" ? "readOnly" : roleKey === "readOnly" ? "officers" : null;
+    const isInConflictingRole = conflictKey ? team[conflictKey].includes(username) : false;
+
     setTeam((prev) => {
       if (prev[roleKey].includes(username)) return prev;
       return { ...prev, [roleKey]: [...prev[roleKey], username] };
     });
-    // Adding a previously blocked user restores their access
-    setBlocked((prev) => { const next = new Set(prev); next.delete(username); return next; });
+    // Only restore access if user is NOT in a conflicting role;
+    // if they are, keep the block so they remain disabled in their old role
+    if (!isInConflictingRole) {
+      setBlocked((prev) => { const next = new Set(prev); next.delete(username); return next; });
+    }
     setDropOpen((prev) => ({ ...prev, [roleKey]: false }));
     setSearch((prev) => ({ ...prev, [roleKey]: "" }));
   };
@@ -225,7 +232,16 @@ export const TeamModal = ({ caseData, allUsers, onClose, onSaved }) => {
             <div className={styles.modalBody}>
               {ROLE_KEYS.map((roleKey) => {
                 const canAdd = !NO_ADD_ROLES.has(roleKey);
-                const eligible = allUsers.filter(USER_ROLE_FILTER[roleKey]);
+                const occupiedByOtherRole = new Set(
+                  roleKey === "officers"
+                    ? [...team.detectiveSupervisors, ...team.caseManagers, ...team.investigators, ...team.readOnly].filter(u => !blocked.has(u))
+                    : roleKey === "readOnly"
+                    ? [...team.detectiveSupervisors, ...team.caseManagers, ...team.investigators, ...team.officers].filter(u => !blocked.has(u))
+                    : []
+                );
+                const eligible = allUsers.filter(
+                  (u) => USER_ROLE_FILTER[roleKey](u) && !occupiedByOtherRole.has(u.username)
+                );
                 const filtered = eligible.filter((u) => {
                   const q = search[roleKey].toLowerCase();
                   return !q || `${u.firstName} ${u.lastName} ${u.username}`.toLowerCase().includes(q);

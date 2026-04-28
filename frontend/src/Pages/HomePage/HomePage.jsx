@@ -492,16 +492,19 @@ export const HomePage = () => {
       role: caseDetails.role,
     };
     setSelectedCase(caseObj);
+    localStorage.setItem("role", caseDetails.role);
+    localStorage.setItem("selectedCase", JSON.stringify(caseObj));
 
-    if (caseDetails.role === "Investigator" || caseDetails.role === "Read Only") {
-      localStorage.setItem("role", caseDetails.role);
-      navigate("/Investigator", { state: { caseDetails } });
-    } else if (
-      caseDetails.role === "Case Manager" ||
-      caseDetails.role === "Detective Supervisor"
-    ) {
-      localStorage.setItem("role", "Case Manager");
-      navigate("/CasePageManager", { state: { caseDetails } });
+    const role = caseDetails.role;
+    if (role === "Detective Supervisor" || role === "Case Manager") {
+      navigate("/CasePageManager", { state: { caseDetails: caseObj } });
+    } else if (role === "Investigator" || role === "Officer") {
+      navigate("/Investigator", { state: { caseDetails: caseObj } });
+    } else if (role === "Read Only") {
+      navigate("/LeadsDesk", { state: { caseDetails: caseObj } });
+    } else {
+      // Admin or unrecognised — default to CasePageManager
+      navigate("/CasePageManager", { state: { caseDetails: caseObj } });
     }
   };
 

@@ -143,7 +143,11 @@ export const GenerateReport = () => {
 
             {/* Breadcrumb */}
             <div className={styles["ld-head"]}>
-              <Link to="/HomePage" className={styles.crumb}>PIMS Home</Link>
+              <span
+                className={styles.crumb}
+                style={{ cursor: "pointer" }}
+                onClick={() => (localStorage.getItem("systemRole") || localStorage.getItem("role")) === "Admin" ? navigate("/AdminTeam") : navigate("/HomePage")}
+              >PIMS Home</span>
               <span className={styles.sep}>{" >> "}</span>
               <Link
                 to={["Admin", "Case Manager", "Detective Supervisor"].includes(selectedCase?.role) ? "/CasePageManager" : "/Investigator"}

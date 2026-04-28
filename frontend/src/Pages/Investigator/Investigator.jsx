@@ -370,15 +370,13 @@ export const Investigator = () => {
                     <td>
                       {team.investigators.length
                         ? team.investigators.map(formatUser).join(', ')
-                        : 'None assigned'}
+                        : '—'}
                     </td>
                   </tr>
-                  {(team.officers || []).length > 0 && (
-                    <tr>
-                      <td>Officer{(team.officers || []).length > 1 ? 's' : ''}</td>
-                      <td>{team.officers.map(formatUser).join(', ')}</td>
-                    </tr>
-                  )}
+                  <tr>
+                    <td>Officer{(team.officers || []).length > 1 ? 's' : ''}</td>
+                    <td>{(team.officers || []).length ? team.officers.map(formatUser).join(', ') : '—'}</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -421,7 +419,7 @@ export const Investigator = () => {
                 filter={allFilter}
                 renderRow={renderAllRow}
                 emptyMessage="No leads assigned to you"
-                showActions={false}
+                showActions={true}
               />
             ) : (
               <>

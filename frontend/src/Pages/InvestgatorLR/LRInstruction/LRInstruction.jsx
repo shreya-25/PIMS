@@ -151,13 +151,14 @@ const SectionTabBar = ({ activeRoute, onNavigate }) => (
  * and the current lead status.
  */
 const BreadcrumbBar = ({ selectedCase, selectedLead, leadStatus }) => {
+  const navigate = useNavigate();
   const caseRoute = selectedCase?.role === 'Investigator' ? '/Investigator' : '/CasePageManager';
 
   return (
     <div className={styles.caseandleadinfo}>
       <h5 className={styles.sideTitle}>
         <div className={styles.ldHead}>
-          <Link to="/HomePage" className={styles.crumb}>PIMS Home</Link>
+          <span className={styles.crumb} style={{ cursor: "pointer" }} onClick={() => (localStorage.getItem("systemRole") || localStorage.getItem("role")) === "Admin" ? navigate("/AdminTeam") : navigate("/HomePage")}>PIMS Home</span>
           <span className={styles.sep}>{' >> '}</span>
           <Link to={caseRoute} state={{ caseDetails: selectedCase }} className={styles.crumb}>
             Case: {selectedCase?.caseNo || ''}

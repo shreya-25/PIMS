@@ -984,6 +984,7 @@ export const CasePageManager = () => {
                                 {allUsers
                                   .filter(user => user.role === "Detective Supervisor")
                                   .filter(user => !dsSearch || `${user.firstName} ${user.lastName} ${user.username}`.toLowerCase().includes(dsSearch.toLowerCase()))
+                                  .sort((a, b) => { const la = (a.lastName || "").toLowerCase(), lb = (b.lastName || "").toLowerCase(); return la !== lb ? la.localeCompare(lb) : (a.firstName || "").toLowerCase().localeCompare((b.firstName || "").toLowerCase()); })
                                   .map(user => (
                                     <div key={user.username} className={styles['dropdown-item']}>
                                       <input
@@ -1044,6 +1045,7 @@ export const CasePageManager = () => {
                                 {allUsers
                                   .filter(user => user.role === "Detective" || user.role === "Case Specific")
                                   .filter(user => !cmSearch || `${user.firstName} ${user.lastName} ${user.username}`.toLowerCase().includes(cmSearch.toLowerCase()))
+                                  .sort((a, b) => { const la = (a.lastName || "").toLowerCase(), lb = (b.lastName || "").toLowerCase(); return la !== lb ? la.localeCompare(lb) : (a.firstName || "").toLowerCase().localeCompare((b.firstName || "").toLowerCase()); })
                                   .map(user => (
                                     <div key={user.username} className={styles['dropdown-item']}>
                                       <input
@@ -1106,6 +1108,7 @@ export const CasePageManager = () => {
                                 {allUsers
                                   .filter(user => user.role === "Detective" || user.role === "Case Specific")
                                   .filter(user => !invSearch || `${user.firstName} ${user.lastName} ${user.username}`.toLowerCase().includes(invSearch.toLowerCase()))
+                                  .sort((a, b) => { const la = (a.lastName || "").toLowerCase(), lb = (b.lastName || "").toLowerCase(); return la !== lb ? la.localeCompare(lb) : (a.firstName || "").toLowerCase().localeCompare((b.firstName || "").toLowerCase()); })
                                   .map(user => (
                                     <div key={user.username} className={styles['dropdown-item']}>
                                       <input
@@ -1169,7 +1172,9 @@ export const CasePageManager = () => {
                                 />
                                 {allUsers
                                   .filter(user => user.role === "Detective" || user.role === "Case Specific")
+                                  .filter(user => ![...selectedDetectiveSupervisors, ...selectedCaseManagers, ...selectedInvestigators].includes(user.username))
                                   .filter(user => !offSearch || `${user.firstName} ${user.lastName} ${user.username}`.toLowerCase().includes(offSearch.toLowerCase()))
+                                  .sort((a, b) => { const la = (a.lastName || "").toLowerCase(), lb = (b.lastName || "").toLowerCase(); return la !== lb ? la.localeCompare(lb) : (a.firstName || "").toLowerCase().localeCompare((b.firstName || "").toLowerCase()); })
                                   .map(user => (
                                     <div key={user.username} className={styles['dropdown-item']}>
                                       <input

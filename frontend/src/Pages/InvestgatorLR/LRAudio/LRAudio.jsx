@@ -794,7 +794,7 @@ export const LRAudio = () => {
           <div className={styles.caseandleadinfo}>
             <h5 className={styles.sideTitle}>
               <div className={styles.ldHead}>
-                <Link to="/HomePage" className={styles.crumb}>PIMS Home</Link>
+                <span className={styles.crumb} style={{ cursor: "pointer" }} onClick={() => (localStorage.getItem("systemRole") || localStorage.getItem("role")) === "Admin" ? navigate("/AdminTeam") : navigate("/HomePage")}>PIMS Home</span>
                 <span className={styles.sep}>{' >> '}</span>
                 <Link
                   to={selectedCase?.role === 'Investigator' ? '/Investigator' : '/CasePageManager'}
