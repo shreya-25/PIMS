@@ -476,6 +476,41 @@ exports.deleteCase = async (req, res) => {
   }
 };
 
+// PUT /api/cases/:caseNo/submit
+exports.submitCase = async (req, res) => {
+  try {
+    const { caseNo } = req.params;
+    if (!caseNo) return res.status(400).json({ message: "caseNo is required" });
+
+    const caseDoc = await Case.findOne({ caseNo })
+      .populate("detectiveSupervisorUserIds", "username firstName lastName")
+      .populate("detectiveSupervisorUserId",  "username firstName lastName");
+
+    if (!caseDoc) return res.status(404).json({ message: "Case not found" });
+    if (caseDoc.status !== "ONGOING") {
+      return res.status(400).json({ message: `Case is already ${caseDoc.status}` });
+    }
+
+    caseDoc.status = "SUBMITTED";
+    await caseDoc.save();
+
+    // Collect DS users to notify (merge legacy single + array field, deduplicate)
+    const dsMap = new Map();
+    const addDS = (u) => { if (u?._id && u?.username) dsMap.set(String(u._id), u); };
+    (caseDoc.detectiveSupervisorUserIds || []).forEach(addDS);
+    if (caseDoc.detectiveSupervisorUserId) addDS(caseDoc.detectiveSupervisorUserId);
+
+    return res.status(200).json({
+      message: "Case submitted for approval",
+      data: caseDoc,
+      detectiveSupervisors: [...dsMap.values()].map((u) => ({ username: u.username })),
+    });
+  } catch (err) {
+    console.error("Error submitting case:", err);
+    return res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
 // PUT /api/cases/:caseNo/close
 exports.closeCase = async (req, res) => {
   try {

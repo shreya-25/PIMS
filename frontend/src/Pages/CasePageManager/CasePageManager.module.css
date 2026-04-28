@@ -46,6 +46,73 @@
   width: 87%;
 }
 
+.case-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.case-status-badge {
+  display: inline-block;
+  padding: 6px 16px;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-ongoing {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-submitted {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.submit-case-btn {
+  padding: 9px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: Arial, sans-serif;
+  color: #fff;
+  background: #e65100;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s ease;
+}
+
+.submit-case-btn:hover:not(:disabled) {
+  background: #bf360c;
+}
+
+.submit-case-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.close-case-btn {
+  padding: 9px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: Arial, sans-serif;
+  color: #fff;
+  background: #c62828;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s ease;
+}
+
+.close-case-btn:hover {
+  background: #8e0000;
+}
+
 /* ─── Collapsible sections ──────────────────────────────────────────────── */
 .collapsible-section {
   margin: 4px 0;

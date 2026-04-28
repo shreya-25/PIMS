@@ -202,11 +202,13 @@ function drawImageWatermark(doc, img, opts = {}) {
 
 
 
-// Time-only formatter for timeline
-function formatTimeOnly(dateString) {
+// Time-only formatter for timeline (tz = IANA timezone from client)
+function formatTimeOnly(dateString, tz) {
   if (!dateString) return "";
   const d = new Date(dateString);
-  return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+  const opts = { hour: "2-digit", minute: "2-digit" };
+  if (tz) opts.timeZone = tz;
+  return d.toLocaleTimeString("en-US", opts);
 }
 
 const formatTime = formatTimeOnly; // ensure the name exists
@@ -1395,8 +1397,8 @@ async function buildLeadBuffer(lead, { includeAll, characterOfCase, userMap, sho
           const tlRows = timeline.map((t) => ({
             "Event Date":  formatDate(t.eventDate),
             "Time Range":
-              `${formatTime(t.eventStartTime) || ""}` +
-              (t.eventEndTime ? ` – ${formatTime(t.eventEndTime)}` : ""),
+              `${formatTime(t.eventStartTime, timezone) || ""}` +
+              (t.eventEndTime ? ` – ${formatTime(t.eventEndTime, timezone)}` : ""),
             "Location":    t.eventLocation || "N/A",
             "Flags":       Array.isArray(t.timelineFlag) ? t.timelineFlag.join(", ") : (t.flags || "N/A"),
             "Description": t.eventDescription || "N/A",
@@ -1514,6 +1516,7 @@ async function generateCaseReport(req, res) {
     reportScope,
     subsetRange,
     leadNos,
+    timezone,
   } = req.body;
 
   const includeAll = selectedReports && selectedReports.FullReport;
@@ -2160,8 +2163,8 @@ if (timeline && timeline.length > 0) {
   const rows = timeline.map((t) => ({
     "Event Date":  formatDate(t.eventDate),
     "Time Range":
-      `${formatTime(t.eventStartTime) || ""}` +
-      (t.eventEndTime ? ` – ${formatTime(t.eventEndTime)}` : ""),
+      `${formatTime(t.eventStartTime, timezone) || ""}` +
+      (t.eventEndTime ? ` – ${formatTime(t.eventEndTime, timezone)}` : ""),
     "Location":    t.eventLocation || "N/A",
     "Flags":       Array.isArray(t.timelineFlag) ? t.timelineFlag.join(", ") : (t.flags || "N/A"),
     "Description": t.eventDescription || "N/A",
@@ -2228,7 +2231,7 @@ const LRTimeline = require("../models/LRTimeline");
 
 async function generateTimelineOnlyReport(req, res) {
   try {
-    const { caseId, user: reqUser } = req.body;
+    const { caseId, user: reqUser, timezone } = req.body;
     if (!caseId) {
       return res.status(400).json({ error: "caseId is required" });
     }
@@ -2276,12 +2279,14 @@ async function generateTimelineOnlyReport(req, res) {
       return start;
     };
 
-    // Format time as "H:MM AM/PM"
+    // Format time as "H:MM AM/PM" using the client's timezone
     const fmtTime = (d) => {
       if (!d) return "";
       const dt = new Date(d);
       if (isNaN(dt)) return "";
-      return dt.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+      const opts = { hour: "numeric", minute: "2-digit" };
+      if (timezone) opts.timeZone = timezone;
+      return dt.toLocaleTimeString("en-US", opts);
     };
 
     // ── Build PDF ──────────────────────────────────────────────────────────
