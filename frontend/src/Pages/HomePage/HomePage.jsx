@@ -992,8 +992,8 @@ export const HomePage = () => {
                                 <td>{c.title}</td>
                                 <td>{formatDate(c.createdAt)}</td>
                                 <td>
-                                  {c.caseManagers !== "—"
-                                    ? c.caseManagers.split(", ").map((m, i) => (
+                                  {(c.caseManagerNames || []).length > 0
+                                    ? c.caseManagerNames.map((m, i) => (
                                         <div key={i}>{m}</div>
                                       ))
                                     : "—"}

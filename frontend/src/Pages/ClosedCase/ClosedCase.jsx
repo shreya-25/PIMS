@@ -44,7 +44,7 @@ export const ClosedCase = () => {
       .catch(() => {});
   }, []);
 
-  // ── Fetch Closed cases (polling like HomePage) ──────────────────────────────
+  // ── Fetch Closed cases ──────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
 
@@ -54,27 +54,50 @@ export const ClosedCase = () => {
         const token = localStorage.getItem("token");
         if (!token) throw new Error("No token found");
 
-        const { data } = await api.get("/api/cases/cases-by-officer", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          params: { officerName: signedInOfficer, status: "COMPLETED" },
-          returnEmptyOn404: true,
-          emptyData: [],
-        });
+        let rows;
+
+        if (treatAsDS) {
+          // DS / Admin: fetch all cases and filter by COMPLETED
+          const { data } = await api.get("/api/cases", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          rows = (Array.isArray(data) ? data : [])
+            .filter((c) => c.status === "COMPLETED")
+            .map((c) => {
+              const cmNames = (c.caseManagerUserIds || c.caseManagerNames || []).map((m) =>
+                typeof m === "string" ? m : m.username || ""
+              ).filter(Boolean);
+              return {
+                _id: c._id,
+                id: c.caseNo,
+                title: c.caseName,
+                closedAt: c.archivedAt || c.updatedAt || null,
+                caseManagers: cmNames.join(", ") || "—",
+                caseManagerNames: cmNames,
+              };
+            });
+        } else {
+          // All others: only their assigned cases
+          const { data } = await api.get("/api/cases/cases-by-officer", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            params: { officerName: signedInOfficer, status: "COMPLETED" },
+            returnEmptyOn404: true,
+            emptyData: [],
+          });
+          rows = (data || []).map((c) => ({
+            _id: c._id,
+            id: c.caseNo,
+            title: c.caseName,
+            closedAt: c.archivedAt || c.updatedAt || null,
+            caseManagers: c.caseManagers || "—",
+            caseManagerNames: c.caseManagerNames || [],
+          }));
+        }
 
         if (cancelled) return;
-
-        const rows = (data || []).map((c) => ({
-          _id: c._id,
-          id: c.caseNo,
-          title: c.caseName,
-          closedAt: c.archivedAt || c.updatedAt || null,
-          caseManagers: c.caseManagers || "—",
-          caseManagerNames: c.caseManagerNames || [],
-        }));
-
         setCases(rows);
       } catch (e) {
         console.error("❌ Error fetching closed cases:", e);
@@ -86,7 +109,25 @@ export const ClosedCase = () => {
 
     fetchClosed();
     return () => { cancelled = true; };
-  }, [signedInOfficer]);
+  }, [signedInOfficer, treatAsDS]);
+
+  // Resolve a caseManagerNames entry (raw username OR "DisplayName (username)") to "Last, First (username)"
+  const fmtManager = (nameOrUsername) => {
+    // Try direct username match first
+    let u = allUsers.find((x) => x.username === nameOrUsername);
+    if (!u) {
+      // Try extracting username from "DisplayName (username)" format
+      const match = /\(([^)]+)\)$/.exec((nameOrUsername || "").trim());
+      if (match) u = allUsers.find((x) => x.username === match[1]);
+    }
+    if (u) {
+      const last  = (u.lastName  || "").trim();
+      const first = (u.firstName || "").trim();
+      const name  = last && first ? `${last}, ${first}` : last || first || "";
+      return name ? `${name} (${u.username})` : u.username;
+    }
+    return nameOrUsername;
+  };
 
   // ── Filter + Sort (mirrors HomePage pattern) ────────────────────────────────
   const columnWidths = {
@@ -136,13 +177,13 @@ export const ClosedCase = () => {
       map.id.add(String(c.id));
       map.title.add(c.title);
       map.closedAt.add(formatDate(c.closedAt));
-      (c.caseManagerNames || []).forEach((name) => { if (name) map.caseManagers.add(name); });
+      (c.caseManagerNames || []).forEach((name) => { if (name) map.caseManagers.add(fmtManager(name)); });
     });
 
     return Object.fromEntries(
       Object.entries(map).map(([key, set]) => [key, [...set]])
     );
-  }, [cases]);
+  }, [cases, allUsers]);
 
   const toggleSelectAll = (dataKey) => {
     const all = distinctValues[dataKey] || [];
@@ -193,7 +234,7 @@ export const ClosedCase = () => {
       return Object.entries(filterConfig).every(([field, selected]) => {
         if (!selected || selected.length === 0) return true;
         if (field === "caseManagers") {
-          return selected.some((s) => (c.caseManagerNames || []).includes(s));
+          return selected.some((s) => (c.caseManagerNames || []).map(fmtManager).includes(s));
         }
         const cell = field === "closedAt" ? formatDate(c.closedAt) : String(c[field]);
         return selected.includes(cell);
@@ -221,7 +262,7 @@ export const ClosedCase = () => {
       if (aV > bV) return direction === "asc" ? 1 : -1;
       return 0;
     });
-  }, [cases, filterConfig, sortConfig]);
+  }, [cases, filterConfig, sortConfig, allUsers]);
 
   const paginatedCases = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
@@ -359,8 +400,8 @@ export const ClosedCase = () => {
                           <td>{c.title}</td>
                           <td>{formatDate(c.closedAt)}</td>
                           <td>
-                            {c.caseManagers !== "—"
-                              ? c.caseManagers.split(", ").map((m, i) => <div key={i}>{m}</div>)
+                            {(c.caseManagerNames || []).length > 0
+                              ? c.caseManagerNames.map((m, i) => <div key={i}>{fmtManager(m)}</div>)
                               : "—"}
                           </td>
                           <td className={styles['center-cell']}>
