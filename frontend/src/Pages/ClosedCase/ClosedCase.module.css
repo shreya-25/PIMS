@@ -64,24 +64,15 @@
 .table-scroll-container {
   width: 100%;
   overflow-x: auto;
-  overflow-y: auto;
-  max-height: calc(100dvh - 220px);
 }
 
 .table-scroll-container::-webkit-scrollbar {
   height: 6px;
-  width: 6px;
 }
 
 .table-scroll-container::-webkit-scrollbar-thumb {
   background: #ccc;
   border-radius: 3px;
-}
-
-.table-scroll-container table thead th {
-  position: sticky;
-  top: 0;
-  z-index: 1;
 }
 
 /* ─── Leads table ────────────────────────────────────────────────────────── */

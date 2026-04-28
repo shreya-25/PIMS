@@ -107,8 +107,7 @@ export const AdminUserList = () => {
       );
       // update local list
       setUsers((prev) => prev.map((u) => (u._id === editUser._id ? { ...u, ...data.user } : u)));
-      setEditSuccess("User updated successfully.");
-      setEditUser((prev) => ({ ...prev, ...data.user }));
+      closeEdit();
     } catch (err) {
       setEditError(err?.response?.data?.message || "Failed to update user.");
     } finally {

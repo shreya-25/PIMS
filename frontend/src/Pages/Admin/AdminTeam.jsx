@@ -130,19 +130,20 @@ export const TeamModal = ({ caseData, allUsers, onClose, onSaved }) => {
   };
 
   const add = (roleKey, username) => {
-    // Check conflict using current team state before any setState
     const conflictKey = roleKey === "officers" ? "readOnly" : roleKey === "readOnly" ? "officers" : null;
-    const isInConflictingRole = conflictKey ? team[conflictKey].includes(username) : false;
 
     setTeam((prev) => {
       if (prev[roleKey].includes(username)) return prev;
-      return { ...prev, [roleKey]: [...prev[roleKey], username] };
+      const next = { ...prev, [roleKey]: [...prev[roleKey], username] };
+      // Move user out of the conflicting role if they were in it
+      if (conflictKey && next[conflictKey].includes(username)) {
+        next[conflictKey] = next[conflictKey].filter((u) => u !== username);
+      }
+      return next;
     });
-    // Only restore access if user is NOT in a conflicting role;
-    // if they are, keep the block so they remain disabled in their old role
-    if (!isInConflictingRole) {
-      setBlocked((prev) => { const next = new Set(prev); next.delete(username); return next; });
-    }
+
+    // Always clear block when actively adding to a role
+    setBlocked((prev) => { const next = new Set(prev); next.delete(username); return next; });
     setDropOpen((prev) => ({ ...prev, [roleKey]: false }));
     setSearch((prev) => ({ ...prev, [roleKey]: "" }));
   };
