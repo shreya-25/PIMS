@@ -49,24 +49,28 @@ export const CasePageManager = () => {
   });
 
   // ─── Case team state ──────────────────────────────────────────────────────
-  const [team, setTeam] = useState({ detectiveSupervisors: [], caseManagers: [], investigators: [] });
+  const [team, setTeam] = useState({ detectiveSupervisors: [], caseManagers: [], investigators: [], officers: [] });
   const [allUsers, setAllUsers] = useState([]);
   const [selectedInvestigators, setSelectedInvestigators] = useState([]);
   const [selectedCaseManagers, setSelectedCaseManagers] = useState([]);
   const [selectedDetectiveSupervisors, setSelectedDetectiveSupervisors] = useState([]);
+  const [selectedOfficers, setSelectedOfficers] = useState([]);
 
   // ─── Team dropdown open/search state ──────────────────────────────────────
   const [investigatorsDropdownOpen, setInvestigatorsDropdownOpen] = useState(false);
   const [caseManagersDropdownOpen, setCaseManagersDropdownOpen] = useState(false);
   const [detectiveSupervisorDropdownOpen, setDetectiveSupervisorDropdownOpen] = useState(false);
+  const [officersDropdownOpen, setOfficersDropdownOpen] = useState(false);
   const [dsSearch, setDsSearch] = useState("");
   const [cmSearch, setCmSearch] = useState("");
   const [invSearch, setInvSearch] = useState("");
+  const [offSearch, setOffSearch] = useState("");
 
   // Refs for click-outside detection on team dropdowns
   const dsRef = useRef(null);
   const cmRef = useRef(null);
   const invRef = useRef(null);
+  const offRef = useRef(null);
 
   // ─── Collapsible section state ────────────────────────────────────────────
   const [isCaseSummaryOpen, setIsCaseSummaryOpen] = useState(true);
@@ -192,6 +196,10 @@ export const CasePageManager = () => {
         setInvestigatorsDropdownOpen(false);
         setInvSearch("");
       }
+      if (offRef.current && !offRef.current.contains(e.target)) {
+        setOfficersDropdownOpen(false);
+        setOffSearch("");
+      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -226,16 +234,11 @@ export const CasePageManager = () => {
 
   // ─── Effect: sync fetched team into selection state ───────────────────────
   useEffect(() => {
-    if (Array.isArray(team.investigators)) {
-      setSelectedInvestigators([...new Set(team.investigators)]);
-    }
-    if (Array.isArray(team.caseManagers)) {
-      setSelectedCaseManagers(team.caseManagers);
-    }
-    if (Array.isArray(team.detectiveSupervisors)) {
-      setSelectedDetectiveSupervisors([...team.detectiveSupervisors]);
-    }
-  }, [team.investigators, team.caseManagers, team.detectiveSupervisors]);
+    if (Array.isArray(team.investigators)) setSelectedInvestigators([...new Set(team.investigators)]);
+    if (Array.isArray(team.caseManagers))  setSelectedCaseManagers(team.caseManagers);
+    if (Array.isArray(team.detectiveSupervisors)) setSelectedDetectiveSupervisors([...team.detectiveSupervisors]);
+    if (Array.isArray(team.officers))      setSelectedOfficers([...team.officers]);
+  }, [team.investigators, team.caseManagers, team.detectiveSupervisors, team.officers]);
 
   // ─── Effect: presence heartbeat ──────────────────────────────────────────
   useEffect(() => {
@@ -482,20 +485,23 @@ export const CasePageManager = () => {
   const saveInvestigators = async (
     overrideInvestigators = selectedInvestigators,
     overrideManagers = selectedCaseManagers,
-    overrideSupervisors = selectedDetectiveSupervisors
+    overrideSupervisors = selectedDetectiveSupervisors,
+    overrideOfficers = selectedOfficers
   ) => {
     try {
       const token = localStorage.getItem("token");
 
-      const prevSupervisors = team.detectiveSupervisors || [];
-      const prevManagers = team.caseManagers || [];
+      const prevSupervisors  = team.detectiveSupervisors || [];
+      const prevManagers     = team.caseManagers || [];
       const prevInvestigators = team.investigators || [];
+      const prevOfficers     = team.officers || [];
 
       // Block removal of officers who still have open leads
       const removed = [
         ...prevSupervisors.filter(u => !overrideSupervisors.includes(u)).map(u => ({ username: u, role: "Detective Supervisor" })),
         ...prevManagers.filter(u => !overrideManagers.includes(u)).map(u => ({ username: u, role: "Case Manager" })),
         ...prevInvestigators.filter(u => !overrideInvestigators.includes(u)).map(u => ({ username: u, role: "Investigator" })),
+        ...prevOfficers.filter(u => !overrideOfficers.includes(u)).map(u => ({ username: u, role: "Officer" })),
       ];
       const incompleteLeads = [...leads.assignedLeads, ...leads.pendingLeads];
       const blocked = removed.filter(o =>
@@ -511,12 +517,14 @@ export const CasePageManager = () => {
         ...overrideSupervisors.map(u => ({ name: u, role: "Detective Supervisor", status: "accepted" })),
         ...overrideManagers.map(u => ({ name: u, role: "Case Manager", status: "accepted" })),
         ...overrideInvestigators.map(u => ({ name: u, role: "Investigator", status: "pending" })),
+        ...overrideOfficers.map(u => ({ name: u, role: "Officer", status: "pending" })),
       ];
 
       const newlyAdded = [
         ...overrideSupervisors.filter(u => !prevSupervisors.includes(u)).map(u => ({ username: u, role: "Detective Supervisor" })),
         ...overrideManagers.filter(u => !prevManagers.includes(u)).map(u => ({ username: u, role: "Case Manager" })),
         ...overrideInvestigators.filter(u => !prevInvestigators.includes(u)).map(u => ({ username: u, role: "Investigator" })),
+        ...overrideOfficers.filter(u => !prevOfficers.includes(u)).map(u => ({ username: u, role: "Officer" })),
       ];
 
       await api.put(
@@ -527,8 +535,9 @@ export const CasePageManager = () => {
 
       setTeam({
         detectiveSupervisors: [...overrideSupervisors],
-        caseManagers: [...overrideManagers],
-        investigators: [...overrideInvestigators],
+        caseManagers:         [...overrideManagers],
+        investigators:        [...overrideInvestigators],
+        officers:             [...overrideOfficers],
       });
 
       // Notify newly added officers
@@ -975,6 +984,7 @@ export const CasePageManager = () => {
                                 {allUsers
                                   .filter(user => user.role === "Detective Supervisor")
                                   .filter(user => !dsSearch || `${user.firstName} ${user.lastName} ${user.username}`.toLowerCase().includes(dsSearch.toLowerCase()))
+                                  .sort((a, b) => { const la = (a.lastName || "").toLowerCase(), lb = (b.lastName || "").toLowerCase(); return la !== lb ? la.localeCompare(lb) : (a.firstName || "").toLowerCase().localeCompare((b.firstName || "").toLowerCase()); })
                                   .map(user => (
                                     <div key={user.username} className={styles['dropdown-item']}>
                                       <input
@@ -1033,8 +1043,9 @@ export const CasePageManager = () => {
                                   autoFocus
                                 />
                                 {allUsers
-                                  .filter(user => user.role === "CaseManager")
+                                  .filter(user => user.role === "Detective" || user.role === "Case Specific")
                                   .filter(user => !cmSearch || `${user.firstName} ${user.lastName} ${user.username}`.toLowerCase().includes(cmSearch.toLowerCase()))
+                                  .sort((a, b) => { const la = (a.lastName || "").toLowerCase(), lb = (b.lastName || "").toLowerCase(); return la !== lb ? la.localeCompare(lb) : (a.firstName || "").toLowerCase().localeCompare((b.firstName || "").toLowerCase()); })
                                   .map(user => (
                                     <div key={user.username} className={styles['dropdown-item']}>
                                       <input
@@ -1095,8 +1106,9 @@ export const CasePageManager = () => {
                                   autoFocus
                                 />
                                 {allUsers
-                                  .filter(user => user.role === "CaseManager" || user.role === "Detective/Investigator")
+                                  .filter(user => user.role === "Detective" || user.role === "Case Specific")
                                   .filter(user => !invSearch || `${user.firstName} ${user.lastName} ${user.username}`.toLowerCase().includes(invSearch.toLowerCase()))
+                                  .sort((a, b) => { const la = (a.lastName || "").toLowerCase(), lb = (b.lastName || "").toLowerCase(); return la !== lb ? la.localeCompare(lb) : (a.firstName || "").toLowerCase().localeCompare((b.firstName || "").toLowerCase()); })
                                   .map(user => (
                                     <div key={user.username} className={styles['dropdown-item']}>
                                       <input
@@ -1123,6 +1135,72 @@ export const CasePageManager = () => {
                         ) : (
                           <div>
                             {team.investigators.length ? displayNamesNoTitle(team.investigators) : "None assigned"}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+
+                    {/* Officer(s) */}
+                    <tr>
+                      <td className={`${styles['name-cell']} ${styles['case-team-td']}`}>
+                        Officer{(team.officers || []).length > 1 ? "s" : ""}
+                      </td>
+                      <td className={styles['case-team-td']}>
+                        {(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") ? (
+                          <div ref={offRef} className={styles['custom-dropdown']}>
+                            <div
+                              className={styles['dropdown-head']}
+                              onClick={() => setOfficersDropdownOpen(prev => !prev)}
+                            >
+                              <span className={styles['dh-text']}>
+                                {selectedOfficers.length > 0 ? displayNamesNoTitle(selectedOfficers) : "Select Officer(s)"}
+                              </span>
+                              <span className={styles['dropdown-icon']} aria-hidden="true">
+                                <img src={officersDropdownOpen ? downIcon : upIcon} className={styles['caret-icon']} alt="" />
+                              </span>
+                            </div>
+                            {officersDropdownOpen && (
+                              <div className={styles['dropdown-options']}>
+                                <input
+                                  type="text"
+                                  className={styles['dropdown-search']}
+                                  placeholder="Search officer..."
+                                  value={offSearch}
+                                  onChange={e => setOffSearch(e.target.value)}
+                                  onClick={e => e.stopPropagation()}
+                                  autoFocus
+                                />
+                                {allUsers
+                                  .filter(user => user.role === "Detective" || user.role === "Case Specific")
+                                  .filter(user => ![...selectedDetectiveSupervisors, ...selectedCaseManagers, ...selectedInvestigators].includes(user.username))
+                                  .filter(user => !offSearch || `${user.firstName} ${user.lastName} ${user.username}`.toLowerCase().includes(offSearch.toLowerCase()))
+                                  .sort((a, b) => { const la = (a.lastName || "").toLowerCase(), lb = (b.lastName || "").toLowerCase(); return la !== lb ? la.localeCompare(lb) : (a.firstName || "").toLowerCase().localeCompare((b.firstName || "").toLowerCase()); })
+                                  .map(user => (
+                                    <div key={user.username} className={styles['dropdown-item']}>
+                                      <input
+                                        type="checkbox"
+                                        id={`off-${user.username}`}
+                                        value={user.username}
+                                        checked={selectedOfficers.includes(user.username)}
+                                        onChange={e => {
+                                          const next = e.target.checked
+                                            ? [...selectedOfficers, user.username]
+                                            : selectedOfficers.filter(u => u !== user.username);
+                                          setSelectedOfficers(next);
+                                          saveInvestigators(selectedInvestigators, selectedCaseManagers, selectedDetectiveSupervisors, next);
+                                        }}
+                                      />
+                                      <label htmlFor={`off-${user.username}`}>
+                                        {fmtName(user)}
+                                      </label>
+                                    </div>
+                                  ))}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div>
+                            {(team.officers || []).length ? displayNamesNoTitle(team.officers) : "None assigned"}
                           </div>
                         )}
                       </td>

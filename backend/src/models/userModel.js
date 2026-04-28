@@ -39,7 +39,7 @@ const userSchema = new mongoose.Schema(
     role: {
       type: String,
       required: true,
-      enum: ["Admin", "Detective Supervisor", "CaseManager", "Detective/Investigator", "External Contributor", "Read Only"],
+      enum: ["Admin", "Detective Supervisor", "Detective", "Case Specific"],
       index: true,
     },
 

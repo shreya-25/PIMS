@@ -1556,7 +1556,12 @@ useEffect(() => {
       {leadsLoading && (
         <div className={styles.reportModalOverlay}>
           <div className={styles.reportModalBox}>
-            <div className={styles.reportModalHeader}>Loading Leads</div>
+            <div className={styles.reportModalHeader}>
+              Loading Leads
+              <button className={styles.reportModalCloseBtn} onClick={() => navigate(-1)} aria-label="Cancel loading">
+                &times;
+              </button>
+            </div>
             <div className={styles.reportModalBody}>
               <p className={styles.reportModalMessage}>
                 Please wait while leads are loading.
@@ -1596,7 +1601,11 @@ useEffect(() => {
         <div className={styles["right-sec"]}>
 
          <div className={styles["ld-head"]}>
-  <Link to="/HomePage" className={styles.crumb}>PIMS Home</Link>
+  <span
+    className={styles.crumb}
+    style={{ cursor: "pointer" }}
+    onClick={() => (localStorage.getItem("systemRole") || localStorage.getItem("role")) === "Admin" ? navigate("/AdminTeam") : navigate("/HomePage")}
+  >PIMS Home</span>
   <span className={styles.sep}>{" >> "}</span>
   <Link
     to={["Admin", "Case Manager", "Detective Supervisor"].includes(selectedCase?.role) ? "/CasePageManager" : "/Investigator"}

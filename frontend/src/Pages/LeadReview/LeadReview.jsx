@@ -30,7 +30,7 @@ export const LeadReview = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [pendingRoute, setPendingRoute]   = useState(null);
-  const [caseTeam, setCaseTeam] = useState({ detectiveSupervisors: [], caseManagers: [], investigators: [] });
+  const [caseTeam, setCaseTeam] = useState({ detectiveSupervisors: [], caseManagers: [], investigators: [], officers: [] });
   const [originalAssigned, setOriginalAssigned] = useState([]);
   const signedInOfficer = localStorage.getItem("loggedInUser");
   const [alertOpen, setAlertOpen] = useState(false);
@@ -289,8 +289,9 @@ const DeleteReasonModal = memo(function DeleteReasonModal({ open, onCancel, onSu
     }).then(resp => {
       setCaseTeam({
         detectiveSupervisors: resp.data.detectiveSupervisors || [],
-        caseManagers:         resp.data.caseManagers,
-        investigators:        resp.data.investigators
+        caseManagers:         resp.data.caseManagers || [],
+        investigators:        resp.data.investigators || [],
+        officers:             resp.data.officers || [],
       });
     }).catch(console.error);
   }, [selectedCase.caseNo]);
@@ -775,52 +776,24 @@ const handleSave = async (updatedOfficers = assignedOfficers, updatedLeadData = 
     // who is newly added (vs original load)
     const newlyAdded = updatedUsernames.filter((u) => !originalAssigned.includes(u));
 
-    // --- CASE officers payload: { name, role, status } ----------------------
+    // Send lead-assignment notifications for each newly assigned person (exclude DS)
     if (newlyAdded.length) {
-      const updatedInvestigators = Array.from(
-        new Set([...(caseTeam.investigators || []).map(toUsername), ...newlyAdded])
-      );
-
-      const officers = [
-        ...(caseTeam.detectiveSupervisors || []).map(ds => ({ name: toUsername(ds), role: "Detective Supervisor", status: "accepted" })),
-        ...(caseTeam.caseManagers || []).map((n) => ({
-          name: toUsername(n),
-          role: "Case Manager",
-          status: "accepted",
-        })),
-        ...updatedInvestigators.map((n) => ({
-          name: toUsername(n),
-          role: "Investigator",
-          status: newlyAdded.includes(n) ? "pending" : "accepted",
-        })),
-      ];
-
-      await api.put(
-        `/api/cases/${encodeURIComponent(selectedCase.caseNo)}/${encodeURIComponent(selectedCase.caseName)}/officers`,
-        { officers },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      const teamResp = await api.get(
-        `/api/cases/${selectedCase.caseNo}/team`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setCaseTeam({
-        detectiveSupervisors: teamResp.data.detectiveSupervisors || [],
-        caseManagers: teamResp.data.caseManagers,
-        investigators: teamResp.data.investigators,
-      });
-
-      // Send lead-assignment notifications for each newly added officer (exclude DS)
       const dsUsernames = (caseTeam.detectiveSupervisors || []).map(toUsername);
       const assignedToEntries = newlyAdded
         .filter((u) => !dsUsernames.includes(u))
-        .map((u) => ({
-          username: u,
-          role: "Investigator",
-          status: "pending",
-          unread: true,
-        }));
+        .map((u) => {
+          const allTeam = [
+            ...(caseTeam.investigators || []).map(toUsername),
+            ...(caseTeam.officers || []).map(toUsername),
+            ...(caseTeam.caseManagers || []).map(toUsername),
+          ];
+          const role = (caseTeam.officers || []).map(toUsername).includes(u)
+            ? "Officer"
+            : allTeam.includes(u)
+            ? "Investigator"
+            : "Investigator";
+          return { username: u, role, status: "pending", unread: true };
+        });
 
       const notificationPayload = {
         notificationId: Date.now().toString(),
@@ -1485,19 +1458,32 @@ const declinedSet = new Set(
     .map(a => a.username)
 );
 
-// filtered users (exclude declined)
+// filtered users (exclude declined) — only case team members
 const filteredUsersAO = React.useMemo(() => {
   const q = aoQuery.trim().toLowerCase();
-  const OFFICER_ROLES = new Set(["Detective Supervisor", "CaseManager", "Detective/Investigator"]);
-  const pool = (allUsers || []).filter(u => OFFICER_ROLES.has(u.role) && !declinedSet.has(u.username));
-  if (!q) return pool;
-  return pool.filter(u => {
+  const teamUsernames = [
+    ...(caseTeam.detectiveSupervisors || []),
+    ...(caseTeam.caseManagers || []),
+    ...(caseTeam.investigators || []),
+    ...(caseTeam.officers || []),
+  ].map(u => (typeof u === "string" ? u : u?.username)).filter(Boolean);
+  const unique = [...new Set(teamUsernames)];
+  const pool = unique
+    .map(uname => (allUsers || []).find(u => u.username === uname))
+    .filter(u => u && !declinedSet.has(u.username));
+  const sort = (arr) => [...arr].sort((a, b) => {
+    const la = (a.lastName || "").toLowerCase(), lb = (b.lastName || "").toLowerCase();
+    if (la !== lb) return la.localeCompare(lb);
+    return (a.firstName || "").toLowerCase().localeCompare((b.firstName || "").toLowerCase());
+  });
+  if (!q) return sort(pool);
+  return sort(pool.filter(u => {
     const a = (u.username || "").toLowerCase();
     const b = (u.firstName || "").toLowerCase();
     const c = (u.lastName || "").toLowerCase();
     return a.includes(q) || b.includes(q) || c.includes(q) || `${b} ${c}`.includes(q);
-  });
-}, [allUsers, aoQuery, declinedSet]);
+  }));
+}, [caseTeam, allUsers, aoQuery, declinedSet]);
 
 // close on outside click / Esc
 useEffect(() => {
@@ -2219,7 +2205,7 @@ const assignmentHoverText = React.useMemo(() => {
         <div className={styles.caseandleadinfo}>
           <h5 className={styles.sideTitle}>
             <div className={styles.ldHead}>
-              <Link to="/HomePage" className={styles.crumb}>PIMS Home</Link>
+              <span className={styles.crumb} style={{ cursor: "pointer" }} onClick={() => (localStorage.getItem("systemRole") || localStorage.getItem("role")) === "Admin" ? navigate("/AdminTeam") : navigate("/HomePage")}>PIMS Home</span>
               <span className={styles.sep}>{" >> "}</span>
               <Link to={getCasePageRoute()} state={{ caseDetails: selectedCase }} className={styles.crumb}>
                 Case: {selectedCase?.caseNo || ""}

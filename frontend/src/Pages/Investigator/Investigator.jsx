@@ -60,7 +60,9 @@ export const Investigator = () => {
   const activeCaseId = selectedCase?._id || selectedCase?.id || caseDetails?._id;
 
   const signedInOfficer = localStorage.getItem('loggedInUser');
-  const isReadOnly = (selectedCase?.role || caseDetails?.role) === 'Read Only';
+  const caseRole = selectedCase?.role || caseDetails?.role;
+  const isReadOnly = caseRole === 'Read Only';
+  const isOfficer  = caseRole === 'Officer';
 
   // ─── UI state ────────────────────────────────────────────────────────────
   const [activeTab,          setActiveTab]          = useState('allLeads');
@@ -73,7 +75,7 @@ export const Investigator = () => {
 
   // ─── Case info state ─────────────────────────────────────────────────────
   const [summary,  setSummary]  = useState('');
-  const [team,     setTeam]     = useState({ detectiveSupervisors: [], caseManagers: [], investigators: [] });
+  const [team,     setTeam]     = useState({ detectiveSupervisors: [], caseManagers: [], investigators: [], officers: [] });
   const [allUsers, setAllUsers] = useState([]);
 
   // ─── Data hooks ───────────────────────────────────────────────────────────
@@ -368,76 +370,47 @@ export const Investigator = () => {
                     <td>
                       {team.investigators.length
                         ? team.investigators.map(formatUser).join(', ')
-                        : 'None assigned'}
+                        : '—'}
                     </td>
+                  </tr>
+                  <tr>
+                    <td>Officer{(team.officers || []).length > 1 ? 's' : ''}</td>
+                    <td>{(team.officers || []).length ? team.officers.map(formatUser).join(', ') : '—'}</td>
                   </tr>
                 </tbody>
               </table>
             </div>
           </CollapsibleSection>
 
-          {/* Tab bar showing lead counts per category */}
+          {/* Tab bar — Officers see a single count label, no switchable tabs */}
           <div className={styles['stats-bar']}>
-            {[
-              { tab: 'allLeads',           label: isReadOnly ? 'All Leads' : 'My Leads', count: leads.allLeads.length },
-              ...(!isReadOnly ? [
-                { tab: 'assignedLeads',      label: 'Assigned Leads',         count: leads.assignedLeads.length },
-                { tab: 'pendingLeads',       label: 'Accepted Leads',         count: leads.pendingLeads.length },
-                { tab: 'pendingLeadReturns', label: 'Lead Returns In Review', count: leads.pendingLeadReturns.length },
-              ] : []),
-            ].map(({ tab, label, count }) => (
-              <span
-                key={tab}
-                className={`${styles.hoverable} ${activeTab === tab ? styles.active : ''}`}
-                onClick={() => setActiveTab(tab)}
-              >
-                {label}: {count}
+            {isOfficer ? (
+              <span className={`${styles.hoverable} ${styles.active}`}>
+                Assigned Leads: {leads.allLeads.length}
               </span>
-            ))}
+            ) : (
+              [
+                { tab: 'allLeads',           label: isReadOnly ? 'All Leads' : 'My Leads', count: leads.allLeads.length },
+                ...(!isReadOnly ? [
+                  { tab: 'assignedLeads',      label: 'Assigned Leads',         count: leads.assignedLeads.length },
+                  { tab: 'pendingLeads',       label: 'Accepted Leads',         count: leads.pendingLeads.length },
+                  { tab: 'pendingLeadReturns', label: 'Lead Returns In Review', count: leads.pendingLeadReturns.length },
+                ] : []),
+              ].map(({ tab, label, count }) => (
+                <span
+                  key={tab}
+                  className={`${styles.hoverable} ${activeTab === tab ? styles.active : ''}`}
+                  onClick={() => setActiveTab(tab)}
+                >
+                  {label}: {count}
+                </span>
+              ))
+            )}
           </div>
 
-          {/* Table area — renders only the active tab's table */}
+          {/* Table area */}
           <div className={styles['content-section']}>
-            {activeTab === 'assignedLeads' && (
-              <LeadsTable
-                columns={ASSIGNED_COLUMNS}
-                colKey={ASSIGNED_COL_KEY}
-                colWidths={ASSIGNED_COL_WIDTHS}
-                rows={paginate(assignedFilter.sortedData)}
-                filter={assignedFilter}
-                renderRow={renderAssignedRow}
-                emptyMessage="No assigned leads available"
-                showActions={true}
-              />
-            )}
-
-            {activeTab === 'pendingLeads' && (
-              <LeadsTable
-                columns={PENDING_COLUMNS}
-                colKey={PENDING_COL_KEY}
-                colWidths={PENDING_COL_WIDTHS}
-                rows={paginate(pendingFilter.sortedData)}
-                filter={pendingFilter}
-                renderRow={renderPendingRow}
-                emptyMessage="No accepted leads available"
-                showActions={true}
-              />
-            )}
-
-            {activeTab === 'pendingLeadReturns' && (
-              <LeadsTable
-                columns={PENDING_LR_COLUMNS}
-                colKey={PENDING_LR_COL_KEY}
-                colWidths={PENDING_LR_COL_WIDTHS}
-                rows={paginate(pendingLRFilter.sortedData)}
-                filter={pendingLRFilter}
-                renderRow={renderPendingLRRow}
-                emptyMessage="No pending lead returns available"
-                showActions={true}
-              />
-            )}
-
-            {activeTab === 'allLeads' && (
+            {isOfficer ? (
               <LeadsTable
                 columns={ALL_COLUMNS}
                 colKey={ALL_COL_KEY}
@@ -445,9 +418,63 @@ export const Investigator = () => {
                 rows={paginate(allFilter.sortedData)}
                 filter={allFilter}
                 renderRow={renderAllRow}
-                emptyMessage="No leads available"
+                emptyMessage="No leads assigned to you"
                 showActions={true}
               />
+            ) : (
+              <>
+                {activeTab === 'assignedLeads' && (
+                  <LeadsTable
+                    columns={ASSIGNED_COLUMNS}
+                    colKey={ASSIGNED_COL_KEY}
+                    colWidths={ASSIGNED_COL_WIDTHS}
+                    rows={paginate(assignedFilter.sortedData)}
+                    filter={assignedFilter}
+                    renderRow={renderAssignedRow}
+                    emptyMessage="No assigned leads available"
+                    showActions={true}
+                  />
+                )}
+
+                {activeTab === 'pendingLeads' && (
+                  <LeadsTable
+                    columns={PENDING_COLUMNS}
+                    colKey={PENDING_COL_KEY}
+                    colWidths={PENDING_COL_WIDTHS}
+                    rows={paginate(pendingFilter.sortedData)}
+                    filter={pendingFilter}
+                    renderRow={renderPendingRow}
+                    emptyMessage="No accepted leads available"
+                    showActions={true}
+                  />
+                )}
+
+                {activeTab === 'pendingLeadReturns' && (
+                  <LeadsTable
+                    columns={PENDING_LR_COLUMNS}
+                    colKey={PENDING_LR_COL_KEY}
+                    colWidths={PENDING_LR_COL_WIDTHS}
+                    rows={paginate(pendingLRFilter.sortedData)}
+                    filter={pendingLRFilter}
+                    renderRow={renderPendingLRRow}
+                    emptyMessage="No pending lead returns available"
+                    showActions={true}
+                  />
+                )}
+
+                {activeTab === 'allLeads' && (
+                  <LeadsTable
+                    columns={ALL_COLUMNS}
+                    colKey={ALL_COL_KEY}
+                    colWidths={ALL_COL_WIDTHS}
+                    rows={paginate(allFilter.sortedData)}
+                    filter={allFilter}
+                    renderRow={renderAllRow}
+                    emptyMessage="No leads available"
+                    showActions={true}
+                  />
+                )}
+              </>
             )}
 
             {/* Confirm-accept modal */}

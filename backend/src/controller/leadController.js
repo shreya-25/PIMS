@@ -471,11 +471,19 @@ const HarddeleteLead = async (req, res) => {
 
   try {
     const role = req.user?.role || "";
-    const allowed = /^(Admin|Case\s*Manager|CaseManager|Detective\s*Supervisor)$/i.test(role);
-    if (!allowed) {
-      return res
-        .status(403)
-        .json({ message: "Unauthorized: Only Case Managers or Detective Supervisors can delete a lead." });
+    const userId = req.user?.userId;
+    const isAdminOrDS = role === "Admin" || role === "Detective Supervisor";
+    if (!isAdminOrDS) {
+      // Check if user is a Case Manager on this specific case
+      const caseDoc = await Case.findOne({ caseNo }).select("caseManagerUserIds").lean();
+      const userObjId = userId ? new mongoose.Types.ObjectId(userId) : null;
+      const isCM = userObjId && caseDoc &&
+        (caseDoc.caseManagerUserIds || []).some(id => id.toString() === userObjId.toString());
+      if (!isCM) {
+        return res
+          .status(403)
+          .json({ message: "Unauthorized: Only Case Managers or Detective Supervisors can delete a lead." });
+      }
     }
 
     const filter = {
@@ -507,10 +515,18 @@ const deleteLead = async (req, res) => {
 
   try {
     const role = req.user?.role || "";
+    const userId = req.user?.userId;
     console.log("[deleteLead] role from JWT:", JSON.stringify(role));
-    const allowed = /^(Admin|Case\s*Manager|CaseManager|Detective\s*Supervisor)$/i.test(role);
-    if (!allowed) {
-      return res.status(403).json({ message: "Unauthorized: Only Case Managers or Detective Supervisors can delete a lead." });
+    const isAdminOrDS = role === "Admin" || role === "Detective Supervisor";
+    if (!isAdminOrDS) {
+      // Check if user is a Case Manager on this specific case
+      const caseDoc = await Case.findById(caseId).select("caseManagerUserIds").lean();
+      const userObjId = userId ? new mongoose.Types.ObjectId(userId) : null;
+      const isCM = userObjId && caseDoc &&
+        (caseDoc.caseManagerUserIds || []).some(id => id.toString() === userObjId.toString());
+      if (!isCM) {
+        return res.status(403).json({ message: "Unauthorized: Only Case Managers or Detective Supervisors can delete a lead." });
+      }
     }
     if (!reason || reason.trim().length < 3) {
       return res.status(400).json({ message: "Reason is required." });

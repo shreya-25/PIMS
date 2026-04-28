@@ -18,6 +18,7 @@ export const SlideBar = ({ onAddCase, onClose,  isOpen,
     managers: [],
     detectiveSupervisors: [],
     investigators: [],
+    officers: [],
     summary: "",
     executiveCaseSummary:"",
     characterOfCase: "",
@@ -42,11 +43,15 @@ export const SlideBar = ({ onAddCase, onClose,  isOpen,
 
   const [managersQuery, setManagersQuery] = useState("");
 const [investigatorsQuery, setInvestigatorsQuery] = useState("");
+const [officersQuery, setOfficersQuery] = useState("");
 const [supervisorQuery, setSupervisorQuery] = useState("");
 const [supervisorOpen, setSupervisorOpen] = useState(false);
+const [officersOpen, setOfficersOpen] = useState(false);
 const supervisorRef = useRef(null);
+const officersRef = useRef(null);
 const managersSearchRef = useRef(null);
 const investigatorsSearchRef = useRef(null);
+const officersSearchRef = useRef(null);
 const supervisorSearchRef = useRef(null);
 
 const toDisplay = (u) => {
@@ -61,17 +66,27 @@ const toDisplay = (u) => {
 const matches = (u, q) =>
   !q ? true : toDisplay(u).toLowerCase().includes(q.toLowerCase());
 
+const sortByName = (a, b) => toDisplay(a).localeCompare(toDisplay(b));
+
 const filteredManagers = allUsers
-  .filter((u) => u.role === "CaseManager")
-  .filter((u) => matches(u, managersQuery));
+  .filter((u) => u.role === "Detective" || u.role === "Case Specific")
+  .filter((u) => matches(u, managersQuery))
+  .sort(sortByName);
 
 const filteredInvestigators = allUsers
-  .filter((u) => u.role === "Detective/Investigator" || u.role === "CaseManager")
-  .filter((u) => matches(u, investigatorsQuery));
+  .filter((u) => u.role === "Detective" || u.role === "Case Specific")
+  .filter((u) => matches(u, investigatorsQuery))
+  .sort(sortByName);
+
+const filteredOfficers = allUsers
+  .filter((u) => u.role === "Detective" || u.role === "Case Specific")
+  .filter((u) => matches(u, officersQuery))
+  .sort(sortByName);
 
 const filteredSupervisors = allUsers
   .filter((u) => u.role === "Detective Supervisor")
-  .filter((u) => matches(u, supervisorQuery));
+  .filter((u) => matches(u, supervisorQuery))
+  .sort(sortByName);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -145,6 +160,13 @@ useEffect(() => {
   }
 }, [supervisorOpen]);
 
+useEffect(() => {
+  if (officersOpen) {
+    setOfficersQuery("");
+    setTimeout(() => officersSearchRef.current?.focus(), 0);
+  }
+}, [officersOpen]);
+
 
 useEffect(() => {
   function handleClickOutside(e) {
@@ -160,15 +182,19 @@ useEffect(() => {
       setSupervisorOpen(false);
       setSupervisorQuery("");
     }
+    if (officersOpen && officersRef.current && !officersRef.current.contains(e.target)) {
+      setOfficersOpen(false);
+      setOfficersQuery("");
+    }
   }
   document.addEventListener("mousedown", handleClickOutside);
   return () => document.removeEventListener("mousedown", handleClickOutside);
-}, [managersOpen, investigatorsOpen, supervisorOpen]);
+}, [managersOpen, investigatorsOpen, supervisorOpen, officersOpen]);
 
   
 
   const handleDone = async () => {
-    const { title, number, managers, detectiveSupervisors, investigators } = caseDetails;
+    const { title, number, managers, detectiveSupervisors, investigators, officers } = caseDetails;
 
     if (!title || !number || !managers.length || !detectiveSupervisors.length) {
        setAlertMessage("Please fill all required fields: Case Number, Name, Managers, and at least one Detective Supervisor");
@@ -195,6 +221,7 @@ useEffect(() => {
       managers: caseDetails.managers.map(username => ({ username })),
       detectiveSupervisors,
       selectedOfficers: investigators.map(name => ({ name })),
+      officers: officers.map(name => ({ username: name })),
     };
   
     const token = localStorage.getItem("token");
@@ -272,6 +299,7 @@ setCaseDetails({
   managers: [],
   detectiveSupervisors: [],
   investigators: [],
+  officers: [],
   summary: "",
   executiveCaseSummary: "",
   characterOfCase: "",
@@ -284,7 +312,8 @@ setIsSidebarOpen(false);
       const everyone = [
        ...caseDetails.detectiveSupervisors.map(u => ({ username: u, role: "Detective Supervisor" })),
        ...caseDetails.managers.map(u => ({ username: u, role: "Case Manager" })),
-       ...caseDetails.investigators.map(u => ({ username: u, role: "Investigator" }))
+       ...caseDetails.investigators.map(u => ({ username: u, role: "Investigator" })),
+       ...caseDetails.officers.map(u => ({ username: u, role: "Officer" })),
       ];
 
       const notificationRecipients = everyone.filter(person => person.username !== creator);

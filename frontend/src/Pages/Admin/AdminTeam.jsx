@@ -42,23 +42,25 @@ const ROLE_LABELS = {
   detectiveSupervisors: "Detective Supervisors",
   caseManagers:         "Case Managers",
   investigators:        "Investigators",
+  officers:             "Officers",
   readOnly:             "Read Only",
 };
 
-const ROLE_KEYS = ["detectiveSupervisors", "caseManagers", "investigators", "readOnly"];
+const ROLE_KEYS = ["detectiveSupervisors", "caseManagers", "investigators", "officers", "readOnly"];
 
 const ROLE_API = {
   detectiveSupervisors: "Detective Supervisor",
   caseManagers:         "Case Manager",
   investigators:        "Investigator",
+  officers:             "Officer",
   readOnly:             "Read Only",
 };
 
 const USER_ROLE_FILTER = {
   detectiveSupervisors: (u) => u.role === "Detective Supervisor",
-  caseManagers:         (u) => u.role === "CaseManager",
-  investigators:        (u) => u.role === "CaseManager" || u.role === "Detective/Investigator",
-  // Admin can grant read-only access to any officer regardless of system role
+  caseManagers:         (u) => u.role === "Detective" || u.role === "Case Specific",
+  investigators:        (u) => u.role === "Detective" || u.role === "Case Specific",
+  officers:             (u) => u.role === "Detective" || u.role === "Case Specific",
   readOnly:             (u) => u.role !== "Admin",
 };
 
@@ -67,14 +69,14 @@ const NO_ADD_ROLES = new Set(["detectiveSupervisors", "caseManagers", "investiga
 
 // ─── Team Management Modal ─────────────────────────────────────────────────────
 
-const TeamModal = ({ caseData, allUsers, onClose, onSaved }) => {
-  const [team, setTeam]             = useState({ detectiveSupervisors: [], caseManagers: [], investigators: [], readOnly: [] });
+export const TeamModal = ({ caseData, allUsers, onClose, onSaved }) => {
+  const [team, setTeam]             = useState({ detectiveSupervisors: [], caseManagers: [], investigators: [], officers: [], readOnly: [] });
   const [initialReadOnly, setInitialReadOnly] = useState([]);
   const [blocked, setBlocked]       = useState(new Set()); // usernames whose access is revoked
   const [loading, setLoading]       = useState(true);
   const [saving, setSaving]         = useState(false);
-  const [search, setSearch]         = useState({ detectiveSupervisors: "", caseManagers: "", investigators: "", readOnly: "" });
-  const [dropOpen, setDropOpen]     = useState({ detectiveSupervisors: false, caseManagers: false, investigators: false, readOnly: false });
+  const [search, setSearch]         = useState({ detectiveSupervisors: "", caseManagers: "", investigators: "", officers: "", readOnly: "" });
+  const [dropOpen, setDropOpen]     = useState({ detectiveSupervisors: false, caseManagers: false, investigators: false, officers: false, readOnly: false });
   const [alertMsg, setAlertMsg]     = useState("");
   const dropRefs = useRef({});
 
@@ -90,6 +92,7 @@ const TeamModal = ({ caseData, allUsers, onClose, onSaved }) => {
           detectiveSupervisors: data.detectiveSupervisors || [],
           caseManagers:         data.caseManagers || [],
           investigators:        data.investigators || [],
+          officers:             data.officers || [],
           readOnly:             ro,
         });
         setInitialReadOnly(ro);
@@ -127,12 +130,19 @@ const TeamModal = ({ caseData, allUsers, onClose, onSaved }) => {
   };
 
   const add = (roleKey, username) => {
+    // Check conflict using current team state before any setState
+    const conflictKey = roleKey === "officers" ? "readOnly" : roleKey === "readOnly" ? "officers" : null;
+    const isInConflictingRole = conflictKey ? team[conflictKey].includes(username) : false;
+
     setTeam((prev) => {
       if (prev[roleKey].includes(username)) return prev;
       return { ...prev, [roleKey]: [...prev[roleKey], username] };
     });
-    // Adding a previously blocked user restores their access
-    setBlocked((prev) => { const next = new Set(prev); next.delete(username); return next; });
+    // Only restore access if user is NOT in a conflicting role;
+    // if they are, keep the block so they remain disabled in their old role
+    if (!isInConflictingRole) {
+      setBlocked((prev) => { const next = new Set(prev); next.delete(username); return next; });
+    }
     setDropOpen((prev) => ({ ...prev, [roleKey]: false }));
     setSearch((prev) => ({ ...prev, [roleKey]: "" }));
   };
@@ -147,6 +157,7 @@ const TeamModal = ({ caseData, allUsers, onClose, onSaved }) => {
         ...team.detectiveSupervisors.map((u) => ({ name: u, role: "Detective Supervisor" })),
         ...team.caseManagers.map((u)          => ({ name: u, role: "Case Manager"        })),
         ...team.investigators.map((u)          => ({ name: u, role: "Investigator"        })),
+        ...team.officers.map((u)               => ({ name: u, role: "Officer"             })),
         ...team.readOnly.map((u)               => ({ name: u, role: "Read Only"           })),
       ];
 
@@ -221,7 +232,16 @@ const TeamModal = ({ caseData, allUsers, onClose, onSaved }) => {
             <div className={styles.modalBody}>
               {ROLE_KEYS.map((roleKey) => {
                 const canAdd = !NO_ADD_ROLES.has(roleKey);
-                const eligible = allUsers.filter(USER_ROLE_FILTER[roleKey]);
+                const occupiedByOtherRole = new Set(
+                  roleKey === "officers"
+                    ? [...team.detectiveSupervisors, ...team.caseManagers, ...team.investigators, ...team.readOnly].filter(u => !blocked.has(u))
+                    : roleKey === "readOnly"
+                    ? [...team.detectiveSupervisors, ...team.caseManagers, ...team.investigators, ...team.officers].filter(u => !blocked.has(u))
+                    : []
+                );
+                const eligible = allUsers.filter(
+                  (u) => USER_ROLE_FILTER[roleKey](u) && !occupiedByOtherRole.has(u.username)
+                );
                 const filtered = eligible.filter((u) => {
                   const q = search[roleKey].toLowerCase();
                   return !q || `${u.firstName} ${u.lastName} ${u.username}`.toLowerCase().includes(q);
@@ -491,6 +511,7 @@ export const AdminTeam = () => {
     ? ["Case No.", "Case Name", "Closed At", "Case Managers"]
     : ["Case No.", "Case Name", "Created At", "Case Managers"];
 
+
   const COL_KEY = {
     "Case No.":      "caseNo",
     "Case Name":     "caseName",
@@ -500,15 +521,15 @@ export const AdminTeam = () => {
   };
 
   const COL_WIDTHS = {
-    "Case No.":      "12%",
-    "Case Name":     "27%",
-    "Created At":    "12%",
-    "Closed At":     "12%",
-    "Case Managers": "15%",
+    "Case No.":      "14%",
+    "Case Name":     "31%",
+    "Created At":    "14%",
+    "Closed At":     "14%",
+    "Case Managers": "20%",
   };
 
   const tabs = [
-    { key: "ONGOING",  label: "Ongoing Cases" },
+    { key: "ONGOING",  label: "Ongoing Cases"  },
     { key: "ARCHIVED", label: "Archived Cases" },
   ];
 

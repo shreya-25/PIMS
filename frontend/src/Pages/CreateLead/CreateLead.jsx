@@ -28,7 +28,7 @@ const { id: caseID, title: caseName } = caseDetails;  // Extract Case ID & Case 
 const [showSelectModal, setShowSelectModal] = useState(false);
 console.log(caseDetails, leadDetails, leadOrigin);
   const [pendingRoute, setPendingRoute]   = useState(null);
-  const [caseTeam, setCaseTeam] = useState({detectiveSupervisor: "", caseManagers: [], investigators: [] });
+  const [caseTeam, setCaseTeam] = useState({ detectiveSupervisors: [], caseManagers: [], investigators: [], officers: [] });
 const [alertOpen, setAlertOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
 const [leadCreated, setLeadCreated] = useState(false);
@@ -92,19 +92,32 @@ useEffect(() => {
   };
 });
 
-const OFFICER_ROLES = new Set(["Detective Supervisor", "CaseManager", "Detective/Investigator"]);
-
 const filteredOfficers = React.useMemo(() => {
-  const eligible = (usernames || []).filter((u) => OFFICER_ROLES.has(u.role));
+  // Only show people already on the case team (DS + CM + investigators + officers)
+  const teamUsernames = [
+    ...(caseTeam.detectiveSupervisors || []),
+    ...(caseTeam.caseManagers || []),
+    ...(caseTeam.investigators || []),
+    ...(caseTeam.officers || []),
+  ];
+  const unique = [...new Set(teamUsernames.filter(Boolean))];
+  const eligible = unique
+    .map((uname) => (usernames || []).find((u) => u.username === uname))
+    .filter(Boolean);
+  const sort = (arr) => [...arr].sort((a, b) => {
+    const la = (a.lastName || "").toLowerCase(), lb = (b.lastName || "").toLowerCase();
+    if (la !== lb) return la.localeCompare(lb);
+    return (a.firstName || "").toLowerCase().localeCompare((b.firstName || "").toLowerCase());
+  });
   const q = officersQuery.trim().toLowerCase();
-  if (!q) return eligible;
-  return eligible.filter((u) => {
+  if (!q) return sort(eligible);
+  return sort(eligible.filter((u) => {
     const a = (u.username || "").toLowerCase();
     const b = (u.firstName || "").toLowerCase();
     const c = (u.lastName || "").toLowerCase();
     return a.includes(q) || b.includes(q) || c.includes(q) || `${b} ${c}`.includes(q);
-  });
-}, [usernames, officersQuery]);
+  }));
+}, [caseTeam, usernames, officersQuery]);
 
   useEffect(() => {
     sessionStorage.setItem(FORM_KEY, JSON.stringify(leadData));
@@ -334,17 +347,13 @@ useEffect(() => {
       `/api/cases/${selectedCase.caseNo}/team`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
-
-    // Make sure caseManagers is always an array
-    const managers = resp.data.caseManagers;
+    const { detectiveSupervisors, detectiveSupervisor, caseManagers, investigators, officers } = resp.data;
     setCaseTeam({
-      detectiveSupervisor: resp.data.detectiveSupervisor || "",
-      caseManagers: Array.isArray(managers) ? managers : managers ? [managers] : [],
-      investigators: Array.isArray(resp.data.investigators)
-        ? resp.data.investigators
-        : resp.data.investigators
-        ? [resp.data.investigators]
-        : [],
+      detectiveSupervisors: Array.isArray(detectiveSupervisors) ? detectiveSupervisors
+        : detectiveSupervisor ? [detectiveSupervisor] : [],
+      caseManagers: Array.isArray(caseManagers) ? caseManagers : caseManagers ? [caseManagers] : [],
+      investigators: Array.isArray(investigators) ? investigators : investigators ? [investigators] : [],
+      officers: Array.isArray(officers) ? officers : [],
     });
   };
   fetchCaseTeam().catch(console.error);
@@ -625,50 +634,16 @@ const orderedAssignees = hasAssignees
 
       const token = localStorage.getItem("token");
 
-      // 6) Update case team with any *new* investigators (compares to existing)
-      const already = [
-        ...caseTeam.investigators,
-        ...caseTeam.caseManagers,
-        caseTeam.detectiveSupervisor,
-      ].filter(Boolean);
-
-      const newlyAdded = leadData.assignedOfficer.filter((u) => !already.includes(u));
-      if (newlyAdded.length) {
-        const updatedInvestigators = [...caseTeam.investigators, ...newlyAdded];
-
-        const officers = [
-          ...(caseTeam.detectiveSupervisor
-            ? [{ name: caseTeam.detectiveSupervisor, role: "Detective Supervisor", status: "accepted" }]
-            : []),
-          ...((caseTeam.caseManagers || []).map((name) => ({
-            name,
-            role: "Case Manager",
-            status: "accepted",
-          }))),
-
-          // all investigators default pending (you can special-case primary as accepted here if you want)
-          ...updatedInvestigators.map((name) => ({
-            name,
-            role: "Investigator",
-            status: "pending",
-          })),
-        ];
-
-        await api.put(
-          `/api/cases/${encodeURIComponent(selectedCase.caseNo)}/${encodeURIComponent(selectedCase.caseName)}/officers`,
-          { officers },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-      }
-
-      // 7) Notifications — keep primary first for display consistency
+      // 6) Notifications — keep primary first for display consistency
       if (orderedAssignees.length) {
         const assignedToEntries = orderedAssignees
-          .filter((u) => u !== caseTeam.detectiveSupervisor)
+          .filter((u) => !(caseTeam.detectiveSupervisors || []).includes(u))
           .map((u) => ({
             username: u,
             role: (caseTeam.caseManagers || []).includes(u)
               ? "Case Manager"
+              : (caseTeam.officers || []).includes(u)
+              ? "Officer"
               : "Investigator",
             status: "pending",
             unread: true,

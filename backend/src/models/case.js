@@ -60,6 +60,13 @@ const caseSchema = new mongoose.Schema(
       },
     ],
 
+    officerUserIds: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+
     readOnlyUserIds: [
       {
         type: mongoose.Schema.Types.ObjectId,

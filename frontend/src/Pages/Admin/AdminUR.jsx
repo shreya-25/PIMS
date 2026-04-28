@@ -225,10 +225,8 @@ export const AdminUR = () => {
                     <option value="" disabled>Select Role</option>
                     <option value="Admin">Admin</option>
                     <option value="Detective Supervisor">Detective Supervisor</option>
-                    <option value="CaseManager">Case Manager</option>
-                    <option value="Detective/Investigator">Detective/Investigator</option>
-                    <option value="External Contributor">External Contributor</option>
-                    <option value="Read Only">Read Only</option>
+                    <option value="Detective">Detective</option>
+                    <option value="Case Specific">Case Specific</option>
                   </select>
                 </div>
               </div>

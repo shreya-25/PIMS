@@ -8,6 +8,8 @@ import Filter from "../../components/Filter/Filter";
 import Pagination from "../../components/Pagination/Pagination";
 import api from "../../api";
 import { CaseContext } from "../CaseContext";
+import { TeamModal } from "../Admin/AdminTeam";
+import { isDetectiveSupervisor } from "../../constants/roles";
 
 const formatDate = (dateString) => {
   if (!dateString) return "";
@@ -24,11 +26,23 @@ export const ClosedCase = () => {
   const { setSelectedCase } = useContext(CaseContext);
   const signedInOfficer = localStorage.getItem("loggedInUser");
 
+  const systemRole = localStorage.getItem("systemRole") || localStorage.getItem("role");
+  const treatAsDS = isDetectiveSupervisor(systemRole) || systemRole === "Admin";
+
   const [cases, setCases] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
+  const [managingCase, setManagingCase] = useState(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    api.get("/api/users/usernames", { headers: { Authorization: `Bearer ${token}` } })
+      .then(({ data }) => setAllUsers(data.users || []))
+      .catch(() => {});
+  }, []);
 
   // ── Fetch Closed cases (polling like HomePage) ──────────────────────────────
   useEffect(() => {
@@ -77,9 +91,9 @@ export const ClosedCase = () => {
   // ── Filter + Sort (mirrors HomePage pattern) ────────────────────────────────
   const columnWidths = {
     "Case No.": "11%",
-    "Case Name": "20%",
-    "Closed At": "8%",
-    "Case Managers": "14%",
+    "Case Name": "21%",
+    "Closed At": "9%",
+    "Case Managers": treatAsDS ? "20%" : "13%",
   };
 
   const colKey = {
@@ -230,6 +244,14 @@ export const ClosedCase = () => {
   return (
     <div className={styles['case-page-manager']}>
       <Navbar />
+      {managingCase && (
+        <TeamModal
+          caseData={managingCase}
+          allUsers={allUsers}
+          onClose={() => setManagingCase(null)}
+          onSaved={() => setManagingCase(null)}
+        />
+      )}
       <div className={styles['main-container']}>
         <SideBar
           variant="home"
@@ -313,7 +335,7 @@ export const ClosedCase = () => {
                           </th>
                         );
                       })}
-                      <th className={styles['actions-header']} style={{ width: "6%" }}>Actions</th>
+                      <th className={styles['actions-header']} style={{ width: "17%" }}>Actions</th>
                     </tr>
                   </thead>
 
@@ -342,9 +364,26 @@ export const ClosedCase = () => {
                               : "—"}
                           </td>
                           <td className={styles['center-cell']}>
-                            <button className={styles['manage-btn']} onClick={() => handleView(c)}>
-                              Manage
-                            </button>
+                            {treatAsDS ? (
+                              <div className={styles['btn-sec']}>
+                                <button
+                                  className={styles['ds-manage-btn']}
+                                  onClick={() => setManagingCase({ _id: c._id, caseNo: c.id, caseName: c.title })}
+                                >
+                                  Manage Team
+                                </button>
+                                <button
+                                  className={styles['ds-open-case-btn']}
+                                  onClick={() => handleView(c)}
+                                >
+                                  Open Case
+                                </button>
+                              </div>
+                            ) : (
+                              <button className={styles['manage-btn']} onClick={() => handleView(c)}>
+                                Manage
+                              </button>
+                            )}
                           </td>
                         </tr>
                       ))

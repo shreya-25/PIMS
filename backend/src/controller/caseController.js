@@ -49,12 +49,19 @@ exports.createCase = async (req, res) => {
       caseNo,
       caseName,
       selectedOfficers = [],
+      officers: selectedOfficersCaseRole = [],
       managers = [],
       detectiveSupervisor,
       detectiveSupervisors,
       characterOfCase = "",
       caseSummary = "",
     } = req.body;
+
+    // --- permission check: only Admin, Detective Supervisor, Detective can create cases ---
+    const userRole = req.user?.role;
+    if (!["Admin", "Detective Supervisor", "Detective"].includes(userRole)) {
+      return res.status(403).json({ message: "Only Admins, Detective Supervisors, and Detectives can create cases." });
+    }
 
     // --- validate required fields ---
     if (!caseNo || !caseName) {
@@ -108,9 +115,12 @@ exports.createCase = async (req, res) => {
     }
 
     const investigatorUsernames = selectedOfficers.map(o => o.username || o.name || o).map(u => u.trim());
-    const investigatorUsers = await User.find({
-      username: { $in: investigatorUsernames },
-    });
+    const investigatorUsers = await User.find({ username: { $in: investigatorUsernames } });
+
+    const officerUsernames = selectedOfficersCaseRole.map(o => o.username || o.name || o).map(u => u.trim());
+    const officerUsers = officerUsernames.length
+      ? await User.find({ username: { $in: officerUsernames } })
+      : [];
 
     const newCase = new Case({
       caseNo,
@@ -121,10 +131,25 @@ exports.createCase = async (req, res) => {
       caseManagerUserIds: managerUsers.map(u => u._id),
       detectiveSupervisorUserIds: dsUsers.map(u => u._id),
       investigatorUserIds: investigatorUsers.map(u => u._id),
+      officerUserIds: officerUsers.map(u => u._id),
       createdByUserId: req.user.userId,
     });
 
     await newCase.save();
+
+    // Promote case managers, investigators, and officers to "Case Specific" system role.
+    // Detective Supervisors keep their existing system role.
+    const caseSpecificIds = [
+      ...managerUsers.map(u => u._id),
+      ...investigatorUsers.map(u => u._id),
+      ...officerUsers.map(u => u._id),
+    ];
+    if (caseSpecificIds.length > 0) {
+      await User.updateMany(
+        { _id: { $in: caseSpecificIds }, role: { $nin: ["Admin", "Detective Supervisor"] } },
+        { $set: { role: "Case Specific" } }
+      );
+    }
 
     res.status(201).json({ message: "Case created successfully", data: newCase });
   } catch (err) {
@@ -154,7 +179,8 @@ exports.getAllCases = async (req, res) => {
   try {
     const { userId, role } = req.user;
 
-    // Admins and Detective Supervisors (system-level) see all cases
+    // Admins and Detective Supervisors (system-level) see all cases;
+    // Detectives and Case Specific users see only their assigned cases
     const isPrivileged = role === "Admin" || role === "Detective Supervisor";
 
     const query = { isDeleted: { $ne: true } };
@@ -166,6 +192,7 @@ exports.getAllCases = async (req, res) => {
         { detectiveSupervisorUserId: uid },
         { detectiveSupervisorUserIds: uid },
         { investigatorUserIds: uid },
+        { officerUserIds: uid },
         { readOnlyUserIds: uid },
       ];
       // Exclude cases where this user's access has been revoked by admin
@@ -177,6 +204,7 @@ exports.getAllCases = async (req, res) => {
       .populate("detectiveSupervisorUserId", "username firstName lastName displayName title")
       .populate("detectiveSupervisorUserIds", "username firstName lastName displayName title")
       .populate("investigatorUserIds", "username firstName lastName displayName title")
+      .populate("officerUserIds", "username firstName lastName displayName title")
       .populate("readOnlyUserIds", "username firstName lastName displayName title")
       .populate("createdByUserId", "username firstName lastName displayName")
       .lean();
@@ -256,6 +284,7 @@ exports.getCasesByOfficer = async (req, res) => {
         { detectiveSupervisorUserId: user._id },
         { detectiveSupervisorUserIds: user._id },
         { investigatorUserIds: user._id },
+        { officerUserIds: user._id },
         { readOnlyUserIds: user._id },
       ],
     })
@@ -263,6 +292,7 @@ exports.getCasesByOfficer = async (req, res) => {
       .populate("detectiveSupervisorUserId", "username firstName lastName displayName title role")
       .populate("detectiveSupervisorUserIds", "username firstName lastName displayName title role")
       .populate("investigatorUserIds", "username firstName lastName displayName title role")
+      .populate("officerUserIds", "username firstName lastName displayName title role")
       .populate("readOnlyUserIds", "username firstName lastName displayName role")
       .lean();
 
@@ -279,6 +309,8 @@ exports.getCasesByOfficer = async (req, res) => {
         role = "Detective Supervisor";
       } else if (c.investigatorUserIds.some(inv => inv._id.equals(user._id))) {
         role = "Investigator";
+      } else if ((c.officerUserIds || []).some(o => o._id.equals(user._id))) {
+        role = "Officer";
       } else if ((c.readOnlyUserIds || []).some(ro => ro._id.equals(user._id))) {
         role = "Read Only";
       }
@@ -532,6 +564,7 @@ exports.getCaseTeam = async (req, res) => {
       .populate("detectiveSupervisorUserId", "username firstName lastName displayName title")
       .populate("detectiveSupervisorUserIds", "username firstName lastName displayName title")
       .populate("investigatorUserIds", "username firstName lastName displayName title")
+      .populate("officerUserIds", "username firstName lastName displayName title")
       .populate("readOnlyUserIds", "username firstName lastName displayName")
       .populate("blockedUserIds", "username")
       .lean();
@@ -541,12 +574,13 @@ exports.getCaseTeam = async (req, res) => {
     }
 
     const detectiveSupervisors = mergeDetectiveSupervisors(c).map(u => u.username).filter(Boolean);
-    const caseManagers = (c.caseManagerUserIds || []).map(u => u.username);
+    const caseManagers  = (c.caseManagerUserIds  || []).map(u => u.username);
     const investigators = [...new Set((c.investigatorUserIds || []).map(u => u.username))];
-    const readOnly = (c.readOnlyUserIds || []).map(u => u.username);
-    const blocked = (c.blockedUserIds || []).map(u => u.username).filter(Boolean);
+    const officers      = (c.officerUserIds      || []).map(u => u.username);
+    const readOnly      = (c.readOnlyUserIds     || []).map(u => u.username);
+    const blocked       = (c.blockedUserIds      || []).map(u => u.username).filter(Boolean);
 
-    return res.json({ detectiveSupervisors, caseManagers, investigators, readOnly, blocked });
+    return res.json({ detectiveSupervisors, caseManagers, investigators, officers, readOnly, blocked });
   } catch (err) {
     console.error("Error in getCaseTeam:", err);
     return res.status(500).json({ message: "Server error", error: err.message });
@@ -599,6 +633,7 @@ exports.updateCaseOfficers = async (req, res) => {
     const caseManagerIds = [];
     const detectiveSupervisorIds = [];
     const investigatorIds = [];
+    const officerIds = [];
     const readOnlyIds = [];
 
     for (const off of officers) {
@@ -613,6 +648,8 @@ exports.updateCaseOfficers = async (req, res) => {
         detectiveSupervisorIds.push(user._id);
       } else if (off.role === "Investigator") {
         investigatorIds.push(user._id);
+      } else if (off.role === "Officer") {
+        officerIds.push(user._id);
       } else if (off.role === "Read Only") {
         readOnlyIds.push(user._id);
       }
@@ -625,7 +662,23 @@ exports.updateCaseOfficers = async (req, res) => {
       caseDoc.detectiveSupervisorUserId = null;
     }
     caseDoc.investigatorUserIds = [...new Map(investigatorIds.map(id => [id.toString(), id])).values()];
+    caseDoc.officerUserIds      = [...new Map(officerIds.map(id => [id.toString(), id])).values()];
     caseDoc.readOnlyUserIds     = [...new Map(readOnlyIds.map(id => [id.toString(), id])).values()];
+
+    // Promote case managers, investigators, officers, and read-only to "Case Specific"
+    // system role. Detective Supervisors on a case keep their existing system role.
+    const caseSpecificIds = [...new Set([
+      ...caseManagerIds.map(id => id.toString()),
+      ...investigatorIds.map(id => id.toString()),
+      ...officerIds.map(id => id.toString()),
+      ...readOnlyIds.map(id => id.toString()),
+    ])];
+    if (caseSpecificIds.length > 0) {
+      await User.updateMany(
+        { _id: { $in: caseSpecificIds }, role: { $nin: ["Admin", "Detective Supervisor"] } },
+        { $set: { role: "Case Specific" } }
+      );
+    }
 
     // Only overwrite blockedUserIds when the admin explicitly sends the list.
     // Callers that don't send blockedUsernames (e.g. CasePageManager) leave the

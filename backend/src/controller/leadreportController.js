@@ -1545,51 +1545,41 @@ let currentY = headerHeight + 20;
         }
         currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 10;
 
-        // Now loop through each enclosure and embed any image files from S3
-for (const enc of leadEnclosures) {
-  const fnameLower = (enc.filename || "").toLowerCase();
-  const isImage = /\.(jpe?g|png|webp|heic|heif|gif|tiff?)$/.test(fnameLower);
-  if (!isImage) continue;
-
-  if (!enc.s3Key) {
-    doc.font("Helvetica-Oblique").fontSize(10).fillColor("red")
-       .text(`(No S3 key for: ${enc.filename})`, 50, currentY);
-    doc.fillColor("black");
-    currentY += 20;
-    continue;
-  }
-
-  try {
-    const rawEncBuf = await getObjectBuffer(enc.s3Key);
-    const imgBuf = await toPdfSafeBuffer(rawEncBuf);
-
-    const availW = doc.page.width - 100; // 612 - 2×50 margin
-    let renderedH = 300;
+        // Embed enclosure images two-per-row
+{
+  const pageW  = doc.page.width;
+  const gap    = 10;
+  const slotW  = Math.floor((pageW - gap) / 2);
+  const maxH   = 180;
+  const pgBot  = () => doc.page.height - doc.page.margins.bottom;
+  const imgEnc = (leadEnclosures || []).filter(e =>
+    /\.(jpe?g|png|webp|heic|heif|gif|tiff?)$/i.test((e.filename || "")) && e.s3Key
+  );
+  for (let i = 0; i < imgEnc.length; i += 2) {
+    const enc1 = imgEnc[i], enc2 = imgEnc[i + 1] || null;
+    let buf1 = null, buf2 = null, h1 = maxH, h2 = maxH;
     try {
-      const meta = await sharp(imgBuf).metadata();
-      const srcW = meta.width || 300;
-      const srcH = meta.height || 300;
-      const scale = Math.min(availW / srcW, 300 / srcH, 1);
-      renderedH = Math.round(srcH * scale);
-    } catch (_) { /* use default */ }
-
-    if (currentY + renderedH > doc.page.height - doc.page.margins.bottom) {
-      doc.addPage();
-      currentY = doc.page.margins.top;
+      buf1 = await toPdfSafeBuffer(await getObjectBuffer(enc1.s3Key));
+      const m1 = await sharp(buf1).metadata();
+      h1 = Math.round((m1.height || maxH) * Math.min(slotW / (m1.width || slotW), maxH / (m1.height || maxH), 1));
+    } catch (_) {}
+    if (enc2) {
+      try {
+        buf2 = await toPdfSafeBuffer(await getObjectBuffer(enc2.s3Key));
+        const m2 = await sharp(buf2).metadata();
+        h2 = Math.round((m2.height || maxH) * Math.min(slotW / (m2.width || slotW), maxH / (m2.height || maxH), 1));
+      } catch (_) { buf2 = null; }
     }
-
-    doc.image(imgBuf, 50, currentY, { fit: [availW, 300], align: "center", valign: "top" });
-    currentY += renderedH + 10;
-
-    doc.font("Helvetica").fontSize(9).fillColor("#555")
-       .text(enc.filename, 50, currentY, { width: availW, align: "center" });
-    currentY += 20;
+    const rowH = enc2 && buf2 ? Math.max(h1, h2) : h1;
+    if (currentY + rowH + 18 > pgBot()) { doc.addPage(); currentY = doc.page.margins.top; }
+    if (buf1) doc.image(buf1, 0, currentY, { fit: [slotW, maxH], align: "center", valign: "top" });
+    doc.font("Helvetica").fontSize(8).fillColor("#555").text(enc1.filename, 0, currentY + rowH + 3, { width: slotW, align: "center" });
+    if (enc2 && buf2) {
+      doc.image(buf2, slotW + gap, currentY, { fit: [slotW, maxH], align: "center", valign: "top" });
+      doc.font("Helvetica").fontSize(8).fillColor("#555").text(enc2.filename, slotW + gap, currentY + rowH + 3, { width: slotW, align: "center" });
+    }
     doc.fillColor("black");
-  } catch (e) {
-    doc.font("Helvetica-Oblique").fontSize(10).fillColor("red")
-       .text(`(S3 fetch failed: ${enc.filename})`, 50, currentY);
-    doc.fillColor("black");
-    currentY += 20;
+    currentY += rowH + 18;
   }
 }
 
@@ -1628,51 +1618,41 @@ for (const enc of leadEnclosures) {
         }
         currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 10;
 
-        // Embed evidence images from S3
-for (const enc of leadEvidence) {
-  const fnameLower = (enc.filename || "").toLowerCase();
-  const isImage = /\.(jpe?g|png|webp|heic|heif|gif|tiff?)$/.test(fnameLower);
-  if (!isImage) continue;
-
-  if (!enc.s3Key) {
-    doc.font("Helvetica-Oblique").fontSize(10).fillColor("red")
-       .text(`(No S3 key for: ${enc.filename})`, 50, currentY);
-    doc.fillColor("black");
-    currentY += 20;
-    continue;
-  }
-
-  try {
-    const rawEncBuf = await getObjectBuffer(enc.s3Key);
-    const imgBuf = await toPdfSafeBuffer(rawEncBuf);
-
-    const availW = doc.page.width - 100; // 612 - 2×50 margin
-    let renderedH = 300;
+        // Embed evidence images two-per-row
+{
+  const pageW  = doc.page.width;
+  const gap    = 10;
+  const slotW  = Math.floor((pageW - gap) / 2);
+  const maxH   = 180;
+  const pgBot  = () => doc.page.height - doc.page.margins.bottom;
+  const imgEv  = (leadEvidence || []).filter(e =>
+    /\.(jpe?g|png|webp|heic|heif|gif|tiff?)$/i.test((e.filename || "")) && e.s3Key
+  );
+  for (let i = 0; i < imgEv.length; i += 2) {
+    const enc1 = imgEv[i], enc2 = imgEv[i + 1] || null;
+    let buf1 = null, buf2 = null, h1 = maxH, h2 = maxH;
     try {
-      const meta = await sharp(imgBuf).metadata();
-      const srcW = meta.width || 300;
-      const srcH = meta.height || 300;
-      const scale = Math.min(availW / srcW, 300 / srcH, 1);
-      renderedH = Math.round(srcH * scale);
-    } catch (_) { /* use default */ }
-
-    if (currentY + renderedH > doc.page.height - doc.page.margins.bottom) {
-      doc.addPage();
-      currentY = doc.page.margins.top;
+      buf1 = await toPdfSafeBuffer(await getObjectBuffer(enc1.s3Key));
+      const m1 = await sharp(buf1).metadata();
+      h1 = Math.round((m1.height || maxH) * Math.min(slotW / (m1.width || slotW), maxH / (m1.height || maxH), 1));
+    } catch (_) {}
+    if (enc2) {
+      try {
+        buf2 = await toPdfSafeBuffer(await getObjectBuffer(enc2.s3Key));
+        const m2 = await sharp(buf2).metadata();
+        h2 = Math.round((m2.height || maxH) * Math.min(slotW / (m2.width || slotW), maxH / (m2.height || maxH), 1));
+      } catch (_) { buf2 = null; }
     }
-
-    doc.image(imgBuf, 50, currentY, { fit: [availW, 300], align: "center", valign: "top" });
-    currentY += renderedH + 10;
-
-    doc.font("Helvetica").fontSize(9).fillColor("#555")
-       .text(enc.filename, 50, currentY, { width: availW, align: "center" });
-    currentY += 20;
+    const rowH = enc2 && buf2 ? Math.max(h1, h2) : h1;
+    if (currentY + rowH + 18 > pgBot()) { doc.addPage(); currentY = doc.page.margins.top; }
+    if (buf1) doc.image(buf1, 0, currentY, { fit: [slotW, maxH], align: "center", valign: "top" });
+    doc.font("Helvetica").fontSize(8).fillColor("#555").text(enc1.filename, 0, currentY + rowH + 3, { width: slotW, align: "center" });
+    if (enc2 && buf2) {
+      doc.image(buf2, slotW + gap, currentY, { fit: [slotW, maxH], align: "center", valign: "top" });
+      doc.font("Helvetica").fontSize(8).fillColor("#555").text(enc2.filename, slotW + gap, currentY + rowH + 3, { width: slotW, align: "center" });
+    }
     doc.fillColor("black");
-  } catch (e) {
-    doc.font("Helvetica-Oblique").fontSize(10).fillColor("red")
-       .text(`(S3 fetch failed: ${enc.filename})`, 50, currentY);
-    doc.fillColor("black");
-    currentY += 20;
+    currentY += rowH + 18;
   }
 }
 
@@ -1708,51 +1688,41 @@ for (const enc of leadEvidence) {
         }
         currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 10;
 
-        // Embed picture images from S3
-for (const enc of leadPictures) {
-  const fnameLower = (enc.filename || "").toLowerCase();
-  const isImage = /\.(jpe?g|png|webp|heic|heif|gif|tiff?)$/.test(fnameLower);
-  if (!isImage) continue;
-
-  if (!enc.s3Key) {
-    doc.font("Helvetica-Oblique").fontSize(10).fillColor("red")
-       .text(`(No S3 key for: ${enc.filename})`, 50, currentY);
-    doc.fillColor("black");
-    currentY += 20;
-    continue;
-  }
-
-  try {
-    const rawEncBuf = await getObjectBuffer(enc.s3Key);
-    const imgBuf = await toPdfSafeBuffer(rawEncBuf);
-
-    const availW = doc.page.width - 100; // 612 - 2×50 margin
-    let renderedH = 300;
+        // Embed picture images two-per-row
+{
+  const pageW  = doc.page.width;
+  const gap    = 10;
+  const slotW  = Math.floor((pageW - gap) / 2);
+  const maxH   = 180;
+  const pgBot  = () => doc.page.height - doc.page.margins.bottom;
+  const imgPic = (leadPictures || []).filter(e =>
+    /\.(jpe?g|png|webp|heic|heif|gif|tiff?)$/i.test((e.filename || "")) && e.s3Key
+  );
+  for (let i = 0; i < imgPic.length; i += 2) {
+    const enc1 = imgPic[i], enc2 = imgPic[i + 1] || null;
+    let buf1 = null, buf2 = null, h1 = maxH, h2 = maxH;
     try {
-      const meta = await sharp(imgBuf).metadata();
-      const srcW = meta.width || 300;
-      const srcH = meta.height || 300;
-      const scale = Math.min(availW / srcW, 300 / srcH, 1);
-      renderedH = Math.round(srcH * scale);
-    } catch (_) { /* use default */ }
-
-    if (currentY + renderedH > doc.page.height - doc.page.margins.bottom) {
-      doc.addPage();
-      currentY = doc.page.margins.top;
+      buf1 = await toPdfSafeBuffer(await getObjectBuffer(enc1.s3Key));
+      const m1 = await sharp(buf1).metadata();
+      h1 = Math.round((m1.height || maxH) * Math.min(slotW / (m1.width || slotW), maxH / (m1.height || maxH), 1));
+    } catch (_) {}
+    if (enc2) {
+      try {
+        buf2 = await toPdfSafeBuffer(await getObjectBuffer(enc2.s3Key));
+        const m2 = await sharp(buf2).metadata();
+        h2 = Math.round((m2.height || maxH) * Math.min(slotW / (m2.width || slotW), maxH / (m2.height || maxH), 1));
+      } catch (_) { buf2 = null; }
     }
-
-    doc.image(imgBuf, 50, currentY, { fit: [availW, 300], align: "center", valign: "top" });
-    currentY += renderedH + 10;
-
-    doc.font("Helvetica").fontSize(9).fillColor("#555")
-       .text(enc.filename, 50, currentY, { width: availW, align: "center" });
-    currentY += 20;
+    const rowH = enc2 && buf2 ? Math.max(h1, h2) : h1;
+    if (currentY + rowH + 18 > pgBot()) { doc.addPage(); currentY = doc.page.margins.top; }
+    if (buf1) doc.image(buf1, 0, currentY, { fit: [slotW, maxH], align: "center", valign: "top" });
+    doc.font("Helvetica").fontSize(8).fillColor("#555").text(enc1.filename, 0, currentY + rowH + 3, { width: slotW, align: "center" });
+    if (enc2 && buf2) {
+      doc.image(buf2, slotW + gap, currentY, { fit: [slotW, maxH], align: "center", valign: "top" });
+      doc.font("Helvetica").fontSize(8).fillColor("#555").text(enc2.filename, slotW + gap, currentY + rowH + 3, { width: slotW, align: "center" });
+    }
     doc.fillColor("black");
-  } catch (e) {
-    doc.font("Helvetica-Oblique").fontSize(10).fillColor("red")
-       .text(`(S3 fetch failed: ${enc.filename})`, 50, currentY);
-    doc.fillColor("black");
-    currentY += 20;
+    currentY += rowH + 18;
   }
 }
 

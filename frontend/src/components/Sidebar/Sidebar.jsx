@@ -29,7 +29,7 @@ export const SideBar = ({
   const signedInOfficer = localStorage.getItem("loggedInUser");
   const signedInUserId  = localStorage.getItem("userId");
   const signedInRole = selectedCase?.role;
-  const systemRole = localStorage.getItem("role");
+  const systemRole = localStorage.getItem("systemRole") || localStorage.getItem("role");
 
   const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
   const [caseList, setCaseList] = useState(initialCases);
@@ -69,7 +69,7 @@ export const SideBar = ({
   const goToCasePage = () => {
     const role = selectedCase?.role;
     const dest =
-      role === "Investigator"
+      role === "Investigator" || role === "Officer"
         ? "/Investigator"
         : role === "Case Manager" || role === "Detective Supervisor"
         ? "/CasePageManager"
@@ -228,7 +228,7 @@ export const SideBar = ({
 
   const handleCaseSelect = (c) => {
     setSelectedCase({ _id: c._id, caseNo: c.caseNo, caseName: c.title, role: c.role });
-    const dest = c.role === "Investigator" ? "/Investigator" : c.role === "Read Only" ? "/LeadsDesk" : "/CasePageManager";
+    const dest = c.role === "Investigator" || c.role === "Officer" ? "/Investigator" : c.role === "Read Only" ? "/LeadsDesk" : "/CasePageManager";
     navigate(dest, { state: { caseDetails: { _id: c._id, caseNo: c.caseNo, caseName: c.title, role: c.role } } });
   };
 
@@ -238,13 +238,13 @@ export const SideBar = ({
       <aside className="sidebar">
         <ul className="sidebar-list">
           <li
-            className={`sidebar-item ${location.pathname === "/AdminCM" ? "active" : ""}`}
-            onClick={() => navigate("/AdminCM")}
+            className={`sidebar-item ${location.pathname === "/AdminTeam" ? "active" : ""}`}
+            onClick={() => navigate("/AdminTeam")}
           >
             <img src={folderIcon} className="sidebar-icon" alt="" />
             <span>Case Management</span>
           </li>
-          {systemRole !== "Investigator" && (
+          {systemRole !== ROLES.CASE_SPECIFIC && (
             <li
               className="sidebar-item"
               style={{ paddingLeft: 32 }}
@@ -275,13 +275,6 @@ export const SideBar = ({
             <img src={folderIcon} className="sidebar-icon" alt="" />
             <span>Agency Management</span>
           </li>
-          <li
-            className={`sidebar-item ${location.pathname === "/AdminTeam" ? "active" : ""}`}
-            onClick={() => navigate("/AdminTeam")}
-          >
-            <img src={folderIcon} className="sidebar-icon" alt="" />
-            <span>Team Management</span>
-          </li>
         </ul>
       </aside>
     );
@@ -309,7 +302,7 @@ export const SideBar = ({
             <span>Case Management</span>
           </li>
 
-          {systemRole !== ROLES.INVESTIGATOR && systemRole !== ROLES.READ_ONLY && (
+          {systemRole !== ROLES.CASE_SPECIFIC && (
             <li
               className="sidebar-item"
               style={{ paddingLeft: 32 }}
@@ -323,7 +316,7 @@ export const SideBar = ({
             </li>
           )}
 
-          {showArchivedTab && systemRole !== ROLES.READ_ONLY && (
+          {showArchivedTab && (
             <li
               className={`sidebar-item ${activeTab === "archived" ? "active" : ""}`}
               onClick={() => navigate("/ClosedCase")}
@@ -337,15 +330,71 @@ export const SideBar = ({
     );
   }
 
+  // Officer variant — Home + Case page + Other Ongoing Cases
+  if (selectedCase?.role === "Officer") {
+    return (
+      <aside className="sidebar">
+        <ul className="sidebar-list">
+          <li
+            className={`sidebar-item ${activePage === "HomePage" || activePage === "AdminTeam" ? "active" : ""}`}
+            onClick={() =>
+              systemRole === "Admin"
+                ? navigate("/AdminTeam")
+                : navigate("/HomePage", { state: { caseDetails, activeTab: "cases" } })
+            }
+          >
+            <img src={homeIcon} className="sidebar-icon" alt="" />
+            <span>PIMS Home</span>
+          </li>
+          <li
+            className={`sidebar-item ${activePage === "Investigator" ? "active" : ""}`}
+            onClick={goToCasePage}
+          >
+            <img src={folderIcon} className="sidebar-icon" alt="" />
+            <span>Case: {selectedCase?.caseNo || "-"}</span>
+          </li>
+
+          {/* Other Ongoing Cases */}
+          <li className="sidebar-item" onClick={() => setCaseDropdownOpen((o) => !o)}>
+            <img src={folderIcon} className="sidebar-icon" alt="" />
+            <span>Other Ongoing Cases {caseDropdownOpen ? "▲" : "▼"}</span>
+          </li>
+          {caseDropdownOpen && (
+            <ul className="dropdown-list1">
+              {caseList
+                .filter((c) => String(c._id) !== String(selectedCase?._id || selectedCase?.id))
+                .map((c) => {
+                  const count = getCaseBadgeCount(c._id);
+                  const isActive = String(selectedCase?._id || selectedCase?.id) === String(c._id);
+                  return (
+                    <li
+                      key={String(c._id)}
+                      className={`sidebar-item${isActive ? " active" : ""}`}
+                      onClick={() => handleCaseSelect(c)}
+                    >
+                      <div className="case-headerSB">
+                        <span>Case: {c.caseNo}</span>
+                        <span className="sidebar-number">{count}</span>
+                      </div>
+                    </li>
+                  );
+                })}
+            </ul>
+          )}
+        </ul>
+      </aside>
+    );
+  }
+
   // Default variant
   return (
     <aside className="sidebar">
       <ul className="sidebar-list">
         <li
-          className={`sidebar-item ${activePage === "HomePage" || activePage === "AdminCM" ? "active" : ""}`}
+          className={`sidebar-item ${activePage === "HomePage" || activePage === "AdminCM" || activePage === "AdminTeam" ? "active" : ""}`}
           onClick={() =>
             systemRole === "Admin"
-              ? navigate("/AdminCM")
+              ? navigate("/AdminTeam")
               : navigate("/HomePage", { state: { caseDetails, activeTab: "cases" } })
           }
         >

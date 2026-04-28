@@ -145,10 +145,15 @@ export const LeadLog = () => {
             ? response.data
             : [];
   
+          const systemRole = localStorage.getItem("systemRole") || localStorage.getItem("role");
+          const privileged = ["Admin", "Detective Supervisor"].includes(systemRole) ||
+            ["Detective Supervisor", "Case Manager"].includes(selectedCase?.role);
+
           const filteredLeads = leadsArray.filter((lead) => {
+            if (privileged) return true;
             return !(
-               lead.accessLevel === "Only Case Manager and Assignees" &&
-               !lead.assignedTo?.some(o => o.username === loggedInOfficer) &&
+              lead.accessLevel === "Only Case Manager and Assignees" &&
+              !lead.assignedTo?.some(o => o.username === loggedInOfficer) &&
               lead.assignedBy !== loggedInOfficer
             );
           });
