@@ -519,6 +519,15 @@
   text-align: left !important;
   font-weight: normal;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wrapDescCell {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  word-break: break-word;
 }
 
 .lead-table2 th {

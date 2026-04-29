@@ -52,9 +52,10 @@ export const ManageLeadReturn = () => {
   const [allUsers,     setAllUsers]     = useState([]);
 
   // ── modal state ──
-  const [openPerson,   setOpenPerson]   = useState(null);
-  const [openVehicle,  setOpenVehicle]  = useState(null);
-  const [showComments, setShowComments] = useState(true);
+  const [openPerson,        setOpenPerson]        = useState(null);
+  const [openVehicle,       setOpenVehicle]       = useState(null);
+  const [showComments,      setShowComments]      = useState(true);
+  const [selectedTimeline,  setSelectedTimeline]  = useState(null);
   const [alertOpen, setAlertOpen]      = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
   const [notifyConfig, setNotifyConfig] = useState({ open: false, title: "Notification", message: "" });
@@ -783,15 +784,27 @@ export const ManageLeadReturn = () => {
                                     Timeline Details
                                   </SectionLink>
                                   <table className={styles.simpleTable}>
-                                    <thead><tr><th>Event Date</th><th>Start</th><th>End</th><th>Location</th><th>Description</th></tr></thead>
+                                    <thead>
+                                      <tr>
+                                        <th style={{ width: '13%' }}>Event Date</th>
+                                        <th style={{ width: '13%' }}>Start</th>
+                                        <th style={{ width: '13%' }}>End</th>
+                                        <th style={{ width: '22%' }}>Location</th>
+                                        <th style={{ width: '29%' }}>Description</th>
+                                        <th style={{ width: '10%' }}>More</th>
+                                      </tr>
+                                    </thead>
                                     <tbody>
                                       {timeline.map((t) => (
                                         <tr key={t._id}>
-                                          <td>{t.eventDate ? new Date(t.eventDate).toLocaleDateString() : "—"}</td>
-                                          <td>{t.eventStartTime ? new Date(t.eventStartTime).toLocaleTimeString() : "—"}</td>
-                                          <td>{t.eventEndTime ? new Date(t.eventEndTime).toLocaleTimeString() : "—"}</td>
-                                          <td>{toText(t.eventLocation)}</td>
-                                          <td>{toText(t.eventDescription)}</td>
+                                          <td className={styles.truncCell}>{t.eventDate ? new Date(t.eventDate).toLocaleDateString() : "—"}</td>
+                                          <td className={styles.truncCell}>{t.eventStartTime ? new Date(t.eventStartTime).toLocaleTimeString() : "—"}</td>
+                                          <td className={styles.truncCell}>{t.eventEndTime ? new Date(t.eventEndTime).toLocaleTimeString() : "—"}</td>
+                                          <td className={styles.truncCell}>{toText(t.eventLocation)}</td>
+                                          <td className={styles.truncCell}>{toText(t.eventDescription)}</td>
+                                          <td>
+                                            <button className={styles.moreBtn} onClick={() => setSelectedTimeline(t)}>View</button>
+                                          </td>
                                         </tr>
                                       ))}
                                     </tbody>
@@ -947,6 +960,46 @@ export const ManageLeadReturn = () => {
           )}
         </div>
       </div>
+
+      {/* ── Timeline entry detail modal ── */}
+      {selectedTimeline && (
+        <div className={styles.tlModalOverlay} onClick={() => setSelectedTimeline(null)}>
+          <div className={styles.tlModal} onClick={e => e.stopPropagation()}>
+            <button className={styles.tlModalClose} onClick={() => setSelectedTimeline(null)}>&times;</button>
+            <h2 className={styles.tlModalTitle}>Timeline Entry Details</h2>
+
+            <table className={styles.tlGroupTable}>
+              <thead><tr><th>Event Date</th><th>Location</th></tr></thead>
+              <tbody><tr>
+                <td>{selectedTimeline.eventDate ? new Date(selectedTimeline.eventDate).toLocaleDateString() : '—'}</td>
+                <td>{toText(selectedTimeline.eventLocation)}</td>
+              </tr></tbody>
+            </table>
+
+            <table className={styles.tlGroupTable}>
+              <thead><tr><th>Start Time</th><th>End Time</th></tr></thead>
+              <tbody><tr>
+                <td>{selectedTimeline.eventStartTime ? new Date(selectedTimeline.eventStartTime).toLocaleTimeString() : '—'}</td>
+                <td>{selectedTimeline.eventEndTime   ? new Date(selectedTimeline.eventEndTime).toLocaleTimeString()   : '—'}</td>
+              </tr></tbody>
+            </table>
+
+            <table className={styles.tlGroupTable}>
+              <thead><tr><th>Description</th></tr></thead>
+              <tbody><tr>
+                <td className={styles.tlWrapCell}>{toText(selectedTimeline.eventDescription)}</td>
+              </tr></tbody>
+            </table>
+
+            {Array.isArray(selectedTimeline.timelineFlag) && selectedTimeline.timelineFlag.length > 0 && (
+              <table className={styles.tlGroupTable}>
+                <thead><tr><th>Flags</th></tr></thead>
+                <tbody><tr><td>{selectedTimeline.timelineFlag.join(', ')}</td></tr></tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
