@@ -797,6 +797,7 @@ const handleShowLeadsInRange = () => {
         selectedReports: { FullReport: true },
         summaryMode: "none",
         reportScope: "all",
+        timezone:    Intl.DateTimeFormat().resolvedOptions().timeZone,
       };
       const response = await api.post(
         "/api/report/generateCase",
@@ -1395,7 +1396,7 @@ useEffect(() => {
                                           <td>{tl.leadReturnId}</td><td>{formatDate(tl.enteredDate)}</td>
                                           <td>{tl.enteredBy}</td><td>{formatDate(tl.eventStartDate)}</td>
                                           <td>{formatDate(tl.eventEndDate)}</td><td>{tl.eventLocation}</td>
-                                          <td>
+                                          <td className={styles.wrapDescCell}>
                                             <div className={expandedDescriptions.has(descKey) ? styles.descTextExpanded : styles.descText}>{tl.eventDescription}</div>
                                             {tl.eventDescription && <button className={styles.viewToggleBtn} onClick={() => toggleDescriptionExpand(descKey)}>{expandedDescriptions.has(descKey) ? 'View Less ▲' : 'View ▶'}</button>}
                                           </td>
@@ -1464,16 +1465,25 @@ useEffect(() => {
                               </table>
 
                               <table className={styles.tlGroupTable}>
-                                <thead><tr><th>Event Start Date</th><th>Event End Date</th><th>Location</th></tr></thead>
-                                <tbody><tr><td>{formatDate(selectedTimelineEntry.eventStartDate)}</td><td>{formatDate(selectedTimelineEntry.eventEndDate)}</td><td>{selectedTimelineEntry.eventLocation}</td></tr></tbody>
+                                <thead><tr><th>Event Start Date</th><th>Event End Date</th></tr></thead>
+                                <tbody><tr>
+                                  <td>{formatDate(selectedTimelineEntry.eventStartDate)}</td>
+                                  <td>{formatDate(selectedTimelineEntry.eventEndDate)}</td>
+                                </tr></tbody>
                               </table>
 
-                              {(selectedTimelineEntry.eventStartTime || selectedTimelineEntry.eventEndTime) && (
-                                <table className={styles.tlGroupTable}>
-                                  <thead><tr><th>Time Range</th></tr></thead>
-                                  <tbody><tr><td>{formatTimeRangeNY(selectedTimelineEntry.eventStartTime, selectedTimelineEntry.eventEndTime)}</td></tr></tbody>
-                                </table>
-                              )}
+                              <table className={styles.tlGroupTable}>
+                                <thead><tr><th>Start Time</th><th>End Time</th></tr></thead>
+                                <tbody><tr>
+                                  <td>{selectedTimelineEntry.eventStartTime ? new Date(selectedTimelineEntry.eventStartTime).toLocaleTimeString() : '—'}</td>
+                                  <td>{selectedTimelineEntry.eventEndTime   ? new Date(selectedTimelineEntry.eventEndTime).toLocaleTimeString()   : '—'}</td>
+                                </tr></tbody>
+                              </table>
+
+                              <table className={styles.tlGroupTable}>
+                                <thead><tr><th>Location</th></tr></thead>
+                                <tbody><tr><td>{selectedTimelineEntry.eventLocation || '—'}</td></tr></tbody>
+                              </table>
 
                               <table className={styles.tlGroupTable}>
                                 <thead><tr><th>Description</th></tr></thead>

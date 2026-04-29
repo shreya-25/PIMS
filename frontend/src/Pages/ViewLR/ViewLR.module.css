@@ -528,6 +528,13 @@
 .simpleTable {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.truncCell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .simpleTable th {
@@ -590,6 +597,78 @@
   padding: 10px 12px;
   color: #6b7280;
   font-size: 20px;
+}
+
+/* ── Timeline entry detail modal ──────────────────────────────────── */
+.tlModalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.tlModal {
+  background: #fff;
+  padding: 20px 24px;
+  border-radius: 8px;
+  width: 95%;
+  max-width: 860px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  font-size: 16px;
+}
+.tlModalTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 12px 0;
+  padding-right: 36px;
+}
+.tlModalClose {
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  border: none;
+  background: transparent;
+  font-size: 24px;
+  cursor: pointer;
+  color: #555;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.tlModalClose:hover { background: #f0f0f0; color: #111; }
+.tlGroupTable {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  margin-bottom: 6px;
+}
+.tlGroupTable th {
+  border: 1px solid #d0d5dd;
+  padding: 6px 10px;
+  background-color: #eef0f5;
+  font-size: 15px;
+  font-weight: 600;
+  color: #444;
+  text-align: left;
+}
+.tlGroupTable td {
+  border: 1px solid #d0d5dd;
+  padding: 6px 10px;
+  font-size: 15px;
+  color: #222;
+  background: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tlWrapCell {
+  white-space: normal !important;
+  word-break: break-word;
 }
 
 /* Responsive */
