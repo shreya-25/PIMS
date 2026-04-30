@@ -165,46 +165,6 @@ export default function ReopenedLeadCard({ lead, displayUser, handleLeadCardClic
           {lead.reopenReason && <span><strong>Reopen Reason:</strong>  {lead.reopenReason}</span>}
         </div>
 
-        {/* Chain of Custody */}
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ fontWeight: 700, fontSize: 16, padding: "6px 10px", background: "#f3e8ff", borderLeft: "4px solid #7c3aed", marginBottom: 4 }}>
-            Chain of Custody — Actions Performed ({allEvents.length})
-          </div>
-          {allEvents.length > 0 ? (
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
-              <thead>
-                <tr style={{ background: "#ede9fe" }}>
-                  <th style={{ padding: "6px 8px", border: "1px solid #c4b5fd", width: "13%" }}>Date &amp; Time</th>
-                  <th style={{ padding: "6px 8px", border: "1px solid #c4b5fd", width: "22%" }}>Action</th>
-                  <th style={{ padding: "6px 8px", border: "1px solid #c4b5fd", width: "14%" }}>Performed By</th>
-                  <th style={{ padding: "6px 8px", border: "1px solid #c4b5fd", width: "16%" }}>Assigned To</th>
-                  <th style={{ padding: "6px 8px", border: "1px solid #c4b5fd", width: "14%" }}>Status After</th>
-                  <th style={{ padding: "6px 8px", border: "1px solid #c4b5fd" }}>Notes / Reason</th>
-                </tr>
-              </thead>
-              <tbody>
-                {allEvents.map((e, i) => (
-                  <tr key={i} style={{ background: i % 2 === 0 ? "#fff" : "#f9f5ff" }}>
-                    <td style={{ padding: "5px 8px", border: "1px solid #ddd", whiteSpace: "nowrap" }}>
-                      {e.timestamp.toLocaleDateString()}{" "}
-                      {e.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                    </td>
-                    <td style={{ padding: "5px 8px", border: "1px solid #ddd", fontWeight: e.kind === "status" ? 600 : 400 }}>
-                      {e.action}
-                    </td>
-                    <td style={{ padding: "5px 8px", border: "1px solid #ddd" }}>{e.by}</td>
-                    <td style={{ padding: "5px 8px", border: "1px solid #ddd", color: "#555" }}>{e.to || "—"}</td>
-                    <td style={{ padding: "5px 8px", border: "1px solid #ddd", color: "#555" }}>{e.statusAfter || "—"}</td>
-                    <td style={{ padding: "5px 8px", border: "1px solid #ddd", color: "#555", whiteSpace: "pre-wrap" }}>{e.detail || "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <div style={{ padding: "8px 12px", color: "#888", fontSize: 14 }}>No actions recorded for this lead.</div>
-          )}
-        </div>
-
         {/* Pre-reopen returns */}
         <div style={{ marginBottom: 12 }}>
           <div style={{ fontWeight: 700, fontSize: 16, padding: "6px 10px", background: "#e0f2fe", borderLeft: "4px solid #0284c7", marginBottom: 4 }}>
