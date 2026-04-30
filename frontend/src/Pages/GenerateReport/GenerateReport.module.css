@@ -950,3 +950,184 @@
   background: #fee2e2;
   border-color: #dc2626;
 }
+
+/* ===== Timeline entries inside lead card (LeadsDesk style) ===== */
+.tl-person-section {
+  width: 100%;
+  overflow-x: auto;
+  padding-top: 4px;
+}
+
+.tl-collapsibleHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+  padding: 4px 8px;
+  background: #f0f1fa;
+  border: 1px solid #dde0f0;
+  border-radius: 4px;
+  color: #29298b;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 8px 0 4px 0;
+  transition: background 0.15s;
+}
+.tl-collapsibleHeader:hover { background: #e4e6f5; }
+
+.tl-collapsibleChevron {
+  font-size: 10px;
+  color: #29298b;
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+.tl-collapsibleChevronOpen { transform: rotate(90deg); }
+
+.tl-lead-table2 {
+  width: 100%;
+  border-collapse: collapse;
+  font-weight: normal;
+  font-size: 18px;
+  color: #222;
+}
+.tl-lead-table2 th,
+.tl-lead-table2 td {
+  padding: 8px 10px;
+  border: 1px solid #e8e8e8;
+  text-align: left !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 18px;
+  color: #222;
+}
+.tl-lead-table2 th { background-color: #f9f9f9; }
+.tl-lead-table2 button { font-size: 18px; color: #555; }
+
+.tl-wrapDescCell {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  word-break: break-word;
+}
+
+.tl-descText {
+  max-height: calc(1.6em * 3);
+  overflow: hidden;
+  line-height: 1.6;
+  color: #444;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.tl-descTextExpanded {
+  line-height: 1.6;
+  color: #444;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.tl-viewBtn {
+  background: #fff;
+  border: 1px solid #c8c8d0;
+  color: #3a3a4a;
+  padding: 4px 14px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+  white-space: nowrap;
+}
+.tl-viewBtn:hover { background-color: #f4f5f7; border-color: #999aaa; color: #1a1a2e; }
+.tl-viewBtn:active { transform: scale(0.97); }
+
+.tl-viewToggleBtn {
+  background: none;
+  border: none;
+  color: #29298b;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 2px 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.15s;
+}
+.tl-viewToggleBtn:hover { color: #1a3faa; text-decoration: underline; }
+
+/* Timeline detail modal */
+.tl-tlModalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.tl-tlModalContent {
+  background: #fff;
+  padding: 20px 24px;
+  border-radius: 8px;
+  width: 95%;
+  max-width: 1100px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  font-size: 16px !important;
+}
+.tl-tlModalContent h2 {
+  font-size: 16px !important;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 4px 0;
+  padding-right: 36px;
+  text-align: left;
+}
+.tl-tlModalContent > p {
+  margin: 1px 0 8px 0;
+  font-size: 16px !important;
+  color: #444;
+  text-align: left;
+}
+.tl-tlModalClose {
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  border: none;
+  background: transparent;
+  font-size: 24px !important;
+  cursor: pointer;
+  color: #555;
+  border-radius: 4px;
+  transition: background 0.15s, color 0.15s;
+}
+.tl-tlModalClose:hover { background: #f0f0f0; color: #111; }
+
+.tl-tlGroupTable {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  margin-bottom: 4px;
+}
+.tl-tlGroupTable th {
+  border: 1px solid #d0d5dd !important;
+  padding: 6px 10px !important;
+  background-color: #eef0f5 !important;
+  font-size: 16px !important;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tl-tlGroupTable td {
+  border: 1px solid #d0d5dd !important;
+  padding: 6px 10px !important;
+  font-size: 16px !important;
+  vertical-align: middle !important;
+  color: #222 !important;
+  background: #fff !important;
+  word-break: break-word;
+}

@@ -60,7 +60,19 @@ export const GenerateReport = () => {
   const allSubCategories = [...new Set(leadsData.flatMap((l) => l.subCategory || []))].sort();
   const baseLeads        = reportType === "reopened"
     ? getReopenedLeads()
-    : (hierarchyLeadsData.length > 0 ? hierarchyLeadsData : leadsData);
+    : reportType === "timeline" && timelineOrderedLeads.length > 0
+      ? timelineOrderedLeads
+      : (hierarchyLeadsData.length > 0 ? hierarchyLeadsData : leadsData);
+
+  const timelineEntriesByLead = reportType === "timeline"
+    ? timelineEntries.reduce((map, e) => {
+        const key = String(e.leadNo ?? "");
+        if (!key) return map;
+        if (!map[key]) map[key] = [];
+        map[key].push(e);
+        return map;
+      }, {})
+    : null;
 
   // For the hierarchy report type use the hierarchy-specific order toggle;
   // everywhere else use the general leadSortOrder.
@@ -342,7 +354,16 @@ export const GenerateReport = () => {
                         <ReopenedLeadCard key={lead.leadNo || i} lead={lead} {...leadCardProps} />
                       ))
                     : displayLeads.map((lead, i) => (
-                        <LeadCard key={lead.leadNo || i} lead={lead} {...leadCardProps} />
+                        <LeadCard
+                          key={lead.leadNo || i}
+                          lead={lead}
+                          {...leadCardProps}
+                          leadTimelineEntries={
+                            timelineEntriesByLead
+                              ? (timelineEntriesByLead[String(lead.leadNo)] || [])
+                              : undefined
+                          }
+                        />
                       ))
                   }
 
