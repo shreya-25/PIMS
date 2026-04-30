@@ -55,6 +55,7 @@ exports.createCase = async (req, res) => {
       detectiveSupervisors,
       characterOfCase = "",
       caseSummary = "",
+      assignedCaseManager = "",
     } = req.body;
 
     // --- permission check: only Admin, Detective Supervisor, Detective can create cases ---
@@ -84,6 +85,10 @@ exports.createCase = async (req, res) => {
         : [];
     if (dsInputs.length === 0) {
       return res.status(400).json({ message: "At least one Detective Supervisor is required." });
+    }
+
+    if (!assignedCaseManager) {
+      return res.status(400).json({ message: "Assigned To (case manager) is required." });
     }
 
     // --- ensure unique caseNo ---
@@ -122,6 +127,12 @@ exports.createCase = async (req, res) => {
       ? await User.find({ username: { $in: officerUsernames } })
       : [];
 
+    let assignedCaseManagerId = null;
+    if (assignedCaseManager) {
+      const acmUser = await findUserByUsername(assignedCaseManager);
+      assignedCaseManagerId = acmUser?._id || null;
+    }
+
     const newCase = new Case({
       caseNo,
       caseName,
@@ -132,6 +143,7 @@ exports.createCase = async (req, res) => {
       detectiveSupervisorUserIds: dsUsers.map(u => u._id),
       investigatorUserIds: investigatorUsers.map(u => u._id),
       officerUserIds: officerUsers.map(u => u._id),
+      assignedCaseManagerUserId: assignedCaseManagerId,
       createdByUserId: req.user.userId,
     });
 
@@ -206,6 +218,7 @@ exports.getAllCases = async (req, res) => {
       .populate("investigatorUserIds", "username firstName lastName displayName title")
       .populate("officerUserIds", "username firstName lastName displayName title")
       .populate("readOnlyUserIds", "username firstName lastName displayName title")
+      .populate("assignedCaseManagerUserId", "username firstName lastName displayName title")
       .populate("createdByUserId", "username firstName lastName displayName")
       .lean();
 
@@ -602,6 +615,7 @@ exports.getCaseTeam = async (req, res) => {
       .populate("officerUserIds", "username firstName lastName displayName title")
       .populate("readOnlyUserIds", "username firstName lastName displayName")
       .populate("blockedUserIds", "username")
+      .populate("assignedCaseManagerUserId", "username")
       .lean();
 
     if (!c) {
@@ -614,8 +628,9 @@ exports.getCaseTeam = async (req, res) => {
     const officers      = (c.officerUserIds      || []).map(u => u.username);
     const readOnly      = (c.readOnlyUserIds     || []).map(u => u.username);
     const blocked       = (c.blockedUserIds      || []).map(u => u.username).filter(Boolean);
+    const assignedCaseManager = c.assignedCaseManagerUserId?.username || null;
 
-    return res.json({ detectiveSupervisors, caseManagers, investigators, officers, readOnly, blocked });
+    return res.json({ detectiveSupervisors, caseManagers, investigators, officers, readOnly, blocked, assignedCaseManager });
   } catch (err) {
     console.error("Error in getCaseTeam:", err);
     return res.status(500).json({ message: "Server error", error: err.message });
@@ -653,7 +668,7 @@ exports.updateCaseOfficers = async (req, res) => {
     const { caseNo } = req.params;
     // blockedUsernames is intentionally not defaulted — undefined means "caller didn't send it,
     // so preserve whatever is already stored" (e.g. CasePageManager team updates).
-    const { officers, blockedUsernames } = req.body;
+    const { officers, blockedUsernames, assignedCaseManagerUsername } = req.body;
 
     if (!caseNo || !Array.isArray(officers)) {
       return res.status(400).json({ message: "caseNo and an array of officers are required" });
@@ -726,6 +741,16 @@ exports.updateCaseOfficers = async (req, res) => {
         if (user) blockedIds.push(user._id);
       }
       caseDoc.blockedUserIds = [...new Map(blockedIds.map(id => [id.toString(), id])).values()];
+    }
+
+    // Update assigned case manager when explicitly provided (empty string clears it)
+    if (assignedCaseManagerUsername !== undefined) {
+      if (assignedCaseManagerUsername) {
+        const acmUser = await findUserByUsername(assignedCaseManagerUsername);
+        caseDoc.assignedCaseManagerUserId = acmUser?._id || null;
+      } else {
+        caseDoc.assignedCaseManagerUserId = null;
+      }
     }
 
     await caseDoc.save();

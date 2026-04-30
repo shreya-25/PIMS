@@ -322,7 +322,7 @@ export const SideBar = ({
               onClick={() => navigate("/ClosedCase")}
             >
               <img src={folderIcon} className="sidebar-icon" alt="" />
-              <span>Archived Cases</span>
+              <span>Closed Cases</span>
             </li>
           )}
         </ul>
@@ -330,7 +330,7 @@ export const SideBar = ({
     );
   }
 
-  // Officer variant — Home + Case page + Other Ongoing Cases
+  // Officer variant — Home + Case page + Other Open Cases
   if (selectedCase?.role === "Officer") {
     return (
       <aside className="sidebar">
@@ -354,10 +354,10 @@ export const SideBar = ({
             <span>Case: {selectedCase?.caseNo || "-"}</span>
           </li>
 
-          {/* Other Ongoing Cases */}
+          {/* Other Open Cases */}
           <li className="sidebar-item" onClick={() => setCaseDropdownOpen((o) => !o)}>
             <img src={folderIcon} className="sidebar-icon" alt="" />
-            <span>Other Ongoing Cases {caseDropdownOpen ? "▲" : "▼"}</span>
+            <span>Other Open Cases {caseDropdownOpen ? "▲" : "▼"}</span>
           </li>
           {caseDropdownOpen && (
             <ul className="dropdown-list1">
@@ -486,11 +486,11 @@ export const SideBar = ({
           </li>
         )}
 
-        {/* Other Ongoing Cases */}
+        {/* Other Open Cases */}
         {systemRole !== "Admin" && (
           <li className="sidebar-item" onClick={() => setCaseDropdownOpen((o) => !o)}>
             <img src={folderIcon} className="sidebar-icon" alt="" />
-            <span>Other Ongoing Cases {caseDropdownOpen ? "▲" : "▼"}</span>
+            <span>Other Open Cases {caseDropdownOpen ? "▲" : "▼"}</span>
           </li>
         )}
 
@@ -520,7 +520,7 @@ export const SideBar = ({
         {isUserDS && (
           <li className="sidebar-item" onClick={() => navigate("/ClosedCase")}>
             <img src={folderIcon} className="sidebar-icon" alt="" />
-            <span>Archived Cases</span>
+            <span>Closed Cases</span>
           </li>
         )}
 

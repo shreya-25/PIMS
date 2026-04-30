@@ -36,6 +36,12 @@ const caseSchema = new mongoose.Schema(
       },
     ],
 
+    assignedCaseManagerUserId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+
     investigatorUserIds: [
       {
         type: mongoose.Schema.Types.ObjectId,

@@ -61,16 +61,22 @@ export const CasePageManager = () => {
   const [caseManagersDropdownOpen, setCaseManagersDropdownOpen] = useState(false);
   const [detectiveSupervisorDropdownOpen, setDetectiveSupervisorDropdownOpen] = useState(false);
   const [officersDropdownOpen, setOfficersDropdownOpen] = useState(false);
+  const [atDropdownOpen, setAtDropdownOpen] = useState(false);
   const [dsSearch, setDsSearch] = useState("");
   const [cmSearch, setCmSearch] = useState("");
   const [invSearch, setInvSearch] = useState("");
   const [offSearch, setOffSearch] = useState("");
+  const [atSearch, setAtSearch] = useState("");
 
   // Refs for click-outside detection on team dropdowns
   const dsRef = useRef(null);
   const cmRef = useRef(null);
   const invRef = useRef(null);
   const offRef = useRef(null);
+  const atRef = useRef(null);
+
+  // ─── Assigned case manager state ─────────────────────────────────────────
+  const [assignedCaseManager, setAssignedCaseManager] = useState("");
 
   // ─── Case status / submit state ───────────────────────────────────────────
   const [caseStatus, setCaseStatus] = useState(null);
@@ -206,6 +212,10 @@ export const CasePageManager = () => {
         setOfficersDropdownOpen(false);
         setOffSearch("");
       }
+      if (atRef.current && !atRef.current.contains(e.target)) {
+        setAtDropdownOpen(false);
+        setAtSearch("");
+      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -235,7 +245,10 @@ export const CasePageManager = () => {
     if (!selectedCase?.caseNo) return;
     const token = localStorage.getItem("token");
     api.get(`/api/cases/${selectedCase.caseNo}/team`)
-      .then(({ data }) => setTeam(data))
+      .then(({ data }) => {
+        setTeam(data);
+        setAssignedCaseManager(data.assignedCaseManager || "");
+      })
       .catch(console.error);
     api.get(`/api/cases/caseNo/${selectedCase.caseNo}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(({ data }) => setCaseStatus(data.status || null))
@@ -335,7 +348,7 @@ export const CasePageManager = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setCaseStatus("COMPLETED");
-      setAlertMessage("Case has been closed and moved to Archived Cases.");
+      setAlertMessage("Case has been closed and moved to Closed Cases.");
       setAlertOpen(true);
     } catch (err) {
       setAlertMessage(err?.response?.data?.message || "Failed to close case.");
@@ -569,7 +582,8 @@ export const CasePageManager = () => {
     overrideInvestigators = selectedInvestigators,
     overrideManagers = selectedCaseManagers,
     overrideSupervisors = selectedDetectiveSupervisors,
-    overrideOfficers = selectedOfficers
+    overrideOfficers = selectedOfficers,
+    overrideAssignedCM = assignedCaseManager
   ) => {
     try {
       const token = localStorage.getItem("token");
@@ -612,7 +626,7 @@ export const CasePageManager = () => {
 
       await api.put(
         `/api/cases/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}/officers`,
-        { officers },
+        { officers, assignedCaseManagerUsername: overrideAssignedCM },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -995,11 +1009,6 @@ export const CasePageManager = () => {
             {/* Status + actions — visible to CM / DS / Admin only */}
             {(selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor" || isAdmin) && (
               <div className={styles['case-status-bar']}>
-                {caseStatus && (
-                  <span className={`${styles['case-status-badge']} ${styles[`status-${caseStatus.toLowerCase()}`]}`}>
-                    {caseStatus === "SUBMITTED" ? "Submitted for Review" : caseStatus === "ONGOING" ? "Ongoing" : caseStatus}
-                  </span>
-                )}
                 {caseStatus === "ONGOING" && (
                   <button
                     className={styles['submit-case-btn']}
@@ -1199,6 +1208,67 @@ export const CasePageManager = () => {
                           </div>
                         ) : (
                           displayNamesNoTitle(team.caseManagers) || "—"
+                        )}
+                      </td>
+                    </tr>
+
+                    {/* Assigned To */}
+                    <tr>
+                      <td className={styles['case-team-td']}>Assigned To</td>
+                      <td className={`${styles['name-cell']} ${styles['case-team-td']}`}>
+                        {(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor" || isAdmin) ? (
+                          <div ref={atRef} className={styles['custom-dropdown']}>
+                            <div
+                              className={styles['dropdown-head']}
+                              onClick={() => setAtDropdownOpen(prev => !prev)}
+                            >
+                              <span className={styles['dh-text']}>
+                                {assignedCaseManager ? displayNameNoTitle(assignedCaseManager) : "Select (required)"}
+                              </span>
+                              <span className={styles['dropdown-icon']} aria-hidden="true">
+                                <img src={atDropdownOpen ? downIcon : upIcon} className={styles['caret-icon']} alt="" />
+                              </span>
+                            </div>
+                            {atDropdownOpen && (
+                              <div className={styles['dropdown-options']}>
+                                <input
+                                  type="text"
+                                  className={styles['dropdown-search']}
+                                  placeholder="Search case manager..."
+                                  value={atSearch}
+                                  onChange={e => setAtSearch(e.target.value)}
+                                  onClick={e => e.stopPropagation()}
+                                  autoFocus
+                                />
+                                {selectedCaseManagers
+                                  .filter(uname => !atSearch || `${uname} ${displayNameNoTitle(uname)}`.toLowerCase().includes(atSearch.toLowerCase()))
+                                  .map(uname => (
+                                    <div key={uname} className={styles['dropdown-item']}>
+                                      <input
+                                        type="radio"
+                                        id={`at-${uname}`}
+                                        name="assignedCaseManager"
+                                        value={uname}
+                                        checked={assignedCaseManager === uname}
+                                        onChange={() => {
+                                          setAssignedCaseManager(uname);
+                                          setAtDropdownOpen(false);
+                                          saveInvestigators(selectedInvestigators, selectedCaseManagers, selectedDetectiveSupervisors, selectedOfficers, uname);
+                                        }}
+                                      />
+                                      <label htmlFor={`at-${uname}`}>
+                                        {displayNameNoTitle(uname)}
+                                      </label>
+                                    </div>
+                                  ))}
+                                {selectedCaseManagers.length === 0 && (
+                                  <div style={{padding:"6px 10px", color:"#999"}}>No case managers</div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          displayNameNoTitle(assignedCaseManager) || "—"
                         )}
                       </td>
                     </tr>

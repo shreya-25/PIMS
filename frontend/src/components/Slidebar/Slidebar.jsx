@@ -22,6 +22,7 @@ export const SlideBar = ({ onAddCase, onClose,  isOpen,
     summary: "",
     executiveCaseSummary:"",
     characterOfCase: "",
+    assignedCaseManager: "",
   });
 
   const [allUsers, setAllUsers] = useState([]);
@@ -53,6 +54,10 @@ const managersSearchRef = useRef(null);
 const investigatorsSearchRef = useRef(null);
 const officersSearchRef = useRef(null);
 const supervisorSearchRef = useRef(null);
+const [assignedToOpen, setAssignedToOpen] = useState(false);
+const [assignedToQuery, setAssignedToQuery] = useState("");
+const assignedToRef = useRef(null);
+const assignedToSearchRef = useRef(null);
 
 const toDisplay = (u) => {
   const last  = (u.lastName  || "").trim();
@@ -140,6 +145,16 @@ const filteredSupervisors = allUsers
   }, []);
 
   useEffect(() => {
+    const managers = caseDetails.managers;
+    const current = caseDetails.assignedCaseManager;
+    if (managers.length === 0) {
+      if (current) setCaseDetails(cd => ({ ...cd, assignedCaseManager: "" }));
+    } else if (!current || !managers.includes(current)) {
+      setCaseDetails(cd => ({ ...cd, assignedCaseManager: managers[0] }));
+    }
+  }, [caseDetails.managers]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
   if (managersOpen) {
     setManagersQuery("");
     setTimeout(() => managersSearchRef.current?.focus(), 0);
@@ -186,18 +201,22 @@ useEffect(() => {
       setOfficersOpen(false);
       setOfficersQuery("");
     }
+    if (assignedToOpen && assignedToRef.current && !assignedToRef.current.contains(e.target)) {
+      setAssignedToOpen(false);
+      setAssignedToQuery("");
+    }
   }
   document.addEventListener("mousedown", handleClickOutside);
   return () => document.removeEventListener("mousedown", handleClickOutside);
-}, [managersOpen, investigatorsOpen, supervisorOpen, officersOpen]);
+}, [managersOpen, investigatorsOpen, supervisorOpen, officersOpen, assignedToOpen]);
 
   
 
   const handleDone = async () => {
     const { title, number, managers, detectiveSupervisors, investigators, officers } = caseDetails;
 
-    if (!title || !number || !managers.length || !detectiveSupervisors.length) {
-       setAlertMessage("Please fill all required fields: Case Number, Name, Managers, and at least one Detective Supervisor");
+    if (!title || !number || !managers.length || !detectiveSupervisors.length || !caseDetails.assignedCaseManager) {
+       setAlertMessage("Please fill all required fields: Case Number, Name, Managers, Detective Supervisor, and Assigned To");
        setAlertOpen(true);
        return;
      }
@@ -222,6 +241,7 @@ useEffect(() => {
       detectiveSupervisors,
       selectedOfficers: investigators.map(name => ({ name })),
       officers: officers.map(name => ({ username: name })),
+      assignedCaseManager: caseDetails.assignedCaseManager,
     };
   
     const token = localStorage.getItem("token");
@@ -304,6 +324,7 @@ setCaseDetails({
   executiveCaseSummary: "",
   characterOfCase: "",
   status: "Ongoing",
+  assignedCaseManager: "",
 });
 setIsSidebarOpen(false);
 
@@ -630,6 +651,74 @@ setIsSidebarOpen(false);
 
 
 
+
+{/* ——— ASSIGNED TO ——— */}
+<div className="inv-select-group" ref={assignedToRef}>
+  <label htmlFor="at-trigger">Assigned To</label>
+  <div className="inv-dropdown">
+    <button
+      id="at-trigger"
+      type="button"
+      className="inv-input"
+      onClick={() => { setAssignedToOpen((o) => !o); setAssignedToQuery(""); }}
+      aria-haspopup="listbox"
+      aria-expanded={assignedToOpen}
+    >
+      <span className="inv-input-label">
+        {caseDetails.assignedCaseManager
+          ? (() => { const u = allUsers.find(x => x.username === caseDetails.assignedCaseManager); return u ? toDisplay(u) : caseDetails.assignedCaseManager; })()
+          : "— None —"}
+      </span>
+      <span className="inv-caret" aria-hidden />
+    </button>
+
+    {assignedToOpen && (
+      <div className="inv-options" role="listbox" onMouseDown={(e) => e.stopPropagation()}>
+        <div className="inv-search-wrap">
+          <input
+            ref={assignedToSearchRef}
+            type="text"
+            className="inv-search"
+            placeholder="Type to filter…"
+            value={assignedToQuery}
+            onChange={(e) => setAssignedToQuery(e.target.value)}
+            onKeyDown={(e) => e.stopPropagation()}
+          />
+        </div>
+        <div className="inv-list">
+          <div
+            className="inv-item"
+            onClick={() => { setCaseDetails(cd => ({ ...cd, assignedCaseManager: "" })); setAssignedToOpen(false); }}
+          >
+            <span className="inv-text">None</span>
+          </div>
+          {caseDetails.managers
+            .filter(uname => {
+              const u = allUsers.find(x => x.username === uname);
+              return !assignedToQuery || (u ? toDisplay(u) : uname).toLowerCase().includes(assignedToQuery.toLowerCase());
+            })
+            .map(uname => {
+              const u = allUsers.find(x => x.username === uname);
+              const display = u ? toDisplay(u) : uname;
+              return (
+                <div
+                  key={uname}
+                  className="inv-item"
+                  onClick={() => { setCaseDetails(cd => ({ ...cd, assignedCaseManager: uname })); setAssignedToOpen(false); }}
+                >
+                  <span className="inv-text">{display}</span>
+                  {caseDetails.assignedCaseManager === uname && <span style={{marginLeft:"auto"}}>✓</span>}
+                </div>
+              );
+            })}
+          {caseDetails.managers.length === 0 && (
+            <div className="inv-empty">Add Case Managers first</div>
+          )}
+        </div>
+      </div>
+    )}
+  </div>
+</div>
 
           {/* ——— INVESTIGATORS ——— */}
           {/* <div className="form-group" ref={investigatorsRef}>

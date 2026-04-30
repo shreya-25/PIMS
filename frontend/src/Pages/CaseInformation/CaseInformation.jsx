@@ -277,7 +277,7 @@ export const CaseInformation = () => {
       await api.put(`/api/cases/${caseNo}/reopen`);
       setCaseDoc((prev) => ({ ...prev, status: 'ONGOING' }));
       setSelectedCase((prev) => ({ ...prev, status: 'ONGOING' }));
-      showAlert('Case reopened successfully. Status is now ONGOING.');
+      showAlert('Case reopened successfully. Status is now Open.');
     } catch (err) {
       showAlert(err?.response?.data?.message || 'Failed to reopen case.');
     } finally {
@@ -692,7 +692,7 @@ export const CaseInformation = () => {
                 const st = caseDoc?.status || selectedCase?.status || 'ONGOING';
                 const isCompleted = st === 'COMPLETED';
                 const cssKey = isCompleted ? 'archived' : st.toLowerCase();
-                const label  = isCompleted ? 'ARCHIVED' : st;
+                const label  = isCompleted ? 'CLOSED' : st === 'ONGOING' ? 'OPEN' : st;
                 return (
                   <span className={`${styles.chip} ${styles['chip-status']} ${styles[cssKey]}`}>
                     {label}
@@ -743,7 +743,7 @@ export const CaseInformation = () => {
                 const reopenTitle = !isDS
                   ? 'Only Detective Supervisors and Admins can reopen cases'
                   : isOngoing
-                  ? 'Case is still ongoing — close it first before reopening'
+                  ? 'Case is still open — close it first before reopening'
                   : '';
 
                 return (
@@ -1150,14 +1150,14 @@ export const CaseInformation = () => {
       <AlertModal
         isOpen={confirmCloseOpen}
         title="Close Case"
-        message={`Are you sure you want to close case "${caseNo} — ${caseName}"? This will mark it as COMPLETED.`}
+        message={`Are you sure you want to close case "${caseNo} — ${caseName}"?`}
         onConfirm={handleCloseCase}
         onClose={() => setConfirmCloseOpen(false)}
       />
       <AlertModal
         isOpen={confirmReopenOpen}
         title="Reopen Case"
-        message={`Are you sure you want to reopen case "${caseNo} — ${caseName}"? This will mark it as ONGOING again.`}
+        message={`Are you sure you want to reopen case "${caseNo} — ${caseName}"?`}
         onConfirm={handleReopenCase}
         onClose={() => setConfirmReopenOpen(false)}
       />
