@@ -1077,20 +1077,20 @@
   overflow-y: auto;
   position: relative;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
-  font-size: 16px !important;
+  font-size: 16px;
 }
 .tl-tlModalContent h2 {
-  font-size: 16px !important;
+  font-size: 20px;
   font-weight: 700;
   color: #1a1a2e;
-  margin: 0 0 4px 0;
+  margin: 0 0 6px 0;
   padding-right: 36px;
   text-align: left;
 }
 .tl-tlModalContent > p {
-  margin: 1px 0 8px 0;
-  font-size: 16px !important;
-  color: #444;
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  color: #222;
   text-align: left;
 }
 .tl-tlModalClose {
@@ -1099,10 +1099,11 @@
   right: 18px;
   border: none;
   background: transparent;
-  font-size: 24px !important;
+  font-size: 22px;
   cursor: pointer;
   color: #555;
   border-radius: 4px;
+  line-height: 1;
   transition: background 0.15s, color 0.15s;
 }
 .tl-tlModalClose:hover { background: #f0f0f0; color: #111; }
@@ -1114,20 +1115,20 @@
   margin-bottom: 4px;
 }
 .tl-tlGroupTable th {
-  border: 1px solid #d0d5dd !important;
-  padding: 6px 10px !important;
-  background-color: #eef0f5 !important;
-  font-size: 16px !important;
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  border: 1px solid #d0d5dd;
+  padding: 8px 10px;
+  background-color: #eef0f5;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a2e;
+  text-align: left;
 }
 .tl-tlGroupTable td {
-  border: 1px solid #d0d5dd !important;
-  padding: 6px 10px !important;
-  font-size: 16px !important;
-  vertical-align: middle !important;
-  color: #222 !important;
-  background: #fff !important;
+  border: 1px solid #d0d5dd;
+  padding: 8px 10px;
+  font-size: 16px;
+  vertical-align: middle;
+  color: #222;
+  background: #fff;
   word-break: break-word;
 }
