@@ -59,6 +59,7 @@ const lrPersonSchema = new mongoose.Schema(
         scar:    { type: String },
         tattoo:  { type: String },
         mark:    { type: String },
+        role:    { type: String },
         additionalData: { type: Schema.Types.Mixed },
 
         // Photo

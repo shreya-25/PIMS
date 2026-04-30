@@ -78,6 +78,10 @@ export const TeamModal = ({ caseData, allUsers, onClose, onSaved }) => {
   const [search, setSearch]         = useState({ detectiveSupervisors: "", caseManagers: "", investigators: "", officers: "", readOnly: "" });
   const [dropOpen, setDropOpen]     = useState({ detectiveSupervisors: false, caseManagers: false, investigators: false, officers: false, readOnly: false });
   const [alertMsg, setAlertMsg]     = useState("");
+  const [assignedCaseManager, setAssignedCaseManager] = useState("");
+  const [atDropOpen, setAtDropOpen] = useState(false);
+  const [atSearch, setAtSearch]     = useState("");
+  const atDropRef = useRef(null);
   const dropRefs = useRef({});
 
   useEffect(() => {
@@ -97,6 +101,7 @@ export const TeamModal = ({ caseData, allUsers, onClose, onSaved }) => {
         });
         setInitialReadOnly(ro);
         setBlocked(new Set(data.blocked || []));
+        setAssignedCaseManager(data.assignedCaseManager || "");
       } catch {
         setAlertMsg("Failed to load team data.");
       } finally {
@@ -114,6 +119,10 @@ export const TeamModal = ({ caseData, allUsers, onClose, onSaved }) => {
           setDropOpen((prev) => ({ ...prev, [rk]: false }));
         }
       });
+      if (atDropRef.current && !atDropRef.current.contains(e.target)) {
+        setAtDropOpen(false);
+        setAtSearch("");
+      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -149,6 +158,10 @@ export const TeamModal = ({ caseData, allUsers, onClose, onSaved }) => {
   };
 
   const save = async () => {
+    if (!assignedCaseManager) {
+      setAlertMsg("Assigned To is required. Please select a case manager.");
+      return;
+    }
     setSaving(true);
     try {
       const token        = localStorage.getItem("token");
@@ -164,7 +177,7 @@ export const TeamModal = ({ caseData, allUsers, onClose, onSaved }) => {
 
       await api.put(
         `/api/cases/${caseData.caseNo}/${encodeURIComponent(caseData.caseName)}/officers`,
-        { officers, blockedUsernames: [...blocked] },
+        { officers, blockedUsernames: [...blocked], assignedCaseManagerUsername: assignedCaseManager },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -331,6 +344,60 @@ export const TeamModal = ({ caseData, allUsers, onClose, onSaved }) => {
                   </div>
                 );
               })}
+
+              {/* Assigned To — single-select from current case managers */}
+              <div className={styles.roleSection}>
+                <div className={styles.roleLabel}>Assigned To</div>
+                <div
+                  className={styles.addDropWrap}
+                  ref={atDropRef}
+                >
+                  <button
+                    className={styles.addBtn}
+                    style={{ fontWeight: "normal" }}
+                    onClick={() => { setAtDropOpen((o) => !o); setAtSearch(""); }}
+                  >
+                    {assignedCaseManager ? resolveDisplay(assignedCaseManager) : "— None —"}
+                  </button>
+                  {atDropOpen && (
+                    <div className={styles.addDropdown}>
+                      <input
+                        autoFocus
+                        type="text"
+                        className={styles.addSearch}
+                        placeholder="Search case managers…"
+                        value={atSearch}
+                        onChange={(e) => setAtSearch(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <div className={styles.addList}>
+                        <div
+                          className={`${styles.addItem} ${!assignedCaseManager ? styles.addItemActive : ""}`}
+                          onClick={() => { setAssignedCaseManager(""); setAtDropOpen(false); }}
+                        >
+                          — None —
+                          {!assignedCaseManager && <span className={styles.checkMark}>✓</span>}
+                        </div>
+                        {team.caseManagers
+                          .filter((uname) => !atSearch || resolveDisplay(uname).toLowerCase().includes(atSearch.toLowerCase()))
+                          .map((uname) => (
+                            <div
+                              key={uname}
+                              className={`${styles.addItem} ${assignedCaseManager === uname ? styles.addItemActive : ""}`}
+                              onClick={() => { setAssignedCaseManager(uname); setAtDropOpen(false); }}
+                            >
+                              {resolveDisplay(uname)}
+                              {assignedCaseManager === uname && <span className={styles.checkMark}>✓</span>}
+                            </div>
+                          ))}
+                        {team.caseManagers.length === 0 && (
+                          <div className={styles.addEmpty}>No case managers assigned</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className={styles.modalFooter}>
@@ -530,8 +597,8 @@ export const AdminTeam = () => {
   };
 
   const tabs = [
-    { key: "ONGOING",  label: "Ongoing Cases"  },
-    { key: "ARCHIVED", label: "Archived Cases" },
+    { key: "ONGOING",  label: "Open Cases"  },
+    { key: "ARCHIVED", label: "Closed Cases" },
   ];
 
   return (

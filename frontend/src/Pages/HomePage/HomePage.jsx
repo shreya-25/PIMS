@@ -140,6 +140,10 @@ export const HomePage = () => {
       : [];
     const caseManagers = caseManagerNames.length > 0 ? caseManagerNames.join(", ") : "—";
 
+    const assignedCaseManager = c.assignedCaseManagerUserId
+      ? getDisplayName(c.assignedCaseManagerUserId)
+      : "—";
+
     const investigators = Array.isArray(c.investigatorUserIds) && c.investigatorUserIds.length > 0
       ? c.investigatorUserIds.map(getDisplayName).filter(Boolean).join(", ") || "—"
       : "—";
@@ -154,6 +158,7 @@ export const HomePage = () => {
       detectiveSupervisor,
       caseManagers,
       caseManagerNames,
+      assignedCaseManager,
       investigators,
     };
   };
@@ -618,27 +623,25 @@ export const HomePage = () => {
   // ─── Cases table: columns, filter/sort ───────────────────────────────────
 
   const columnWidths = treatAsDS
-    ? { "Case No.": "11%", "Case Name": "28%", "Created At": "11%", "Case Managers": "18%", "Status": "10%" }
-    : { "Case No.": "12%", "Case Name": "32%", "Created At": "12%", "Case Managers": "20%", "Status": "10%" };
-  const colKey = { "Case No.": "id", "Case Name": "title", "Created At": "createdAt", "Case Managers": "caseManagers", "Status": "status" };
+    ? { "Case No.": "11%", "Case Name": "28%", "Created At": "13%", "Assigned To": "16%", "Status": "10%" }
+    : { "Case No.": "12%", "Case Name": "32%", "Created At": "14%", "Assigned To": "18%", "Status": "10%" };
+  const colKey = { "Case No.": "id", "Case Name": "title", "Created At": "createdAt", "Assigned To": "assignedCaseManager", "Status": "status" };
 
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
-  const [filterConfig, setFilterConfig] = useState({ id: [], title: [], createdAt: [], role: [], caseManagers: [], status: [] });
+  const [filterConfig, setFilterConfig] = useState({ id: [], title: [], createdAt: [], role: [], assignedCaseManager: [], status: [] });
   const [openFilter, setOpenFilter] = useState(null);
   const [filterSearch, setFilterSearch] = useState({});
   const [tempFilterSelections, setTempFilterSelections] = useState({});
 
   const distinctValues = useMemo(() => {
-    const map = { id: new Set(), title: new Set(), createdAt: new Set(), role: new Set(), caseManagers: new Set(), status: new Set() };
+    const map = { id: new Set(), title: new Set(), createdAt: new Set(), role: new Set(), assignedCaseManager: new Set(), status: new Set() };
     cases.forEach((c) => {
       map.id.add(String(c.id));
       map.title.add(c.title);
       map.createdAt.add(formatDate(c.createdAt));
       map.role.add(c.role);
       if (c.status) map.status.add(c.status);
-      if (Array.isArray(c.caseManagerNames)) {
-        c.caseManagerNames.forEach((name) => { if (name) map.caseManagers.add(name); });
-      }
+      if (c.assignedCaseManager && c.assignedCaseManager !== "—") map.assignedCaseManager.add(c.assignedCaseManager);
     });
     return Object.fromEntries(Object.entries(map).map(([k, s]) => [k, [...s]]));
   }, [cases]);
@@ -647,10 +650,7 @@ export const HomePage = () => {
     const filtered = cases.filter((c) =>
       Object.entries(filterConfig).every(([field, sel]) => {
         if (!sel.length) return true;
-        if (field === "caseManagers") {
-          return sel.some((s) => (c.caseManagerNames || []).includes(s));
-        }
-        const cell = field === "createdAt" ? formatDate(c.createdAt) : String(c[field]);
+        const cell = field === "createdAt" ? formatDate(c.createdAt) : String(c[field] ?? "");
         return sel.includes(cell);
       })
     );
@@ -916,7 +916,7 @@ export const HomePage = () => {
                     className={`${styles.hoverable} ${activeTab === "cases" ? styles.active : ""}`}
                     onClick={() => setActiveTab("cases")}
                   >
-                    {isAdmin || treatAsDS ? `All Ongoing Cases: ${cases.length}` : `My Ongoing Cases: ${cases.length}`}
+                    {isAdmin || treatAsDS ? `All Open Cases: ${cases.length}` : `My Open Cases: ${cases.length}`}
                   </button>
                   {!isReadOnlyUser && (
                     <button
@@ -943,7 +943,7 @@ export const HomePage = () => {
                       <table className={styles["leads-table"]}>
                         <thead>
                           <tr>
-                            {["Case No.", "Case Name", "Created At", "Case Managers", "Status"].map((col) => {
+                            {["Case No.", "Case Name", "Created At", "Assigned To", "Status"].map((col) => {
                               const dataKey = colKey[col];
                               return (
                                 <th
@@ -991,17 +991,25 @@ export const HomePage = () => {
                               <tr key={c.id}>
                                 <td>{c.id}</td>
                                 <td>{c.title}</td>
-                                <td>{formatDate(c.createdAt)}</td>
                                 <td>
-                                  {(c.caseManagerNames || []).length > 0
-                                    ? c.caseManagerNames.map((m, i) => (
-                                        <div key={i}>{m}</div>
-                                      ))
-                                    : "—"}
+                                  {formatDate(c.createdAt)}
+                                  {c.createdAt && (() => {
+                                    const now = new Date();
+                                    const created = new Date(c.createdAt);
+                                    const nowDay = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+                                    const createdDay = Date.UTC(created.getFullYear(), created.getMonth(), created.getDate());
+                                    const days = Math.round((nowDay - createdDay) / 86400000);
+                                    return (
+                                      <span style={{ color: "#000", fontSize: "0.82em", marginLeft: "4px" }}>
+                                        ({days}d)
+                                      </span>
+                                    );
+                                  })()}
                                 </td>
+                                <td>{c.assignedCaseManager || "—"}</td>
                                 <td>
                                   <span className={`${styles["status-badge"]} ${c.status === "SUBMITTED" ? styles["status-submitted"] : styles["status-ongoing"]}`}>
-                                    {c.status === "SUBMITTED" ? "Submitted" : "Ongoing"}
+                                    {c.status === "SUBMITTED" ? "Submitted" : "Open"}
                                   </span>
                                 </td>
                                 <td style={{ textAlign: "left" }}>

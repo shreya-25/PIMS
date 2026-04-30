@@ -1241,10 +1241,10 @@ let currentY = headerHeight + 20;
         // How we’ll group fields into small tables
         const personTables = [
           ["Last Name", "First Name", "Middle Initial", "Suffix", "Alias"],
-          ["Sex", "Date of Birth", "Address", "Phone No", "Email"],
+          ["Sex", "Date of Birth", "Age", "Address", "Phone No", "Email"],
           ["Race", "Ethnicity", "Person Type", "Condition", "Caution Type"],
           ["Skin Tone", "Eye Color", "Glasses", "Hair Color", "Height"],
-          ["Weight", "Scars", "Marks", "Tattoo"],
+          ["Weight", "Scars", "Marks", "Tattoo", "Role"],
           ["SSN", "Driver License ID", "Occupation", "Business Name"],
           ["Street 1", "Street 2", "Building"],
           ["Apartment", "City", "State", "Zip Code"],
@@ -1260,6 +1260,15 @@ let currentY = headerHeight + 20;
             case "Suffix":         return person.suffix || "";
             case "Alias":          return person.alias || "";
             case "Date of Birth":  return formatDate(person.dateOfBirth);
+            case "Age":            return (() => {
+              if (!person.dateOfBirth) return "";
+              const d = new Date(person.dateOfBirth);
+              const now = new Date();
+              let a = now.getFullYear() - d.getUTCFullYear();
+              const m = now.getMonth() - d.getUTCMonth();
+              if (m < 0 || (m === 0 && now.getDate() < d.getUTCDate())) a--;
+              return a >= 0 ? String(a) : "";
+            })();
             case "Sex":            return person.sex || "";
             case "Address":        return [
               person.address?.building,
@@ -1289,6 +1298,7 @@ let currentY = headerHeight + 20;
             case "Hair Color":     return person.hairColor || "";
             case "Height":         return person.height && (person.height.feet != null || person.height.inches != null) ? `${person.height.feet ?? 0}ft ${person.height.inches ?? 0}in` : (person.height || "");
             case "Weight":         return person.weight != null && person.weight !== "" ? `${person.weight} lbs` : "";
+            case "Role":           return person.role || "";
             case "Scars":          return person.scar || "";
             case "Marks":          return person.mark || "";
             case "Tattoo":         return person.tattoo || "";

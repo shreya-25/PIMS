@@ -227,8 +227,8 @@ export const AdminCM = () => {
   };
 
   const tabs = [
-    { key: "ONGOING",  label: "Ongoing Cases" },
-    { key: "ARCHIVED", label: "Archived Cases" },
+    { key: "ONGOING",  label: "Open Cases" },
+    { key: "ARCHIVED", label: "Closed Cases" },
   ];
 
   return (

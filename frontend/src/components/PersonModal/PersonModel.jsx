@@ -95,6 +95,17 @@ const PersonModal = ({
             ? (() => { const d = new Date(person.dateOfBirth); return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()).toLocaleDateString(); })()
             : "";
 
+          const age = person.dateOfBirth
+            ? (() => {
+                const d = new Date(person.dateOfBirth);
+                const now = new Date();
+                let a = now.getFullYear() - d.getUTCFullYear();
+                const m = now.getMonth() - d.getUTCMonth();
+                if (m < 0 || (m === 0 && now.getDate() < d.getUTCDate())) a--;
+                return a >= 0 ? String(a) : "";
+              })()
+            : "";
+
           return (
             <div key={idx} style={{ marginBottom: 32 }}>
               {idx > 0 && <hr style={{ margin: "16px 0" }} />}
@@ -131,12 +142,13 @@ const PersonModal = ({
                 </tbody>
               </table>
 
-              {/* Row 2: Sex | Date Of Birth | Address | Phone No | Email */}
+              {/* Row 2: Sex | Date Of Birth | Age | Address | Phone No | Email */}
               <table className="person-group-table">
                 <thead>
                   <tr>
                     <th>Sex</th>
                     <th>Date Of Birth</th>
+                    <th>Age</th>
                     <th>Address</th>
                     <th>Phone No</th>
                     <th>Email</th>
@@ -146,6 +158,7 @@ const PersonModal = ({
                   <tr>
                     <td>{person.sex || ""}</td>
                     <td>{dob}</td>
+                    <td>{age}</td>
                     <td>{fullAddress}</td>
                     <td>{person.cellNumber || ""}</td>
                     <td>{person.email || ""}</td>
@@ -197,7 +210,7 @@ const PersonModal = ({
                 </tbody>
               </table>
 
-              {/* Row 5: Weight | Scars | Marks | Tattoo */}
+              {/* Row 5: Weight | Scars | Marks | Tattoo | Role */}
               <table className="person-group-table">
                 <thead>
                   <tr>
@@ -205,6 +218,7 @@ const PersonModal = ({
                     <th>Scars</th>
                     <th>Marks</th>
                     <th>Tattoo</th>
+                    <th>Role</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -213,6 +227,7 @@ const PersonModal = ({
                     <td>{person.scar || ""}</td>
                     <td>{person.mark || ""}</td>
                     <td>{person.tattoo || ""}</td>
+                    <td>{person.role || ""}</td>
                   </tr>
                 </tbody>
               </table>

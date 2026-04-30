@@ -1149,6 +1149,15 @@ async function buildLeadBuffer(lead, { includeAll, characterOfCase, userMap, sho
               "Alias":             person.alias          || "",
               "Sex":               person.sex            || "",
               "Date of Birth":     person.dateOfBirth ? formatDate(person.dateOfBirth) : "",
+              "Age":               (() => {
+                if (!person.dateOfBirth) return "";
+                const d = new Date(person.dateOfBirth);
+                const now = new Date();
+                let a = now.getFullYear() - d.getUTCFullYear();
+                const m = now.getMonth() - d.getUTCMonth();
+                if (m < 0 || (m === 0 && now.getDate() < d.getUTCDate())) a--;
+                return a >= 0 ? String(a) : "";
+              })(),
               "Address":           fullAddress,
               "Phone No":          person.cellNumber     || "",
               "Email":             person.email          || "",
@@ -1166,6 +1175,7 @@ async function buildLeadBuffer(lead, { includeAll, characterOfCase, userMap, sho
               "Scars":             person.scar           || "",
               "Marks":             person.mark           || "",
               "Tattoo":            person.tattoo         || "",
+              "Role":              person.role           || "",
               "SSN":               person.ssn            || "",
               "Driver License ID": person.driverLicenseId || "",
               "Occupation":        person.occupation     || "",
@@ -1802,6 +1812,15 @@ if (leadState) {
                     "Alias":            person.alias || "",
                     "Sex":              person.sex || "",
                     "Date of Birth":    person.dateOfBirth ? formatDate(person.dateOfBirth) : "",
+                    "Age":              (() => {
+                      if (!person.dateOfBirth) return "";
+                      const d = new Date(person.dateOfBirth);
+                      const now = new Date();
+                      let a = now.getFullYear() - d.getUTCFullYear();
+                      const m = now.getMonth() - d.getUTCMonth();
+                      if (m < 0 || (m === 0 && now.getDate() < d.getUTCDate())) a--;
+                      return a >= 0 ? String(a) : "";
+                    })(),
                     "Address":          fullAddress,
                     "Phone No":         person.cellNumber || "",
                     "Email":            person.email || "",
@@ -1819,6 +1838,7 @@ if (leadState) {
                     "Scars":            person.scar || "",
                     "Marks":            person.mark || "",
                     "Tattoo":           person.tattoo || "",
+                    "Role":             person.role || "",
                     "SSN":              person.ssn || "",
                     "Driver License ID": person.driverLicenseId || "",
                     "Occupation":       person.occupation || "",

@@ -66,7 +66,7 @@ const buildEmptyForm = (todayISO) => ({
   personType: '', condition: '', cautionType: '',
   sex: '', race: '', ethnicity: '', skinTone: '',
   eyeColor: '', glasses: '', hairColor: '',
-  tattoo: '', scar: '', mark: '',
+  tattoo: '', scar: '', mark: '', role: '',
   heightFt: '', heightIn: '', weight: '',
 });
 
@@ -106,6 +106,7 @@ const buildFormFromPerson = (person) => ({
   tattoo:       person?.tattoo                    || '',
   scar:         person?.scar                      || '',
   mark:         person?.mark                      || '',
+  role:         person?.role                      || '',
   heightFt:     person?.height?.feet    != null ? String(person.height.feet)   : '',
   heightIn:     person?.height?.inches  != null ? String(person.height.inches) : '',
   weight:       person?.weight          != null ? String(person.weight)         : '',
@@ -593,6 +594,7 @@ export const LRPerson1 = () => {
       tattoo:       formData.tattoo,
       scar:         formData.scar,
       mark:         formData.mark,
+      role:         formData.role,
       height: {
         feet:   formData.heightFt !== '' ? Number(formData.heightFt)  : undefined,
         inches: formData.heightIn !== '' ? Number(formData.heightIn)  : undefined,
@@ -794,8 +796,24 @@ export const LRPerson1 = () => {
                   </tr>
                   <tr>
                     <td>Date of Birth</td>
-                    <td><input type="date" value={formData.dateOfBirth}
-                      onChange={(e) => handleChange('dateOfBirth', e.target.value)} /></td>
+                    <td>
+                      <input type="date" value={formData.dateOfBirth}
+                        onChange={(e) => handleChange('dateOfBirth', e.target.value)} />
+                    </td>
+                    <td>Age</td>
+                    <td>
+                      <input type="text" readOnly value={(() => {
+                        if (!formData.dateOfBirth) return '';
+                        const d = new Date(formData.dateOfBirth);
+                        const now = new Date();
+                        let age = now.getFullYear() - d.getFullYear();
+                        const m = now.getMonth() - d.getMonth();
+                        if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--;
+                        return age >= 0 ? String(age) : '';
+                      })()} style={{ background: '#f5f5f5', cursor: 'default' }} />
+                    </td>
+                  </tr>
+                  <tr>
                     <td>Cell Number</td>
                     <td>
                       <input type="text" value={formData.cellNumber}
@@ -891,6 +909,15 @@ export const LRPerson1 = () => {
                         <option value="Witness">Witness</option>
                       </select>
                     </td>
+                  </tr>
+                  <tr>
+                    <td>Role</td>
+                    <td>
+                      <input type="text" value={formData.role}
+                        onChange={(e) => handleChange('role', e.target.value)} />
+                    </td>
+                    <td></td>
+                    <td></td>
                   </tr>
                   <tr>
                     <td>Condition</td>
@@ -1037,6 +1064,8 @@ export const LRPerson1 = () => {
                       <input type="text" value={formData.mark}
                         onChange={(e) => handleChange('mark', e.target.value)} />
                     </td>
+                    <td></td>
+                    <td></td>
                   </tr>
 
                   {/* ── Photo upload ── */}

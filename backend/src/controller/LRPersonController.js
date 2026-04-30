@@ -48,7 +48,7 @@ const createLRPerson = async (req, res) => {
             alias, businessName, address, ssn, driverLicenseId, dateOfBirth, email,
             occupation, personType, condition, cautionType,
             sex, race, ethnicity, skinTone, eyeColor, hairColor,
-            glasses, height, weight, scar, tattoo, mark,
+            glasses, height, weight, scar, tattoo, mark, role,
             accessLevel, additionalData
         } = req.body;
 
@@ -71,7 +71,7 @@ const createLRPerson = async (req, res) => {
             alias, businessName, address, ssn, driverLicenseId, dateOfBirth, email,
             occupation, personType, condition, cautionType,
             sex, race, ethnicity, skinTone, eyeColor, hairColor,
-            glasses, height, weight, scar, tattoo, mark,
+            glasses, height, weight, scar, tattoo, mark, role,
             accessLevel, additionalData,
             // ObjectId refs
             caseId: refs.caseId,
