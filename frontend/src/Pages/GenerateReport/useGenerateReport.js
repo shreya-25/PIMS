@@ -570,7 +570,7 @@ export function useGenerateReport(selectedCase) {
       const token    = localStorage.getItem("token");
       const response = await api.post(
         "/api/report/generateTimeline",
-        { caseNo: selectedCase.caseNo, caseName: selectedCase.caseName, user: localStorage.getItem("loggedInUser") || "Unknown" },
+        { caseId: selectedCase._id || selectedCase.id, user: localStorage.getItem("loggedInUser") || "Unknown" },
         { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, responseType: "blob", signal: controller.signal }
       );
       openPdfBlob(response.data);
