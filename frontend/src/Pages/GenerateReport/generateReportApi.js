@@ -59,14 +59,14 @@ export async function fetchLeadAllSectionsLikeViewLR({ leadNo, leadName, caseId,
   //   2. reopenedDate set but status moved on → filter by createdAt (immutable MongoDB
   //      timestamp) so edits after reopen are NOT mistakenly included.
   let preReopenReturns = [];
-  if (leadDoc.leadStatus === "Reopened") {
-    preReopenReturns = [...leadReturns];
-  } else if (leadDoc.reopenedDate) {
+  if (leadDoc.reopenedDate) {
     const reopenedAt = new Date(leadDoc.reopenedDate).getTime();
     preReopenReturns = leadReturns.filter((ret) => {
       const retDate = new Date(ret.createdAt || ret.enteredDate || 0).getTime();
-      return retDate < reopenedAt;
+      return retDate <= reopenedAt;
     });
+  } else if (leadDoc.leadStatus === "Reopened") {
+    preReopenReturns = [...leadReturns];
   }
 
   return {
