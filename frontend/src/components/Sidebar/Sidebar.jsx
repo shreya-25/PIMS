@@ -14,6 +14,7 @@ export const SideBar = ({
   onShowCaseSelector,
   variant = "default",
   isDS: isDSProp = null,
+  showAddCase = false,
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -238,15 +239,18 @@ export const SideBar = ({
       <aside className="sidebar">
         <ul className="sidebar-list">
           <li
-            className={`sidebar-item ${location.pathname === "/AdminTeam" ? "active" : ""}`}
-            onClick={() => navigate("/AdminTeam")}
+            className={`sidebar-item ${location.pathname === "/AdminTeam" && !showAddCase ? "active" : ""}`}
+            onClick={() => {
+              onShowCaseSelector?.(false);
+              navigate("/AdminTeam");
+            }}
           >
             <img src={folderIcon} className="sidebar-icon" alt="" />
             <span>Case Management</span>
           </li>
           {systemRole !== ROLES.CASE_SPECIFIC && (
             <li
-              className="sidebar-item"
+              className={`sidebar-item ${showAddCase ? "active" : ""}`}
               style={{ paddingLeft: 32 }}
               onClick={() => onShowCaseSelector?.(true)}
             >
@@ -295,8 +299,11 @@ export const SideBar = ({
           </li>
 
           <li
-            className={`sidebar-item ${["cases"].includes(activeTab) ? "active" : ""}`}
-            onClick={() => setActiveTab?.("cases")}
+            className={`sidebar-item ${["cases"].includes(activeTab) && !showAddCase ? "active" : ""}`}
+            onClick={() => {
+              onShowCaseSelector?.(false);
+              setActiveTab?.("cases");
+            }}
           >
             <img src={folderIcon} className="sidebar-icon" alt="" />
             <span>Case Management</span>
@@ -304,7 +311,7 @@ export const SideBar = ({
 
           {systemRole !== ROLES.CASE_SPECIFIC && (
             <li
-              className="sidebar-item"
+              className={`sidebar-item ${showAddCase ? "active" : ""}`}
               style={{ paddingLeft: 32 }}
               onClick={() => {
                 setActiveTab?.("cases");

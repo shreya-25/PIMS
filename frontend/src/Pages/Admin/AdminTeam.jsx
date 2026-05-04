@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useContext } from "react";
 import styles from "./AdminTeam.module.css";
 import Navbar from "../../components/Navbar/Navbar";
 import { SideBar } from "../../components/Sidebar/Sidebar";
-import { SlideBar } from "../../components/Slidebar/Slidebar";
+import { AddCaseInline } from "../HomePage/AddCaseInline";
 import Filter from "../../components/Filter/Filter";
 import Pagination from "../../components/Pagination/Pagination";
 import { AlertModal } from "../../components/AlertModal/AlertModal";
@@ -469,6 +469,20 @@ export const AdminTeam = () => {
 
   useEffect(() => { setCurrentPage(1); }, [filterConfig, sortConfig]);
 
+  useEffect(() => {
+    if (showAddCase) {
+      document.documentElement.style.overflow = "hidden";
+      document.body.style.overflow = "hidden";
+    } else {
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+    };
+  }, [showAddCase]);
+
   // ─── Map cases ───────────────────────────────────────────────────────────────
   const lookupUser = (u) => {
     if (!u) return null;
@@ -602,14 +616,10 @@ export const AdminTeam = () => {
   ];
 
   return (
-    <div className={styles["page-wrapper"]}>
+    <div className={styles["page-wrapper"]} style={showAddCase ? { height: "100dvh", overflow: "hidden" } : {}}>
       <Navbar />
-      <div className={styles["main-container"]}>
-        <SideBar variant="admin" onShowCaseSelector={setShowAddCase} />
-
-        {showAddCase && (
-          <SlideBar isOpen={showAddCase} hideTrigger onClose={() => setShowAddCase(false)} onAddCase={() => setShowAddCase(false)} />
-        )}
+      <div className={styles["main-container"]} style={showAddCase ? { height: "100dvh", maxHeight: "100dvh", overflow: "hidden" } : {}}>
+        <SideBar variant="admin" onShowCaseSelector={setShowAddCase} showAddCase={showAddCase} />
 
         {managingCase && (
           <TeamModal
@@ -620,7 +630,19 @@ export const AdminTeam = () => {
           />
         )}
 
-        <div className={styles["left-content"]}>
+        <div
+          className={styles["left-content"]}
+          style={showAddCase ? { overflow: "hidden", height: `calc(100dvh - var(--nav-h, 110px))`, maxHeight: `calc(100dvh - var(--nav-h, 110px))` } : {}}
+        >
+          {showAddCase ? (
+            <AddCaseInline
+              allUsers={allUsers}
+              onAddCase={(newCase) => {
+                if (newCase) setRawCases((prev) => [newCase, ...prev]);
+                setShowAddCase(false);
+              }}
+            />
+          ) : (
           <div className={styles["main-page-belowpart"]}>
 
             {/* Stats / tab bar */}
@@ -734,6 +756,7 @@ export const AdminTeam = () => {
               )}
             </div>
           </div>
+          )}
         </div>
       </div>
     </div>

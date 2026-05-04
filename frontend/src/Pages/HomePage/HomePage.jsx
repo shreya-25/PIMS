@@ -6,7 +6,7 @@ import { CaseContext } from "../CaseContext";
 import Navbar from "../../components/Navbar/Navbar";
 import NotificationCard from "../../components/NotificationCard/NotificationCard1";
 import Filter from "../../components/Filter/Filter";
-import { SlideBar } from "../../components/Slidebar/Slidebar";
+import { AddCaseInline } from "./AddCaseInline";
 import { SideBar } from "../../components/Sidebar/Sidebar";
 import Pagination from "../../components/Pagination/Pagination";
 import { AlertModal } from "../../components/AlertModal/AlertModal";
@@ -848,6 +848,21 @@ export const HomePage = () => {
     setCurrentPage(1);
   }, [assignedFilterConfig, assignedSortConfig, activeTab, filterConfig, sortConfig, pendingFilterConfig, pendingSortConfig]);
 
+  // Lock page scroll while Add Case screen is open
+  useEffect(() => {
+    if (showAddCase) {
+      document.documentElement.style.overflow = "hidden";
+      document.body.style.overflow = "hidden";
+    } else {
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+    };
+  }, [showAddCase]);
+
   return (
     <div className={styles["case-page-manager"]}>
       <Navbar />
@@ -872,6 +887,7 @@ export const HomePage = () => {
           setActiveTab={setActiveTab}
           onShowCaseSelector={setShowAddCase}
           isDS={treatAsDS}
+          showAddCase={showAddCase}
         />
 
         {managingCase && (
@@ -883,22 +899,18 @@ export const HomePage = () => {
           />
         )}
 
-        {/* Add case slide-bar (shown when triggered from sidebar) */}
-        {showAddCase && (
-          <SlideBar
-            isOpen={true}
-            hideTrigger={true}
-            onClose={() => setShowAddCase(false)}
-            onAddCase={(newCase) => {
-              addCase(newCase);
-              setActiveTab("cases");
-              setShowAddCase(false);
-            }}
-            buttonClass="custom-add-case-btn1"
-          />
-        )}
-
-        <div className={styles["left-content"]}>
+        <div className={styles["left-content"]} style={showAddCase ? { overflow: "hidden", height: `calc(100dvh - var(--nav-h, 110px))`, maxHeight: `calc(100dvh - var(--nav-h, 110px))` } : {}}>
+          {showAddCase ? (
+            <AddCaseInline
+              allUsers={allUsers}
+              onAddCase={(newCase) => {
+                addCase(newCase);
+                setActiveTab("cases");
+                setShowAddCase(false);
+              }}
+            />
+          ) : (
+          <>
           <div className={styles["main-page-abovepart"]}>
             {/* Notifications view */}
             {!isCaseMgmt && (
@@ -1261,6 +1273,8 @@ export const HomePage = () => {
                 </div>
               </div>
             </>
+          )}
+          </>
           )}
         </div>
       </div>
