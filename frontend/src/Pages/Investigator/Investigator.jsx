@@ -20,11 +20,11 @@ import styles from './Investigator.module.css';
 
 const ASSIGNED_COLUMNS   = ['Lead No.', 'Lead Name', 'Due Date', 'Priority', 'Days Left', 'Assigned Officers'];
 const ASSIGNED_COL_KEY   = { 'Lead No.': 'id', 'Lead Name': 'description', 'Due Date': 'dueDate', 'Priority': 'priority', 'Days Left': 'remainingDays', 'Assigned Officers': 'assignedOfficers' };
-const ASSIGNED_COL_WIDTHS = { 'Lead No.': '12%', 'Lead Name': '20%', 'Due Date': '13%', 'Priority': '10%', 'Days Left': '13%', 'Assigned Officers': '21%' };
+const ASSIGNED_COL_WIDTHS = { 'Lead No.': '12%', 'Lead Name': '14%', 'Due Date': '13%', 'Priority': '10%', 'Days Left': '13%', 'Assigned Officers': '27%' };
 
 const PENDING_COLUMNS    = ['Lead No.', 'Lead Name', 'Due Date', 'Priority', 'Days Left', 'Assigned Officers'];
 const PENDING_COL_KEY    = { 'Lead No.': 'id', 'Lead Name': 'description', 'Due Date': 'dueDate', 'Priority': 'priority', 'Days Left': 'remainingDays', 'Assigned Officers': 'assignedOfficers' };
-const PENDING_COL_WIDTHS = { 'Lead No.': '12%', 'Lead Name': '20%', 'Due Date': '13%', 'Priority': '10%', 'Days Left': '11%', 'Assigned Officers': '21%' };
+const PENDING_COL_WIDTHS = { 'Lead No.': '12%', 'Lead Name': '14%', 'Due Date': '13%', 'Priority': '10%', 'Days Left': '11%', 'Assigned Officers': '27%' };
 
 const PENDING_LR_COLUMNS    = ['Lead No.', 'Lead Name', 'Case Name'];
 const PENDING_LR_COL_KEY    = { 'Lead No.': 'id', 'Lead Name': 'description', 'Case Name': 'caseName' };
@@ -32,7 +32,7 @@ const PENDING_LR_COL_WIDTHS = { 'Lead No.': '15%', 'Lead Name': '35%', 'Case Nam
 
 const ALL_COLUMNS    = ['Lead No.', 'Lead Log Summary', 'Lead Status', 'Assigned Officers', 'Due Status'];
 const ALL_COL_KEY    = { 'Lead No.': 'id', 'Lead Log Summary': 'description', 'Lead Status': 'leadStatus', 'Assigned Officers': 'assignedOfficers', 'Due Status': 'dueStatus' };
-const ALL_COL_WIDTHS = { 'Lead No.': '10%', 'Lead Log Summary': '32%', 'Lead Status': '13%', 'Assigned Officers': '15%', 'Due Status': '12%' };
+const ALL_COL_WIDTHS = { 'Lead No.': '10%', 'Lead Log Summary': '27%', 'Lead Status': '11%', 'Assigned Officers': '22%', 'Due Status': '12%' };
 
 // Filter key arrays — kept at module level so useTableFilter deps stay stable
 const LEAD_FILTER_KEYS    = ['id', 'description', 'dueDate', 'priority', 'remainingDays', 'flags', 'assignedOfficers'];

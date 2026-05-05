@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
    LRInstruction.module.css
    Styles for the Lead Instructions page.
    Primary accent: #29298b (app navy)
@@ -19,8 +19,8 @@
 /* Content area sits to the right of the 20%-wide sidebar */
 .LRIContent {
   display: flex;
-  margin-left: 20%;
-  width: 80%;
+  margin-left: var(--sidebar-w);
+  width: calc(100% - var(--sidebar-w));
   height: calc(100vh - 110px);
   margin-top: 110px;
   overflow: hidden;
@@ -50,8 +50,8 @@
 .topMenuNav,
 .topMenuSections {
   position: fixed;
-  left: 20%;
-  width: 80%;
+  left: var(--sidebar-w);
+  width: calc(100% - var(--sidebar-w));
   height: 56px;
   z-index: 1050;
   background: #ffffff;
@@ -338,3 +338,5 @@
   white-space: pre-wrap;
   word-break: break-word;
 }
+
+

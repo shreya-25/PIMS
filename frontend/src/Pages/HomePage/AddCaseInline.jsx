@@ -106,6 +106,7 @@ const matches = (u, q) =>
           caseManager: 0,
           investigator: 0,
           other: 0,
+          caseIds: new Set(),
         };
       }
     });
@@ -114,21 +115,24 @@ const matches = (u, q) =>
       if (c.status !== "ONGOING") return;
 
       const assignedUname = c.assignedCaseManagerUserId?.username;
-      if (assignedUname && counts[assignedUname]) counts[assignedUname].assignedTo++;
+      if (assignedUname && counts[assignedUname]) {
+        counts[assignedUname].assignedTo++;
+        counts[assignedUname].caseIds.add(c._id);
+      }
 
       (c.caseManagerUserIds || []).forEach((u) => {
         const uname = u?.username;
-        if (uname && counts[uname]) counts[uname].caseManager++;
+        if (uname && counts[uname]) { counts[uname].caseManager++; counts[uname].caseIds.add(c._id); }
       });
 
       (c.investigatorUserIds || []).forEach((u) => {
         const uname = u?.username;
-        if (uname && counts[uname]) counts[uname].investigator++;
+        if (uname && counts[uname]) { counts[uname].investigator++; counts[uname].caseIds.add(c._id); }
       });
 
       (c.officerUserIds || []).forEach((u) => {
         const uname = u?.username;
-        if (uname && counts[uname]) counts[uname].other++;
+        if (uname && counts[uname]) { counts[uname].other++; counts[uname].caseIds.add(c._id); }
       });
 
       const supervisors = [
@@ -140,14 +144,16 @@ const matches = (u, q) =>
 
       supervisors.forEach((u) => {
         const uname = u?.username;
-        if (uname && counts[uname]) counts[uname].other++;
+        if (uname && counts[uname]) { counts[uname].other++; counts[uname].caseIds.add(c._id); }
       });
     });
 
-    return Object.values(counts).sort((a, b) => {
-      if (b.assignedTo !== a.assignedTo) return b.assignedTo - a.assignedTo;
-      return toDisplay(a.user).localeCompare(toDisplay(b.user));
-    });
+    return Object.values(counts)
+      .sort((a, b) => {
+        if (b.assignedTo !== a.assignedTo) return b.assignedTo - a.assignedTo;
+        return toDisplay(a.user).localeCompare(toDisplay(b.user));
+      })
+      .map(({ caseIds, ...rest }) => ({ ...rest, total: caseIds.size }));
   }, [allUsers, rawCases]);
 
   const filteredOfficerWorkload = useMemo(() => {
@@ -597,7 +603,7 @@ const matches = (u, q) =>
               <div key={o.user.username} className={styles.officerCard}>
                 <div className={styles.officerName}>{toDisplay(o.user)}</div>
                 <div className={styles.officerSystemRole}>{o.user.role}</div>
-                <div className={styles.assignedCount}>Assigned To: {o.assignedTo} {o.assignedTo === 1 ? "case" : "cases"}</div>
+                <div className={styles.assignedCount}>Assigned To: {o.assignedTo} {o.assignedTo === 1 ? "case" : "cases"} &nbsp;·&nbsp; Total: {o.total} {o.total === 1 ? "case" : "cases"}</div>
                 <div className={styles.officerCounts}>
                   <span className={`${styles.countBadge} ${styles.cmBadge}`}>Case Manager: {o.caseManager}</span>
                   <span className={`${styles.countBadge} ${styles.invBadge}`}>Investigator: {o.investigator}</span>

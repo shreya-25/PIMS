@@ -1,4 +1,4 @@
-/* ─── Layout ────────────────────────────────────────────────────────────── */
+﻿/* ─── Layout ────────────────────────────────────────────────────────────── */
 .case-information {
   display: flex;
   flex-direction: column;
@@ -17,11 +17,11 @@
   margin-top: 110px;
   align-items: center;
   height: auto;
-  width: 80%;
+  width: calc(100% - var(--sidebar-w));
   box-sizing: border-box;
-  margin-left: 20%;
-  padding-left: 20px;
-  padding-right: 20px;
+  margin-left: var(--sidebar-w);
+  padding-left: 32px;
+  padding-right: 32px;
   padding-bottom: 40px;
 }
 
@@ -796,3 +796,4 @@
     gap: 12px;
   }
 }
+

@@ -1,4 +1,4 @@
-/* ─── Layout ────────────────────────────────────────────────────────────── */
+﻿/* ─── Layout ────────────────────────────────────────────────────────────── */
 .lead-log-page {
   display: flex;
   flex-direction: column;
@@ -17,10 +17,11 @@
   margin-top: 110px;
   align-items: center;
   height: auto;
-  width: 80%;
+  width: calc(100% - var(--sidebar-w));
   box-sizing: border-box;
-  margin-left: 20%;
-  padding-left: 20px;
+  margin-left: var(--sidebar-w);
+  padding-left: 32px;
+  padding-right: 32px;
 }
 
 /* ─── Breadcrumb ─────────────────────────────────────────────────────────── */
@@ -254,3 +255,4 @@
 .close-popup-btn:hover {
   color: #323638;
 }
+

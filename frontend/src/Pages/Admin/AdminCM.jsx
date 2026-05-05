@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useContext } from "react";
 import styles from "./AdminCM.module.css";
 import Navbar from "../../components/Navbar/Navbar";
 import { SideBar } from "../../components/Sidebar/Sidebar";
-import { SlideBar } from "../../components/Slidebar/Slidebar";
+import { AddCaseInline } from "../HomePage/AddCaseInline";
 import Filter from "../../components/Filter/Filter";
 import Pagination from "../../components/Pagination/Pagination";
 import { useNavigate } from "react-router-dom";
@@ -65,6 +65,7 @@ export const AdminCM = () => {
   const isAdminOrDS = systemRole === "Admin" || systemRole === "Detective Supervisor";
 
   const [showAddCase, setShowAddCase]   = useState(false);
+  const [allUsers, setAllUsers]         = useState([]);
   const [rawCases, setRawCases]         = useState([]);
   const [loading, setLoading]           = useState(true);
   const [error, setError]               = useState("");
@@ -99,7 +100,14 @@ export const AdminCM = () => {
       }
     };
     fetchCases();
+    api.get("/api/users/usernames").then(({ data }) => setAllUsers(data.users || [])).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    document.documentElement.style.overflow = showAddCase ? "hidden" : "";
+    document.body.style.overflow = showAddCase ? "hidden" : "";
+    return () => { document.documentElement.style.overflow = ""; document.body.style.overflow = ""; };
+  }, [showAddCase]);
 
   // Reset filters + page when switching tabs
   useEffect(() => {
@@ -236,18 +244,12 @@ export const AdminCM = () => {
       <Navbar />
 
       <div className={styles["main-container"]}>
-        <SideBar variant="admin" onShowCaseSelector={setShowAddCase} />
-
-        {showAddCase && (
-          <SlideBar
-            isOpen={showAddCase}
-            hideTrigger
-            onClose={() => setShowAddCase(false)}
-            onAddCase={() => setShowAddCase(false)}
-          />
-        )}
+        <SideBar variant="admin" onShowCaseSelector={setShowAddCase} showAddCase={showAddCase} />
 
         <div className={styles["left-content"]}>
+          {showAddCase ? (
+            <AddCaseInline allUsers={allUsers} onAddCase={(newCase) => { if (newCase) setRawCases(prev => [newCase, ...prev]); setShowAddCase(false); }} />
+          ) : (
           <div className={styles["main-page-belowpart"]}>
 
             {/* ── Stats bar ── */}
@@ -376,6 +378,7 @@ export const AdminCM = () => {
             </div>
 
           </div>
+          )}
         </div>
       </div>
     </div>

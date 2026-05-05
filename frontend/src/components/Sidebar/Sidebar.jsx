@@ -259,22 +259,22 @@ export const SideBar = ({
             </li>
           )}
           <li
-            className={`sidebar-item ${location.pathname === "/AdminUR" ? "active" : ""}`}
-            onClick={() => navigate("/AdminUR")}
+            className={`sidebar-item ${location.pathname === "/AdminUR" && !showAddCase ? "active" : ""}`}
+            onClick={() => { onShowCaseSelector?.(false); navigate("/AdminUR"); }}
           >
             <img src={folderIcon} className="sidebar-icon" alt="" />
             <span>User Registration</span>
           </li>
           <li
-            className={`sidebar-item ${location.pathname === "/AdminUserList" ? "active" : ""}`}
-            onClick={() => navigate("/AdminUserList")}
+            className={`sidebar-item ${location.pathname === "/AdminUserList" && !showAddCase ? "active" : ""}`}
+            onClick={() => { onShowCaseSelector?.(false); navigate("/AdminUserList"); }}
           >
             <img src={folderIcon} className="sidebar-icon" alt="" />
             <span>Registered Users</span>
           </li>
           <li
-            className={`sidebar-item ${location.pathname === "/AdminAgencies" ? "active" : ""}`}
-            onClick={() => navigate("/AdminAgencies")}
+            className={`sidebar-item ${location.pathname === "/AdminAgencies" && !showAddCase ? "active" : ""}`}
+            onClick={() => { onShowCaseSelector?.(false); navigate("/AdminAgencies"); }}
           >
             <img src={folderIcon} className="sidebar-icon" alt="" />
             <span>Agency Management</span>

@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
    LRPerson1 – CSS Module
    Primary accent: #29298b (app navy)
    ============================================================ */
@@ -14,8 +14,8 @@
 /* ===== Main content area (sidebar + main column) ===== */
 .pageContent {
   display: flex;
-  margin-left: 20%;
-  width: 80%;
+  margin-left: var(--sidebar-w);
+  width: calc(100% - var(--sidebar-w));
   height: calc(100vh - 110px);
   margin-top: 110px;
   overflow: hidden;
@@ -41,8 +41,8 @@
 .topMenuNav,
 .topMenuSections {
   position: fixed;
-  left: 20%;
-  width: 80%;
+  left: var(--sidebar-w);
+  width: calc(100% - var(--sidebar-w));
   height: 56px;
   z-index: 1050;
   box-sizing: border-box;
@@ -364,3 +364,5 @@
 .cancelBtn:hover {
   background-color: #545b62;
 }
+
+

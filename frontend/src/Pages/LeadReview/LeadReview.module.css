@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
    LeadReview – CSS Module
    Primary accent: #29298b (app navy)
    ============================================================ */
@@ -14,8 +14,8 @@
 /* ===== Main content area (right of fixed sidebar) ===== */
 .LRIContent {
   display: flex;
-  margin-left: 20%;
-  width: 80%;
+  margin-left: var(--sidebar-w);
+  width: calc(100% - var(--sidebar-w));
   height: calc(100vh - 110px);
   margin-top: 110px;
   overflow: hidden;
@@ -1266,3 +1266,4 @@ select.inputField:disabled {
   min-width: 40px;
   text-align: right;
 }
+

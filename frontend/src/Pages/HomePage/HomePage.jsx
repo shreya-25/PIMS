@@ -623,8 +623,8 @@ export const HomePage = () => {
   // ─── Cases table: columns, filter/sort ───────────────────────────────────
 
   const columnWidths = treatAsDS
-    ? { "Case No.": "11%", "Case Name": "28%", "Created At": "13%", "Assigned To": "16%", "Status": "10%" }
-    : { "Case No.": "12%", "Case Name": "32%", "Created At": "14%", "Assigned To": "18%", "Status": "10%" };
+    ? { "Case No.": "9%", "Case Name": "25%", "Created At": "13%", "Assigned To": "23%", "Status": "10%" }
+    : { "Case No.": "10%", "Case Name": "29%", "Created At": "14%", "Assigned To": "25%", "Status": "10%" };
   const colKey = { "Case No.": "id", "Case Name": "title", "Created At": "createdAt", "Assigned To": "assignedCaseManager", "Status": "status" };
 
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
@@ -633,6 +633,12 @@ export const HomePage = () => {
   const [filterSearch, setFilterSearch] = useState({});
   const [tempFilterSelections, setTempFilterSelections] = useState({});
 
+  const statusDisplayLabel = (raw) => {
+    if (raw === "SUBMITTED") return "Submitted";
+    if (raw === "CLOSED") return "Closed";
+    return "Open";
+  };
+
   const distinctValues = useMemo(() => {
     const map = { id: new Set(), title: new Set(), createdAt: new Set(), role: new Set(), assignedCaseManager: new Set(), status: new Set() };
     cases.forEach((c) => {
@@ -640,17 +646,18 @@ export const HomePage = () => {
       map.title.add(c.title);
       map.createdAt.add(formatDate(c.createdAt));
       map.role.add(c.role);
-      if (c.status) map.status.add(c.status);
       if (c.assignedCaseManager && c.assignedCaseManager !== "—") map.assignedCaseManager.add(c.assignedCaseManager);
     });
-    return Object.fromEntries(Object.entries(map).map(([k, s]) => [k, [...s]]));
+    const result = Object.fromEntries(Object.entries(map).map(([k, s]) => [k, [...s]]));
+    result.status = ["Open", "Submitted", "Closed"];
+    return result;
   }, [cases]);
 
   const sortedCases = useMemo(() => {
     const filtered = cases.filter((c) =>
       Object.entries(filterConfig).every(([field, sel]) => {
         if (!sel.length) return true;
-        const cell = field === "createdAt" ? formatDate(c.createdAt) : String(c[field] ?? "");
+        const cell = field === "createdAt" ? formatDate(c.createdAt) : field === "status" ? statusDisplayLabel(c.status) : String(c[field] ?? "");
         return sel.includes(cell);
       })
     );
@@ -961,9 +968,9 @@ export const HomePage = () => {
                                 <th
                                   key={col}
                                   className={styles["column-header1"]}
-                                  style={{ width: columnWidths[col], position: "relative" }}
+                                  style={{ width: columnWidths[col], position: "relative", textAlign: col === "Status" ? "center" : "left" }}
                                 >
-                                  <div className={styles["header-title"]}>
+                                  <div className={styles["header-title"]} style={col === "Status" ? { justifyContent: "center" } : {}}>
                                     {col}
                                     <span>
                                       <button
@@ -994,7 +1001,7 @@ export const HomePage = () => {
                                 </th>
                               );
                             })}
-                            <th style={{ width: treatAsDS ? "22%" : "14%", textAlign: "center" }}>Actions</th>
+                            <th style={{ width: treatAsDS ? "20%" : "12%", textAlign: "center" }}>Actions</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1019,7 +1026,7 @@ export const HomePage = () => {
                                   })()}
                                 </td>
                                 <td>{c.assignedCaseManager || "—"}</td>
-                                <td>
+                                <td style={{ textAlign: "center" }}>
                                   <span className={`${styles["status-badge"]} ${c.status === "SUBMITTED" ? styles["status-submitted"] : styles["status-ongoing"]}`}>
                                     {c.status === "SUBMITTED" ? "Submitted" : "Open"}
                                   </span>

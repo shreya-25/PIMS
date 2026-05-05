@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import styles from "./AdminUserList.module.css";
 import Navbar from "../../components/Navbar/Navbar";
 import { SideBar } from "../../components/Sidebar/Sidebar";
-import { SlideBar } from "../../components/Slidebar/Slidebar";
+import { AddCaseInline } from "../HomePage/AddCaseInline";
 import api from "../../api";
 
 const ROLE_LABELS = {
@@ -20,6 +20,7 @@ const BLANK_EDIT = {
 
 export const AdminUserList = () => {
   const [showAddCase, setShowAddCase] = useState(false);
+  const [allUsers, setAllUsers] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -34,10 +35,15 @@ export const AdminUserList = () => {
 
   useEffect(() => {
     fetchUsers();
-    api.get("/api/agencies")
-      .then(({ data }) => setAgencyList(data.agencies || []))
-      .catch(() => {});
+    api.get("/api/agencies").then(({ data }) => setAgencyList(data.agencies || [])).catch(() => {});
+    api.get("/api/users/usernames").then(({ data }) => setAllUsers(data.users || [])).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    document.documentElement.style.overflow = showAddCase ? "hidden" : "";
+    document.body.style.overflow = showAddCase ? "hidden" : "";
+    return () => { document.documentElement.style.overflow = ""; document.body.style.overflow = ""; };
+  }, [showAddCase]);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -120,16 +126,12 @@ export const AdminUserList = () => {
       <Navbar />
 
       <div className={styles["main-container"]}>
-        <SideBar variant="admin" onShowCaseSelector={setShowAddCase} />
-        {showAddCase && (
-          <SlideBar
-            isOpen={showAddCase}
-            hideTrigger
-            onClose={() => setShowAddCase(false)}
-            onAddCase={() => setShowAddCase(false)}
-          />
-        )}
+        <SideBar variant="admin" onShowCaseSelector={setShowAddCase} showAddCase={showAddCase} />
 
+        <div className={styles["left-content"]}>
+          {showAddCase ? (
+            <AddCaseInline allUsers={allUsers} onAddCase={() => setShowAddCase(false)} />
+          ) : (
         <div className={styles["content"]}>
           <div className={styles["card"]}>
             <div className={styles["card-header"]}>
@@ -190,6 +192,8 @@ export const AdminUserList = () => {
               </div>
             )}
           </div>
+        </div>
+          )}
         </div>
       </div>
 

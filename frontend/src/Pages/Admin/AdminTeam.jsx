@@ -65,7 +65,7 @@ const USER_ROLE_FILTER = {
 };
 
 // Roles the admin cannot add new members to (but CAN remove existing members)
-const NO_ADD_ROLES = new Set(["detectiveSupervisors", "caseManagers", "investigators"]);
+const NO_ADD_ROLES = new Set(["detectiveSupervisors", "caseManagers", "investigators", "officers"]);
 
 // ─── Team Management Modal ─────────────────────────────────────────────────────
 
@@ -413,6 +413,12 @@ export const TeamModal = ({ caseData, allUsers, onClose, onSaved }) => {
   );
 };
 
+const statusDisplayLabel = (raw) => {
+  if (raw === "SUBMITTED") return "Submitted";
+  if (raw === "COMPLETED") return "Closed";
+  return "Open";
+};
+
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 
 export const AdminTeam = () => {
@@ -430,7 +436,7 @@ export const AdminTeam = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize]       = useState(50);
 
-  const emptyFilter = () => ({ caseNo: [], caseName: [], createdAtFmt: [], closedAtFmt: [], status: [], caseManagers: [] });
+  const emptyFilter = () => ({ caseNo: [], caseName: [], createdAtFmt: [], closedAtFmt: [], statusLabel: [], assignedTo: [] });
   const [sortConfig, setSortConfig]                     = useState({ key: null, direction: "asc" });
   const [filterConfig, setFilterConfig]                 = useState(emptyFilter());
   const [openFilter, setOpenFilter]                     = useState(null);
@@ -497,7 +503,7 @@ export const AdminTeam = () => {
 
   const cases = useMemo(() => {
     return rawCases
-      .filter((c) => isArchived ? c.status === "COMPLETED" : c.status === "ONGOING")
+      .filter((c) => isArchived ? c.status === "COMPLETED" : (c.status === "ONGOING" || c.status === "SUBMITTED"))
       .map((c) => {
         const cmNames = (c.caseManagerUserIds || []).map(lookupUser).filter(Boolean);
         return {
@@ -509,30 +515,32 @@ export const AdminTeam = () => {
           closedAt:     c.archivedAt || c.updatedAt || null,
           closedAtFmt:  formatDate(c.archivedAt || c.updatedAt || null),
           status:       c.status || "—",
-          caseManagers: cmNames.join(", ") || "—",
+          statusLabel:  statusDisplayLabel(c.status),
+          assignedTo:   lookupUser(c.assignedCaseManagerUserId) || "—",
           caseManagerNames: cmNames,
         };
       });
   }, [rawCases, isArchived, allUsers]);
 
   const counts = useMemo(() => ({
-    ONGOING:  rawCases.filter((c) => c.status === "ONGOING").length,
+    ONGOING:  rawCases.filter((c) => c.status === "ONGOING" || c.status === "SUBMITTED").length,
     ARCHIVED: rawCases.filter((c) => c.status === "COMPLETED").length,
   }), [rawCases]);
 
   // ─── Distinct filter values ───────────────────────────────────────────────────
   const distinctValues = useMemo(() => {
-    const map = { caseNo: new Set(), caseName: new Set(), createdAtFmt: new Set(), closedAtFmt: new Set(), status: new Set(), caseManagers: new Set() };
+    const map = { caseNo: new Set(), caseName: new Set(), createdAtFmt: new Set(), closedAtFmt: new Set(), assignedTo: new Set() };
     cases.forEach((c) => {
       map.caseNo.add(c.caseNo);
       map.caseName.add(c.caseName);
       map.createdAtFmt.add(c.createdAtFmt);
       map.closedAtFmt.add(c.closedAtFmt);
-      map.status.add(c.status);
-      c.caseManagerNames.forEach((n) => map.caseManagers.add(n));
+      if (c.assignedTo && c.assignedTo !== "—") map.assignedTo.add(c.assignedTo);
     });
-    return Object.fromEntries(Object.entries(map).map(([k, s]) => [k, [...s]]));
-  }, [cases]);
+    const result = Object.fromEntries(Object.entries(map).map(([k, s]) => [k, [...s]]));
+    result.statusLabel = isArchived ? ["Closed"] : ["Open", "Submitted"];
+    return result;
+  }, [cases, isArchived]);
 
   // ─── Filter + sort ────────────────────────────────────────────────────────────
   const sortedCases = useMemo(() => {
@@ -590,24 +598,25 @@ export const AdminTeam = () => {
   };
 
   const COLUMNS = isArchived
-    ? ["Case No.", "Case Name", "Closed At", "Case Managers"]
-    : ["Case No.", "Case Name", "Created At", "Case Managers"];
-
+    ? ["Case No.", "Case Name", "Closed At", "Assigned To", "Status"]
+    : ["Case No.", "Case Name", "Created At", "Assigned To", "Status"];
 
   const COL_KEY = {
-    "Case No.":      "caseNo",
-    "Case Name":     "caseName",
-    "Created At":    "createdAtFmt",
-    "Closed At":     "closedAtFmt",
-    "Case Managers": "caseManagers",
+    "Case No.":   "caseNo",
+    "Case Name":  "caseName",
+    "Created At": "createdAtFmt",
+    "Closed At":  "closedAtFmt",
+    "Assigned To": "assignedTo",
+    "Status":     "statusLabel",
   };
 
   const COL_WIDTHS = {
-    "Case No.":      "14%",
-    "Case Name":     "31%",
-    "Created At":    "14%",
-    "Closed At":     "14%",
-    "Case Managers": "20%",
+    "Case No.":    "9%",
+    "Case Name":   "25%",
+    "Created At":  "13%",
+    "Closed At":   "13%",
+    "Assigned To": "23%",
+    "Status":      "10%",
   };
 
   const tabs = [
@@ -616,9 +625,9 @@ export const AdminTeam = () => {
   ];
 
   return (
-    <div className={styles["page-wrapper"]} style={showAddCase ? { height: "100dvh", overflow: "hidden" } : {}}>
+    <div className={styles["page-wrapper"]}>
       <Navbar />
-      <div className={styles["main-container"]} style={showAddCase ? { height: "100dvh", maxHeight: "100dvh", overflow: "hidden" } : {}}>
+      <div className={styles["main-container"]}>
         <SideBar variant="admin" onShowCaseSelector={setShowAddCase} showAddCase={showAddCase} />
 
         {managingCase && (
@@ -630,10 +639,7 @@ export const AdminTeam = () => {
           />
         )}
 
-        <div
-          className={styles["left-content"]}
-          style={showAddCase ? { overflow: "hidden", height: `calc(100dvh - var(--nav-h, 110px))`, maxHeight: `calc(100dvh - var(--nav-h, 110px))` } : {}}
-        >
+        <div className={styles["left-content"]}>
           {showAddCase ? (
             <AddCaseInline
               allUsers={allUsers}
@@ -671,8 +677,8 @@ export const AdminTeam = () => {
                           {COLUMNS.map((col) => {
                             const dataKey = COL_KEY[col];
                             return (
-                              <th key={col} className={styles["column-header1"]} style={{ width: COL_WIDTHS[col], position: "relative" }}>
-                                <div className={styles["header-title"]}>
+                              <th key={col} className={styles["column-header1"]} style={{ width: COL_WIDTHS[col], position: "relative", textAlign: col === "Status" ? "center" : "left" }}>
+                                <div className={styles["header-title"]} style={col === "Status" ? { justifyContent: "center" } : {}}>
                                   {col}
                                   <span>
                                     <button
@@ -702,13 +708,13 @@ export const AdminTeam = () => {
                               </th>
                             );
                           })}
-                          <th style={{ width: "21%", textAlign: "center" }}>Actions</th>
+                          <th style={{ width: "20%", textAlign: "center" }}>Actions</th>
                         </tr>
                       </thead>
                       <tbody>
                         {paginatedCases.length === 0 ? (
                           <tr>
-                            <td colSpan={5} style={{ textAlign: "center", padding: "8px" }}>No cases found.</td>
+                            <td colSpan={6} style={{ textAlign: "center", padding: "8px" }}>No cases found.</td>
                           </tr>
                         ) : (
                           paginatedCases.map((c) => (
@@ -716,10 +722,11 @@ export const AdminTeam = () => {
                               <td>{c.caseNo}</td>
                               <td>{c.caseName}</td>
                               <td>{isArchived ? c.closedAtFmt : c.createdAtFmt}</td>
-                              <td>
-                                {c.caseManagerNames.length > 0
-                                  ? c.caseManagerNames.map((m, i) => <div key={i}>{m}</div>)
-                                  : "—"}
+                              <td>{c.assignedTo}</td>
+                              <td style={{ textAlign: "center" }}>
+                                <span className={`${styles["status-badge"]} ${c.statusLabel === "Submitted" ? styles["status-submitted"] : c.statusLabel === "Closed" ? styles["status-closed"] : styles["status-ongoing"]}`}>
+                                  {c.statusLabel}
+                                </span>
                               </td>
                               <td style={{ textAlign: "center" }}>
                                 <div className={styles["action-btns"]}>
@@ -737,7 +744,6 @@ export const AdminTeam = () => {
                                   </button>
                                 </div>
                               </td>
-
                             </tr>
                           ))
                         )}

@@ -671,7 +671,7 @@ export const CasePageManager = () => {
     "Priority": "priority", "Days Left": "remainingDays", "Assigned Officers": "assignedOfficers",
   };
   const assignedColWidths = {
-    "Lead No.": "16%", "Lead Name": "22%", "Priority": "10%", "Assigned Officers": "20%",
+    "Lead No.": "16%", "Lead Name": "16%", "Priority": "10%", "Assigned Officers": "26%",
   };
 
   const popupAssignedRefs = useRef({});
@@ -735,7 +735,7 @@ export const CasePageManager = () => {
     "Lead No.": "id", "Lead Name": "description", "Due Date": "dueDate",
     "Priority": "priority", "Days Left": "remainingDays", "Assigned Officers": "assignedOfficers",
   };
-  const pendingColWidths = { "Lead No.": "12%", "Lead Name": "32%", "Priority": "8%", "Assigned Officers": "18%" };
+  const pendingColWidths = { "Lead No.": "12%", "Lead Name": "22%", "Priority": "8%", "Assigned Officers": "28%" };
 
   const popupPendingRefs = useRef({});
   const [openPendingFilter, setOpenPendingFilter] = useState(null);
@@ -858,7 +858,7 @@ export const CasePageManager = () => {
     "Lead No.": "id", "Lead Log Summary": "description",
     "Lead Status": "leadStatus", "Assigned Officers": "assignedOfficers", "Due Status": "dueStatus",
   };
-  const allColWidths = { "Lead No.": "8%", "Lead Log Summary": "32%", "Lead Status": "13%", "Assigned Officers": "15%", "Due Status": "10%" };
+  const allColWidths = { "Lead No.": "8%", "Lead Log Summary": "27%", "Lead Status": "11%", "Assigned Officers": "22%", "Due Status": "10%" };
 
   const popupAllRefs = useRef({});
   const [openAllFilter, setOpenAllFilter] = useState(null);

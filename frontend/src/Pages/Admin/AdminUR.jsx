@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import styles from "./AdminUR.module.css";
 import Navbar from "../../components/Navbar/Navbar";
 import { SideBar } from "../../components/Sidebar/Sidebar";
-import { SlideBar } from "../../components/Slidebar/Slidebar";
+import { AddCaseInline } from "../HomePage/AddCaseInline";
 import { AlertModal } from "../../components/AlertModal/AlertModal";
 import api from "../../api";
 
@@ -25,13 +25,19 @@ function generateTempPassword() {
 
 export const AdminUR = () => {
   const [showAddCase, setShowAddCase] = useState(false);
+  const [allUsers, setAllUsers] = useState([]);
   const [agencyList, setAgencyList] = useState([]);
 
   useEffect(() => {
-    api.get("/api/agencies")
-      .then(({ data }) => setAgencyList(data.agencies || []))
-      .catch(() => {});
+    api.get("/api/agencies").then(({ data }) => setAgencyList(data.agencies || [])).catch(() => {});
+    api.get("/api/users/usernames").then(({ data }) => setAllUsers(data.users || [])).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    document.documentElement.style.overflow = showAddCase ? "hidden" : "";
+    document.body.style.overflow = showAddCase ? "hidden" : "";
+    return () => { document.documentElement.style.overflow = ""; document.body.style.overflow = ""; };
+  }, [showAddCase]);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -128,16 +134,12 @@ export const AdminUR = () => {
       <Navbar />
 
       <div className={styles["main-container"]}>
-        <SideBar variant="admin" onShowCaseSelector={setShowAddCase} />
-        {showAddCase && (
-          <SlideBar
-            isOpen={showAddCase}
-            hideTrigger
-            onClose={() => setShowAddCase(false)}
-            onAddCase={() => setShowAddCase(false)}
-          />
-        )}
+        <SideBar variant="admin" onShowCaseSelector={setShowAddCase} showAddCase={showAddCase} />
 
+        <div className={styles["left-content"]}>
+          {showAddCase ? (
+            <AddCaseInline allUsers={allUsers} onAddCase={() => setShowAddCase(false)} />
+          ) : (
         <div className={styles["content"]}>
           <div className={styles["card"]}>
             <div className={styles["card-header"]}>
@@ -366,6 +368,8 @@ export const AdminUR = () => {
               </div>
             </form>
           </div>
+        </div>
+          )}
         </div>
       </div>
       <AlertModal

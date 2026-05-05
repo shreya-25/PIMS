@@ -1,4 +1,4 @@
-/* ─── Layout ────────────────────────────────────────────────────────────── */
+﻿/* ─── Layout ────────────────────────────────────────────────────────────── */
 .case-page-manager {
   display: flex;
   flex-direction: column;
@@ -16,9 +16,9 @@
   margin-top: 110px;
   align-items: center;
   height: auto;
-  width: 80%;
+  width: calc(100% - var(--sidebar-w));
   box-sizing: border-box;
-  margin-left: 20%;
+  margin-left: var(--sidebar-w);
   padding-left: 20px;
 }
 
@@ -692,3 +692,4 @@
     margin: 4px 0;
   }
 }
+

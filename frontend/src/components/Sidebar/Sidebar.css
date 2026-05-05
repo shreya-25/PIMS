@@ -1,7 +1,7 @@
 /* ---- Globals ---- */
 :root{
   --nav-h: 110px;     /* your fixed Navbar height */
-  --sidebar-w: 20%; /* one width used everywhere */
+  --sidebar-w: 15%; /* one width used everywhere */
 }
 
 html, body, #root { height: 100%; margin: 0; }

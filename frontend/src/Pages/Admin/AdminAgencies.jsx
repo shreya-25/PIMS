@@ -2,13 +2,14 @@ import React, { useState, useEffect } from "react";
 import styles from "./AdminAgencies.module.css";
 import Navbar from "../../components/Navbar/Navbar";
 import { SideBar } from "../../components/Sidebar/Sidebar";
-import { SlideBar } from "../../components/Slidebar/Slidebar";
+import { AddCaseInline } from "../HomePage/AddCaseInline";
 import api from "../../api";
 
 const BLANK = { name: "", ori: "" };
 
 export const AdminAgencies = () => {
   const [showAddCase, setShowAddCase] = useState(false);
+  const [allUsers, setAllUsers] = useState([]);
   const [agencies, setAgencies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -28,7 +29,16 @@ export const AdminAgencies = () => {
   // delete confirm
   const [deleteId, setDeleteId] = useState(null);
 
-  useEffect(() => { fetchAgencies(); }, []);
+  useEffect(() => {
+    fetchAgencies();
+    api.get("/api/users/usernames").then(({ data }) => setAllUsers(data.users || [])).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.style.overflow = showAddCase ? "hidden" : "";
+    document.body.style.overflow = showAddCase ? "hidden" : "";
+    return () => { document.documentElement.style.overflow = ""; document.body.style.overflow = ""; };
+  }, [showAddCase]);
 
   const fetchAgencies = async () => {
     setLoading(true);
@@ -121,16 +131,12 @@ export const AdminAgencies = () => {
       <Navbar />
 
       <div className={styles["main-container"]}>
-        <SideBar variant="admin" onShowCaseSelector={setShowAddCase} />
-        {showAddCase && (
-          <SlideBar
-            isOpen={showAddCase}
-            hideTrigger
-            onClose={() => setShowAddCase(false)}
-            onAddCase={() => setShowAddCase(false)}
-          />
-        )}
+        <SideBar variant="admin" onShowCaseSelector={setShowAddCase} showAddCase={showAddCase} />
 
+        <div className={styles["left-content"]}>
+          {showAddCase ? (
+            <AddCaseInline allUsers={allUsers} onAddCase={() => setShowAddCase(false)} />
+          ) : (
         <div className={styles["content"]}>
 
           {/* ── Add Agency card ─────────────────────────────────────────────── */}
@@ -299,7 +305,8 @@ export const AdminAgencies = () => {
               </div>
             )}
           </div>
-
+        </div>
+          )}
         </div>
       </div>
     </div>

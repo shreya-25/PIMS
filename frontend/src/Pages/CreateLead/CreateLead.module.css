@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
    CreateLead – CSS Module
    Primary accent: #29298b (app navy)
    ============================================================ */
@@ -13,8 +13,8 @@
 
 /* ===== Main content area (right of fixed 20% sidebar) ===== */
 .mainContainer {
-  margin-left: 20%;
-  width: 80%;
+  margin-left: var(--sidebar-w);
+  width: calc(100% - var(--sidebar-w));
   height: calc(100vh - 110px);
   margin-top: 110px;
   overflow: hidden;
@@ -481,3 +481,4 @@ select.inputField:disabled {
 .nextBtn:hover {
   background-color: #1558b0;
 }
+

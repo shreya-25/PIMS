@@ -1,6 +1,5 @@
-:root {
+﻿:root {
   --nav-h: 110px;
-  --sidebar-w: 300px;
 }
 
 /* ─── Page layout ─────────────────────────────────────────────────────────── */
@@ -15,9 +14,10 @@
 
 /* Main content area sits to the right of the fixed sidebar */
 .main-container {
-  margin-left: 20%;
-  width: 80%;
-  padding-left: 20px;
+  margin-left: var(--sidebar-w);
+  width: calc(100% - var(--sidebar-w));
+  padding-left: 32px;
+  padding-right: 32px;
   padding-top: var(--nav-h);
   box-sizing: border-box;
   height: 100dvh;
@@ -41,9 +41,10 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   width: 100%;
   flex: 0 0 auto;
-  margin-top: 20px;
+  margin-top: 4px;
 }
 
 /* Lower section (case management tables) */
@@ -51,12 +52,16 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 99%;
+  justify-content: flex-start;
+  width: 100%;
   box-sizing: border-box;
-  margin-top: 20px;
+  margin-top: 4px;
+  padding: 0 8px;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable both-edges;
 }
 
 /* ─── Tab navigation bar ──────────────────────────────────────────────────── */
@@ -67,7 +72,7 @@
   align-items: center;
   background-color: rgb(41, 41, 139);
   border-radius: 5px;
-  width: 95%;
+  width: 100%;
   margin-top: 8px;
   padding: 10px;
 }
@@ -102,9 +107,8 @@
 /* ─── Content section ─────────────────────────────────────────────────────── */
 
 .content-section {
-  padding: 8px;
-  width: 95%;
-  margin: 0 auto;
+  padding: 8px 0;
+  width: 100%;
   display: flex;
   flex-direction: column;
 }
@@ -366,3 +370,4 @@
   border: none;
   font-size: 20px;
 }
+
