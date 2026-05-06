@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext  } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { AlertModal } from "../AlertModal/AlertModal";
 import api from "../../api";
@@ -16,9 +16,10 @@ const Navbar = () => {
    const [alertOpen,    setAlertOpen]    = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
-  const { selectedCase } = useContext(CaseContext) || {};
+  const { selectedCase, setSelectedCase, setSelectedLead } = useContext(CaseContext) || {};
 
   const [newNotifs, setNewNotifs]         = useState([]);
+  const [navigating, setNavigating]       = useState(null);
 
   const [showNotifications, setShowNotifications] = useState(false);
   const [showChats, setShowChats] = useState(false);
@@ -114,9 +115,102 @@ const Navbar = () => {
     ]);
   }, []);
 
-  const handleNotificationClick = (index) => {
-    // setNewNotifs(prev => prev.filter((_, i) => i !== index));
-    navigate('/HomePage');
+  const getNotifType = (n) => {
+    if (n.type === "Case")       return { letter: "C",  color: "#2563eb" };
+    if (n.type === "Lead")       return { letter: "L",  color: "#16a34a" };
+    if (n.type === "LeadReturn") return { letter: "LR", color: "#dc2626" };
+    return { letter: "?", color: "#6b7280" };
+  };
+
+  const handleNotificationClick = async (n) => {
+    const loggedInUser  = localStorage.getItem("loggedInUser");
+    const signedInUserId = localStorage.getItem("userId");
+
+    const isMyEntry = (r) =>
+      signedInUserId && r.userId
+        ? String(r.userId) === signedInUserId
+        : r.username === loggedInUser;
+
+    const myAss = n.assignedTo.find(r => isMyEntry(r));
+    if (!myAss) return;
+
+    setNavigating(n._id);
+    setShowNotifications(false);
+    setNewNotifs(prev => prev.filter(x => x._id !== n._id));
+
+    try {
+      if (myAss.unread !== false) {
+        api.put(`/api/notifications/mark-read/${n.notificationId}`, {
+          userId: signedInUserId || undefined,
+          username: loggedInUser,
+        }).catch(e => console.error("Mark-read failed:", e.message));
+      }
+
+      const token = localStorage.getItem("token");
+      const { data: allCases } = await api.get("/api/cases", {
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        params: { officerName: loggedInUser },
+      });
+
+      const matchedCase = allCases.find(
+        c => String(c.caseNo) === String(n.caseNo) || String(c._id) === String(n.caseId)
+      );
+      if (!matchedCase) { setNavigating(null); return; }
+
+      let resolvedRole = myAss.role;
+      const name = loggedInUser?.toLowerCase?.() ?? "";
+      const matchMember = (u) =>
+        (signedInUserId && (String(u._id) === signedInUserId || String(u.id) === signedInUserId || String(u.userId) === signedInUserId)) ||
+        u.username?.toLowerCase() === name ||
+        u.displayName?.toLowerCase() === name;
+
+      if (matchedCase.detectiveSupervisorUserId && matchMember(matchedCase.detectiveSupervisorUserId)) {
+        resolvedRole = "Detective Supervisor";
+      } else if (Array.isArray(matchedCase.caseManagerUserIds) && matchedCase.caseManagerUserIds.some(matchMember)) {
+        resolvedRole = "Case Manager";
+      } else if (Array.isArray(matchedCase.investigatorUserIds) && matchedCase.investigatorUserIds.some(matchMember)) {
+        resolvedRole = "Investigator";
+      }
+
+      const caseObj = {
+        _id: matchedCase._id,
+        id: matchedCase.caseNo,
+        title: matchedCase.caseName,
+        caseNo: matchedCase.caseNo,
+        caseName: matchedCase.caseName,
+        status: matchedCase.status,
+        role: resolvedRole,
+        createdAt: matchedCase.createdAt,
+      };
+
+      setSelectedCase(caseObj);
+      sessionStorage.setItem("selectedCase", JSON.stringify(caseObj));
+      localStorage.setItem("selectedCase", JSON.stringify(caseObj));
+      localStorage.setItem("role", resolvedRole);
+
+      if (n.type === "Case") {
+        setSelectedLead(null);
+        sessionStorage.removeItem("selectedLead");
+        localStorage.removeItem("selectedLead");
+        const dest = resolvedRole === "Case Manager" || resolvedRole === "Detective Supervisor"
+          ? "/CasePageManager" : "/Investigator";
+        navigate(dest, { state: { caseDetails: caseObj } });
+      } else {
+        const leadObj = { leadNo: n.leadNo, leadName: n.leadName };
+        setSelectedLead(leadObj);
+        sessionStorage.setItem("selectedLead", JSON.stringify(leadObj));
+        localStorage.setItem("selectedLead", JSON.stringify(leadObj));
+        if (n.type === "Lead") {
+          navigate("/LeadReview", { state: { caseDetails: caseObj, leadDetails: leadObj } });
+        } else if (n.type === "LeadReturn") {
+          navigate("/LRInstruction", { state: { caseDetails: caseObj, leadDetails: leadObj } });
+        }
+      }
+    } catch (err) {
+      console.error("Notification navigation failed:", err);
+    } finally {
+      setNavigating(null);
+    }
   };
 
   const handleChatClick = (index) => {
@@ -248,47 +342,48 @@ const Navbar = () => {
             ></i>
             {newNotifs.length > 0 && <span className="badge">{newNotifs.length}</span>}
             {showNotifications && (
-              // <div className="dropdown-list">
-              //    {newNotifs.length > 0 
-              //       ? newNotifs.map((n, idx) => (
-              //           <div
-              //             key={n._id}
-              //             className="dropdown-item"
-              //             onClick={() => handleNotificationClick(idx)}
-              //           >
-              //             <strong>{n.assignedBy}</strong> {n.action1}
-              //           </div>
-              //         ))
-              //       : <div className="dropdown-item">No new notifications</div>
-              //     }
-              // </div>
-               <div className="dropdown-list">
-      {newNotifs.length > 0
-        ? newNotifs.map((n, idx) => (
-            <div
-              key={n._id}
-              className="dropdown-itemNB"
-              onClick={() => handleNotificationClick(idx)}
-            >
-              <div className="notif-content">
-                <strong>{n.assignedBy}</strong> {n.action1}
+              <div className="dropdown-list">
+                <div className="dropdown-notif-header">
+                  Notifications
+                </div>
+                {newNotifs.length > 0
+                  ? newNotifs.map((n) => {
+                      const { letter, color } = getNotifType(n);
+                      const isLoading = navigating === n._id;
+                      return (
+                        <div
+                          key={n._id}
+                          className={`dropdown-itemNB${isLoading ? " loading" : ""}`}
+                          onClick={() => !isLoading && handleNotificationClick(n)}
+                        >
+                          <div className="notif-type-badge" style={{ backgroundColor: color }}>
+                            {letter}
+                          </div>
+                          <div className="notif-body">
+                            <div className="notif-content">
+                              {isLoading
+                                ? <em>Loading…</em>
+                                : <><strong>{n.assignedBy}</strong> {n.action1}
+                                    {n.post1 && <strong> {n.post1}</strong>}
+                                  </>
+                              }
+                            </div>
+                            <div className="notif-date">
+                              {n.type}&nbsp;&bull;&nbsp;
+                              {new Date(n.time).toLocaleDateString("en-US", {
+                                month: "short", day: "numeric", year: "numeric"
+                              })}{" "}
+                              {new Date(n.time).toLocaleTimeString("en-US", {
+                                hour: "2-digit", minute: "2-digit"
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  : <div className="dropdown-item empty">No new notifications</div>
+                }
               </div>
-              <div className="notif-date">
-                {new Date(n.time).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric"
-                })}{" "}
-                {new Date(n.time).toLocaleTimeString("en-US", {
-                  hour: "2-digit",
-                  minute: "2-digit"
-                })}
-              </div>
-            </div>
-          ))
-        : <div className="dropdown-item empty">No new notifications</div>
-      }
-    </div>
             )}
           </li>
 
