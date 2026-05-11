@@ -657,9 +657,19 @@ function formatDate(dateString) {
   if (!dateString) return "";
   const date = new Date(dateString);
   if (isNaN(date)) return "";
-  const month = (date.getMonth() + 1).toString().padStart(2, "0");
-  const day = date.getDate().toString().padStart(2, "0");
-  const year = date.getFullYear().toString().slice(-2);
+  const month = (date.getUTCMonth() + 1).toString().padStart(2, "0");
+  const day = date.getUTCDate().toString().padStart(2, "0");
+  const year = date.getUTCFullYear().toString().slice(-2);
+  return `${month}/${day}/${year}`;
+}
+
+function formatDateLong(dateString) {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  if (isNaN(date)) return "";
+  const month = (date.getUTCMonth() + 1).toString().padStart(2, "0");
+  const day = date.getUTCDate().toString().padStart(2, "0");
+  const year = date.getUTCFullYear().toString();
   return `${month}/${day}/${year}`;
 }
 
@@ -1148,7 +1158,7 @@ async function buildLeadBuffer(lead, { includeAll, characterOfCase, userMap, sho
               "Suffix":            person.suffix         || "",
               "Alias":             person.alias          || "",
               "Sex":               person.sex            || "",
-              "Date of Birth":     person.dateOfBirth ? formatDate(person.dateOfBirth) : "",
+              "Date of Birth":     person.dateOfBirth ? formatDateLong(person.dateOfBirth) : "",
               "Age":               (() => {
                 if (!person.dateOfBirth) return "";
                 const d = new Date(person.dateOfBirth);
@@ -1300,16 +1310,17 @@ async function buildLeadBuffer(lead, { includeAll, characterOfCase, userMap, sho
           doc.font("Helvetica-Bold").fontSize(12).text("Evidence Details:", 50, currentY);
           currentY += 20;
 
-          const evHeaders = ["Date Entered", "Type", "Disposed Date", "Description", "File / Link"];
+          const evHeaders = ["Date Entered", "Type", "Collection", "Disposed", "Description", "File / Link"];
           const evRows = lr.evidence.map((ev) => ({
-            "Date Entered":  formatDate(ev.enteredDate),
-            "Type":          ev.type || "N/A",
-            "Disposed Date": formatDate(ev.disposedDate),
-            "Description":   ev.evidenceDescription || "N/A",
-            "File / Link":   ev.isLink ? (ev.link || "Link") : (ev.originalName || ev.filename || "N/A"),
+            "Date Entered": formatDate(ev.enteredDate),
+            "Type":         ev.type || "N/A",
+            "Collection":   formatDate(ev.collectionDate),
+            "Disposed":     formatDate(ev.disposedDate),
+            "Description":  ev.evidenceDescription || "N/A",
+            "File / Link":  ev.isLink ? (ev.link || "Link") : (ev.originalName || ev.filename || "N/A"),
           }));
           currentY = ensureSpace(doc, currentY, 60);
-          currentY = drawTable(doc, 50, currentY, evHeaders, evRows, [107, 65, 113, 127, 100]) + 10;
+          currentY = drawTable(doc, 50, currentY, evHeaders, evRows, [78, 68, 72, 68, 130, 96]) + 10;
           currentY = await embedAttachments(doc, lr.evidence, currentY, "Evidence");
 
           for (const ev of lr.evidence) {
@@ -1403,9 +1414,10 @@ async function buildLeadBuffer(lead, { includeAll, characterOfCase, userMap, sho
           doc.font("Helvetica-Bold").fontSize(12).text("Timeline Details:", 50, currentY);
           currentY += 20;
 
-          const tlHeaders = ["Event Date", "Time Range", "Location", "Flags", "Description"];
+          const tlHeaders = ["Start Date", "End Date", "Time Range", "Location", "Flags", "Description"];
           const tlRows = timeline.map((t) => ({
-            "Event Date":  formatDate(t.eventDate),
+            "Start Date":  formatDate(t.eventStartDate || t.eventDate),
+            "End Date":    formatDate(t.eventEndDate),
             "Time Range":
               `${formatTime(t.eventStartTime) || ""}` +
               (t.eventEndTime ? ` – ${formatTime(t.eventEndTime)}` : ""),
@@ -1414,7 +1426,7 @@ async function buildLeadBuffer(lead, { includeAll, characterOfCase, userMap, sho
             "Description": t.eventDescription || "N/A",
           }));
           currentY = ensureSpace(doc, currentY, 60);
-          currentY = drawTable(doc, 50, currentY, tlHeaders, tlRows, [80, 100, 100, 80, 152]) + 20;
+          currentY = drawTable(doc, 50, currentY, tlHeaders, tlRows, [65, 65, 90, 90, 65, 137]) + 20;
         }
       }
     } else {
@@ -1811,7 +1823,7 @@ if (leadState) {
                     "Suffix":           person.suffix || "",
                     "Alias":            person.alias || "",
                     "Sex":              person.sex || "",
-                    "Date of Birth":    person.dateOfBirth ? formatDate(person.dateOfBirth) : "",
+                    "Date of Birth":    person.dateOfBirth ? formatDateLong(person.dateOfBirth) : "",
                     "Age":              (() => {
                       if (!person.dateOfBirth) return "";
                       const d = new Date(person.dateOfBirth);
@@ -2069,17 +2081,17 @@ if (lr.evidence && lr.evidence.length > 0) {
   doc.font("Helvetica-Bold").fontSize(12).text("Evidence Details:", 50, currentY);
   currentY += 20;
 
-  const evHeaders = ["Date Entered", "Type", "Disposed Date", "Description", "File / Link"];
+  const evHeaders = ["Date Entered", "Type", "Collection", "Disposed", "Description", "File / Link"];
   const evRows = lr.evidence.map((ev) => ({
-    "Date Entered":    formatDate(ev.enteredDate),
-    "Type":            ev.type || "N/A",
-    // "Collection Date": formatDate(ev.collectionDate),
-    "Disposed Date":   formatDate(ev.disposedDate),
-    "Description":     ev.evidenceDescription || "N/A",
-    "File / Link":     ev.isLink ? (ev.link || "Link") : (ev.originalName || ev.filename || "N/A"),
+    "Date Entered": formatDate(ev.enteredDate),
+    "Type":         ev.type || "N/A",
+    "Collection":   formatDate(ev.collectionDate),
+    "Disposed":     formatDate(ev.disposedDate),
+    "Description":  ev.evidenceDescription || "N/A",
+    "File / Link":  ev.isLink ? (ev.link || "Link") : (ev.originalName || ev.filename || "N/A"),
   }));
   currentY = ensureSpace(doc, currentY, 60);
-  currentY = drawTable(doc, 50, currentY, evHeaders, evRows, [107, 65, 113, 127, 100]) + 10;
+  currentY = drawTable(doc, 50, currentY, evHeaders, evRows, [78, 68, 72, 68, 130, 96]) + 10;
 
   // Embed images / list documents / show links
   currentY = await embedAttachments(doc, lr.evidence, currentY, "Evidence");
@@ -2179,9 +2191,10 @@ if (timeline && timeline.length > 0) {
   doc.font("Helvetica-Bold").fontSize(12).text("Timeline Details:", 50, currentY);
   currentY += 20;
 
-  const headers = ["Event Date", "Time Range", "Location", "Flags", "Description"];
+  const headers = ["Start Date", "End Date", "Time Range", "Location", "Flags", "Description"];
   const rows = timeline.map((t) => ({
-    "Event Date":  formatDate(t.eventDate),
+    "Start Date":  formatDate(t.eventStartDate || t.eventDate),
+    "End Date":    formatDate(t.eventEndDate),
     "Time Range":
       `${formatTime(t.eventStartTime) || ""}` +
       (t.eventEndTime ? ` – ${formatTime(t.eventEndTime)}` : ""),
@@ -2190,7 +2203,7 @@ if (timeline && timeline.length > 0) {
     "Description": t.eventDescription || "N/A",
   }));
   currentY = ensureSpace(doc, currentY, 60);
-  currentY = drawTable(doc, 50, currentY, headers, rows, [80, 100, 100, 80, 152]) + 20;
+  currentY = drawTable(doc, 50, currentY, headers, rows, [65, 65, 90, 90, 65, 137]) + 20;
 }
 
             }
@@ -2284,9 +2297,9 @@ async function generateTimelineOnlyReport(req, res) {
       if (!d) return "";
       const dt = new Date(d);
       if (isNaN(dt)) return "";
-      const mm = String(dt.getMonth() + 1).padStart(2, "0");
-      const dd = String(dt.getDate()).padStart(2, "0");
-      const yy = String(dt.getFullYear()).slice(-2);
+      const mm = String(dt.getUTCMonth() + 1).padStart(2, "0");
+      const dd = String(dt.getUTCDate()).padStart(2, "0");
+      const yy = String(dt.getUTCFullYear()).slice(-2);
       return `${mm}/${dd}/${yy}`;
     };
 

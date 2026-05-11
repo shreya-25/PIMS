@@ -628,9 +628,19 @@ const formatDate = (dateString) => {
   if (!dateString) return "";
   const date = new Date(dateString);
   if (isNaN(date)) return "";
-  const month = (date.getMonth() + 1).toString().padStart(2, "0");
-  const day = date.getDate().toString().padStart(2, "0");
-  const year = date.getFullYear().toString().slice(-2);
+  const month = (date.getUTCMonth() + 1).toString().padStart(2, "0");
+  const day = date.getUTCDate().toString().padStart(2, "0");
+  const year = date.getUTCFullYear().toString().slice(-2);
+  return `${month}/${day}/${year}`;
+};
+
+const formatDateLong = (dateString) => {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  if (isNaN(date)) return "";
+  const month = (date.getUTCMonth() + 1).toString().padStart(2, "0");
+  const day = date.getUTCDate().toString().padStart(2, "0");
+  const year = date.getUTCFullYear().toString();
   return `${month}/${day}/${year}`;
 };
 
@@ -1259,7 +1269,7 @@ let currentY = headerHeight + 20;
             case "Middle Initial": return person.middleInitial || "";
             case "Suffix":         return person.suffix || "";
             case "Alias":          return person.alias || "";
-            case "Date of Birth":  return formatDate(person.dateOfBirth);
+            case "Date of Birth":  return formatDateLong(person.dateOfBirth);
             case "Age":            return (() => {
               if (!person.dateOfBirth) return "";
               const d = new Date(person.dateOfBirth);
@@ -1606,14 +1616,14 @@ let currentY = headerHeight + 20;
       } else {
            currentY = startSection(doc, "Evidence Details", currentY);
 
-        const headers = ["Date Entered","Type","Collection Date","Disposed Date","Description"];
-        const widths  = [80,80,90,90,172];
+        const headers = ["Date Entered","Type","Collection","Disposed","Description"];
+        const widths  = [80,80,90,80,182];
         const rows    = leadEvidence.map(ev => ({
-          "Date Entered":     formatDate(ev.enteredDate),
-          "Type":             ev.type || "",
-          "Collection Date":  formatDate(ev.collectionDate),
-          "Disposed Date":    formatDate(ev.disposedDate),
-          "Description":      ev.evidenceDescription || ""
+          "Date Entered": formatDate(ev.enteredDate),
+          "Type":         ev.type || "",
+          "Collection":   formatDate(ev.collectionDate),
+          "Disposed":     formatDate(ev.disposedDate),
+          "Description":  ev.evidenceDescription || ""
         }));
 
         // 2) estimate table height
@@ -1841,12 +1851,12 @@ let currentY = headerHeight + 20;
         // currentY += 20;
       } else {
         currentY = startSection(doc, "Timeline Details", currentY);
-        const headers = ["Event Date","Time Range","Location","Flags","Description"];
-        const widths  = [80,100,100, 80, 152];
+        const headers = ["Start Date","End Date","Time Range","Location","Flags","Description"];
+        const widths  = [65, 65, 90, 90, 65, 137];
         const rows    = leadTimeline.map(t => ({
-          "Event Date":   formatDate(t.eventDate),
-         "Time Range":  `${formatTime(t.eventStartTime, timezone)} – ${formatTime(t.eventEndTime, timezone)}`,
-
+          "Start Date":   formatDate(t.eventStartDate || t.eventDate),
+          "End Date":     formatDate(t.eventEndDate),
+          "Time Range":   `${formatTime(t.eventStartTime, timezone)} – ${formatTime(t.eventEndTime, timezone)}`,
           "Location":     t.eventLocation || "",
           "Flags":        Array.isArray(t.timelineFlag) ? t.timelineFlag.join(", ") : "",
           "Description":  t.eventDescription || ""
