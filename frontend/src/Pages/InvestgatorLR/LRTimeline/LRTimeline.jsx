@@ -24,7 +24,7 @@ import { CaseContext } from '../../CaseContext';
 import api from '../../../api';
 import { useLeadStatus } from '../../../hooks/useLeadStatus';
 import { useLeadReport } from '../useLeadReport';
-import { normalizeId, alphabetToNumber } from '../lrUtils';
+import { normalizeId, alphabetToNumber, formatDate } from '../lrUtils';
 
 // Merge shared LR stylesheet with component-specific overrides
 import lrStyles    from '../LR.module.css';
@@ -307,10 +307,10 @@ export const LRTimeline = () => {
     accessLevel:      e.accessLevel || 'Everyone',
     enteredBy:        e.enteredBy,
     enteredByUserId:  e.enteredByUserId ? String(e.enteredByUserId) : null,
-    dateEntered:      e.enteredDate ? new Date(e.enteredDate).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }) : '',
-    date:             e.eventDate     ? new Date(e.eventDate).toLocaleDateString()     : '',
-    eventStartDate:   e.eventStartDate ? new Date(e.eventStartDate).toLocaleDateString() : '',
-    eventEndDate:     e.eventEndDate   ? new Date(e.eventEndDate).toLocaleDateString()   : '',
+    dateEntered:      formatDate(e.enteredDate),
+    date:             formatDate(e.eventDate),
+    eventStartDate:   formatDate(e.eventStartDate),
+    eventEndDate:     formatDate(e.eventEndDate),
     timeRange:        formatTimeRange(e.eventStartTime, e.eventEndTime),
     location:         e.eventLocation,
     description:      e.eventDescription,

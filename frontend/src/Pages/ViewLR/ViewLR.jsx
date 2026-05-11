@@ -32,6 +32,16 @@ const toText = (v) => {
   try { return JSON.stringify(v); } catch { return "—"; }
 };
 
+const formatDate = (dateString) => {
+  if (!dateString) return "—";
+  const d = new Date(dateString);
+  if (isNaN(d)) return "—";
+  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(d.getUTCDate()).padStart(2, "0");
+  const yy = String(d.getUTCFullYear()).slice(-2);
+  return `${mm}/${dd}/${yy}`;
+};
+
 export const ViewLR = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -46,11 +56,13 @@ export const ViewLR = () => {
   const [audio, setAudio] = useState([]);
   const [videos, setVideos] = useState([]);
   const [timeline, setTimeline] = useState([]);
+  const [scratchpad, setScratchpad] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openPerson, setOpenPerson] = useState(null);
   const [openVehicle, setOpenVehicle] = useState(null);
   const [showComments, setShowComments] = useState(true);
   const [selectedTimeline, setSelectedTimeline] = useState(null);
+  const [selectedDetail, setSelectedDetail] = useState(null);
   const [allUsers, setAllUsers] = useState([]);
   const currentUser = localStorage.getItem("loggedInUser");
   const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus} = useContext(CaseContext);
@@ -192,6 +204,7 @@ const submitDisabledReason = isClosedOrCompleted
           audioRes,
           videosRes,
           timelineRes,
+          scratchpadRes,
         ] = await Promise.all([
           api.get(`/api/lead/lead/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
           api.get(`/api/leadReturnResult/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
@@ -203,6 +216,7 @@ const submitDisabledReason = isClosedOrCompleted
           api.get(`/api/lraudio/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
           api.get(`/api/lrvideo/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
           api.get(`/api/timeline/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
+          api.get(`/api/scratchpad/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
         ]);
 
         const leadDoc = instrRes.data?.[0] || {};
@@ -226,6 +240,7 @@ const submitDisabledReason = isClosedOrCompleted
         setAudio(audioRes.data || []);
         setVideos(videosRes.data || []);
         setTimeline(timelineRes.data || []);
+        setScratchpad((scratchpadRes.data || []).filter(n => n.type === 'Lead'));
       } finally {
         setLoading(false);
       }
@@ -242,7 +257,7 @@ const submitDisabledReason = isClosedOrCompleted
   const sectionsByReturn = useMemo(() => {
     const map = new Map();
     const touch = (k) => {
-      if (!map.has(k)) map.set(k, { persons: [], vehicles: [], enclosures: [], evidence: [], pictures: [], audio: [], videos: [] });
+      if (!map.has(k)) map.set(k, { persons: [], vehicles: [], enclosures: [], evidence: [], pictures: [], audio: [], videos: [], notes: [] });
       return map.get(k);
     };
 
@@ -253,8 +268,9 @@ const submitDisabledReason = isClosedOrCompleted
     pictures.forEach((x) => touch(keyFor(x)).pictures.push(x));
     audio.forEach((x) => touch(keyFor(x)).audio.push(x));
     videos.forEach((x) => touch(keyFor(x)).videos.push(x));
+    scratchpad.forEach((x) => touch(keyFor(x)).notes.push(x));
     return map;
-  }, [persons, vehicles, enclosures, evidence, pictures, audio, videos]);
+  }, [persons, vehicles, enclosures, evidence, pictures, audio, videos, scratchpad]);
 
   const go = (path) => navigate(path);
 
@@ -600,7 +616,7 @@ const actuallyDoSubmitReport = async () => {
                     {returns.map((ret) => {
                       const k = keyFor(ret);
                       const grouped = sectionsByReturn.get(k) || {
-                        persons: [], vehicles: [], enclosures: [], evidence: [], pictures: [], audio: [], videos: []
+                        persons: [], vehicles: [], enclosures: [], evidence: [], pictures: [], audio: [], videos: [], notes: []
                       };
                       return (
                         <div key={ret._id || k} className={styles.lrCard}>
@@ -617,7 +633,7 @@ const actuallyDoSubmitReport = async () => {
                               <div className={styles.metaItem}>
                                 <span className={styles.metaLabel}>Date:</span>
                                 <span className={styles.metaValue}>
-                                  {ret.enteredDate ? new Date(ret.enteredDate).toLocaleString() : "—"}
+                                  {formatDate(ret.enteredDate)}
                                 </span>
                               </div>
                             </div>
@@ -678,7 +694,7 @@ const actuallyDoSubmitReport = async () => {
                                 <tbody>
                                     {grouped.persons.map((p) => (
                                     <tr key={p._id}>
-                                        <td>{p.enteredDate ? new Date(p.enteredDate).toLocaleDateString() : "—"}</td>
+                                        <td>{formatDate(p.enteredDate)}</td>
                                         <td>{[p.firstName, p.middleInitial, p.lastName].filter(Boolean).join(' ') || '—'}</td>
                                         <td>{toText(p.cellNumber)}</td>
                                         <td>{p.address?.street1 ? [p.address.street1, p.address.street2, p.address.building, p.address.apartment].filter(Boolean).join(' • ') + (p.address.city || p.address.state || p.address.zipCode ? ` • ${[p.address.city, p.address.state, p.address.zipCode].filter(Boolean).join(', ')}` : '') : '—'}</td>
@@ -742,38 +758,33 @@ const actuallyDoSubmitReport = async () => {
                         if (grouped.enclosures.length) {
                         detailSections.push(
                             <div key="enclosures" className={styles.tableBlock}>
-                            {/* <div className={styles.tableHeader}>Enclosures</div> */}
-                            <Link
-    className={styles.tableHeader}
-    to="/LREnclosures"                         // adjust if your route differs
-    state={{
-      caseDetails: selectedCase,
-      leadDetails: selectedLead,
-    }}
-  >
-    Enclosure Details
-  </Link>
+                            <Link className={styles.tableHeader} to="/LREnclosures" state={{ caseDetails: selectedCase, leadDetails: selectedLead }}>Enclosure Details</Link>
                             <table className={styles.simpleTable}>
                                 <thead>
                                 <tr>
                                     <th>Type</th>
                                     <th>Description</th>
                                     <th>File / Link</th>
+                                    <th style={{ width: '8%' }}>More</th>
                                 </tr>
                                 </thead>
                                 <tbody>
                                 {grouped.enclosures.map((e) => {
                                     const href = e?.isLink && e?.link ? e.link : e?.signedUrl ? e.signedUrl : "";
                                     const fileLabel = e?.isLink ? (e?.originalName || e?.link || "") : (e?.originalName || e?.filename || "");
-                                    const fileCell = href
-                                      ? <a href={href} target="_blank" rel="noreferrer">{fileLabel || "View file"}</a>
-                                      : (fileLabel || "—");
-
+                                    const fileCell = href ? <a href={href} target="_blank" rel="noreferrer">{fileLabel || "View file"}</a> : (fileLabel || "—");
                                     return (
                                     <tr key={e._id}>
                                         <td>{toText(e.type)}</td>
                                         <td>{toText(e.enclosureDescription || e.description)}</td>
                                         <td>{fileCell}</td>
+                                        <td><button className={styles.moreBtn} onClick={() => setSelectedDetail({ title: 'Enclosure Details', fields: [
+                                          { label: 'Type', value: toText(e.type) },
+                                          { label: 'Date Entered', value: formatDate(e.enteredDate) },
+                                          { label: 'Entered By', value: toText(e.enteredBy) },
+                                          { label: 'Description', value: toText(e.enclosureDescription || e.description) },
+                                          { label: 'File', href: href || '', linkText: fileLabel || '' },
+                                        ]})}>More</button></td>
                                     </tr>
                                     );
                                 })}
@@ -784,89 +795,42 @@ const actuallyDoSubmitReport = async () => {
                         }
 
 
-                       // Timeline
-                        if (timeline.length) {
-                        detailSections.push(
-                            <div key="timeline" className={styles.tableBlock}>
-                             <Link
-                                className={styles.tableHeader}
-                                to="/LRTimeline"
-                                state={{ caseDetails: selectedCase, leadDetails: selectedLead }}
-                              >
-                                Timeline Details
-                              </Link>
-                            <table className={styles.simpleTable}>
-                                <thead>
-                                <tr>
-                                    <th style={{ width: '13%' }}>Event Date</th>
-                                    <th style={{ width: '13%' }}>Start</th>
-                                    <th style={{ width: '13%' }}>End</th>
-                                    <th style={{ width: '22%' }}>Location</th>
-                                    <th style={{ width: '29%' }}>Description</th>
-                                    <th style={{ width: '10%' }}>More</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                {timeline.map((t) => (
-                                    <tr key={t._id}>
-                                    <td className={styles.truncCell}>{t.eventDate ? new Date(t.eventDate).toLocaleDateString() : "—"}</td>
-                                    <td className={styles.truncCell}>{t.eventStartTime ? new Date(t.eventStartTime).toLocaleTimeString() : "—"}</td>
-                                    <td className={styles.truncCell}>{t.eventEndTime ? new Date(t.eventEndTime).toLocaleTimeString() : "—"}</td>
-                                    <td className={styles.truncCell}>{toText(t.eventLocation)}</td>
-                                    <td className={styles.truncCell}>{toText(t.eventDescription)}</td>
-                                    <td>
-                                        <button className={styles.moreBtn} onClick={() => setSelectedTimeline(t)}>View</button>
-                                    </td>
-                                    </tr>
-                                ))}
-                                </tbody>
-                            </table>
-                            </div>
-                        );
-                        }
 
 
                         // Evidence
                         if (grouped.evidence.length) {
                         detailSections.push(
                             <div key="evidence" className={styles.tableBlock}>
-                            {/* <div className={styles.tableHeader}>Evidence</div> */}
-                             <Link
-    className={styles.tableHeader}
-    to="/LREvidences"                         // adjust if your route differs
-    state={{
-      caseDetails: selectedCase,
-      leadDetails: selectedLead,
-    }}
-  >
-    Evidence Details
-  </Link>
+                            <Link className={styles.tableHeader} to="/LREvidences" state={{ caseDetails: selectedCase, leadDetails: selectedLead }}>Evidence Details</Link>
                             <table className={styles.simpleTable}>
                                 <thead>
                                 <tr>
                                     <th>Type</th>
                                     <th>Description</th>
                                     <th>Collected</th>
-                                    <th>Disposed</th>
-                                    <th>File / Link</th>
+                                    <th>File</th>
+                                    <th style={{ width: '8%' }}>More</th>
                                 </tr>
                                 </thead>
                                 <tbody>
                                 {grouped.evidence.map((e) => {
                                     const href = e?.isLink && e?.link ? e.link : e?.signedUrl ? e.signedUrl : "";
                                     const fileLabel = e?.isLink ? (e?.originalName || e?.link || "") : (e?.originalName || e?.filename || "");
-                                    const fileCell = href
-                                      ? <a href={href} target="_blank" rel="noreferrer">{fileLabel || "View file"}</a>
-                                      : (fileLabel || "—");
-
                                     return (
                                     <tr key={e._id}>
                                         <td>{toText(e.type)}</td>
                                         <td>{toText(e.evidenceDescription)}</td>
-                                        <td>{e.collectionDate ? new Date(e.collectionDate).toLocaleDateString() : "—"}</td>
-                                        <td>{e.disposedDate ? new Date(e.disposedDate).toLocaleDateString() : "—"}</td>
-                                        <td>{fileCell}</td>
-
+                                        <td>{formatDate(e.collectionDate)}</td>
+                                        <td>{href ? <a href={href} target="_blank" rel="noreferrer">{fileLabel || 'File'}</a> : (fileLabel || '—')}</td>
+                                        <td><button className={styles.moreBtn} onClick={() => setSelectedDetail({ title: 'Evidence Details', fields: [
+                                          { label: 'Type', value: toText(e.type) },
+                                          { label: 'Collected', value: formatDate(e.collectionDate) },
+                                          { label: 'Disposed', value: formatDate(e.disposedDate) },
+                                          { label: 'Entered By', value: toText(e.enteredBy) },
+                                          { label: 'Date Entered', value: formatDate(e.enteredDate) },
+                                          { label: 'Description', value: toText(e.evidenceDescription) },
+                                          { label: 'File', href: href || '', linkText: fileLabel || '' },
+                                        ]})}>More</button></td>
                                     </tr>
                                     );
                                 })}
@@ -881,40 +845,33 @@ const actuallyDoSubmitReport = async () => {
                         if (grouped.pictures.length) {
                         detailSections.push(
                             <div key="pictures" className={styles.tableBlock}>
-                            {/* <div className={styles.tableHeader}>Pictures</div> */}
-                             <Link
-    className={styles.tableHeader}
-    to="/LRPictures"                         // adjust if your route differs
-    state={{
-      caseDetails: selectedCase,
-      leadDetails: selectedLead,
-    }}
-  >
-    Picture Details
-  </Link>
+                            <Link className={styles.tableHeader} to="/LRPictures" state={{ caseDetails: selectedCase, leadDetails: selectedLead }}>Picture Details</Link>
                             <table className={styles.simpleTable}>
                                 <thead>
                                 <tr>
-                                    <th>Description</th>
                                     <th>Taken On</th>
+                                    <th>Description</th>
                                     <th>File / Link</th>
-                                  
+                                    <th style={{ width: '8%' }}>More</th>
                                 </tr>
                                 </thead>
                                 <tbody>
                                 {grouped.pictures.map((p) => {
                                     const href = p?.isLink && p?.link ? p.link : p?.signedUrl ? p.signedUrl : "";
                                     const fileLabel = p?.isLink ? (p?.originalName || p?.link || "") : (p?.originalName || p?.filename || "");
-                                    const fileCell = href
-                                      ? <a href={href} target="_blank" rel="noreferrer">{fileLabel || "View file"}</a>
-                                      : (fileLabel || "—");
-
+                                    const fileCell = href ? <a href={href} target="_blank" rel="noreferrer">{fileLabel || "View file"}</a> : (fileLabel || "—");
                                     return (
                                     <tr key={p._id}>
+                                        <td>{formatDate(p.datePictureTaken)}</td>
                                         <td>{toText(p.pictureDescription || p.description)}</td>
-                                        <td>{p.datePictureTaken ? new Date(p.datePictureTaken).toLocaleDateString() : "—"}</td>
                                         <td>{fileCell}</td>
-
+                                        <td><button className={styles.moreBtn} onClick={() => setSelectedDetail({ title: 'Picture Details', fields: [
+                                          { label: 'Date Taken', value: formatDate(p.datePictureTaken) },
+                                          { label: 'Entered By', value: toText(p.enteredBy) },
+                                          { label: 'Date Entered', value: formatDate(p.enteredDate) },
+                                          { label: 'Description', value: toText(p.pictureDescription || p.description) },
+                                          { label: 'File', href: href || '', linkText: fileLabel || '' },
+                                        ]})}>More</button></td>
                                     </tr>
                                     );
                                 })}
@@ -925,53 +882,36 @@ const actuallyDoSubmitReport = async () => {
                         }
 
 
-                        // Audios (table view)
+                        // Audio
                         if (grouped.audio.length) {
                         detailSections.push(
                             <div key="audio" className={styles.tableBlock}>
-                            {/* <div className={styles.tableHeader}>Audio</div> */}
-                             <Link
-    className={styles.tableHeader}
-    to="/LRAudio"                         // adjust if your route differs
-    state={{
-      caseDetails: selectedCase,
-      leadDetails: selectedLead,
-    }}
-  >
-    Audio Details
-  </Link>
+                            <Link className={styles.tableHeader} to="/LRAudio" state={{ caseDetails: selectedCase, leadDetails: selectedLead }}>Audio Details</Link>
                             <table className={styles.simpleTable}>
                                 <thead>
                                 <tr>
                                     <th>Recorded On</th>
                                     <th>Description</th>
                                     <th>File / Link</th>
+                                    <th style={{ width: '8%' }}>More</th>
                                 </tr>
                                 </thead>
                                 <tbody>
                                 {grouped.audio.map((a) => {
-                                    const href =
-                                    a?.isLink && a?.link ? a.link :
-                                    a?.signedUrl ? a.signedUrl : "";
+                                    const href = a?.isLink && a?.link ? a.link : a?.signedUrl ? a.signedUrl : "";
                                     const fileLabel = a?.isLink ? (a?.originalName || a?.link || "") : (a?.originalName || a?.filename || "");
-
                                     return (
                                     <tr key={a._id}>
-                                        <td>
-                                        {a.dateAudioRecorded
-                                            ? new Date(a.dateAudioRecorded).toLocaleString()
-                                            : "—"}
-                                        </td>
+                                        <td>{formatDate(a.dateAudioRecorded)}</td>
                                         <td>{toText(a.audioDescription)}</td>
-                                        <td>
-                                        {href ? (
-                                            <a href={href} target="_blank" rel="noreferrer">
-                                            {toText(fileLabel) || "View file"}
-                                            </a>
-                                        ) : (
-                                            toText(fileLabel) || "—"
-                                        )}
-                                        </td>
+                                        <td>{href ? <a href={href} target="_blank" rel="noreferrer">{toText(fileLabel) || "View file"}</a> : (toText(fileLabel) || "—")}</td>
+                                        <td><button className={styles.moreBtn} onClick={() => setSelectedDetail({ title: 'Audio Details', fields: [
+                                          { label: 'Recorded On', value: formatDate(a.dateAudioRecorded) },
+                                          { label: 'Entered By', value: toText(a.enteredBy) },
+                                          { label: 'Date Entered', value: formatDate(a.enteredDate) },
+                                          { label: 'Description', value: toText(a.audioDescription) },
+                                          { label: 'File', href: href || '', linkText: fileLabel || '' },
+                                        ]})}>More</button></td>
                                     </tr>
                                     );
                                 })}
@@ -982,46 +922,107 @@ const actuallyDoSubmitReport = async () => {
                         }
 
 
-                        // Videos (table view)
+                        // Videos
                         if (grouped.videos.length) {
                         detailSections.push(
                             <div key="videos" className={styles.tableBlock}>
-                            <div className={styles.tableHeader}>Videos</div>
+                            <Link className={styles.tableHeader} to="/LRVideo" state={{ caseDetails: selectedCase, leadDetails: selectedLead }}>Video Details</Link>
                             <table className={styles.simpleTable}>
                                 <thead>
                                 <tr>
                                     <th>Recorded On</th>
                                     <th>Description</th>
                                     <th>File / Link</th>
+                                    <th style={{ width: '8%' }}>More</th>
                                 </tr>
                                 </thead>
                                 <tbody>
                                 {grouped.videos.map((v) => {
-                                    const href =
-                                    v?.isLink && v?.link ? v.link :
-                                    v?.signedUrl ? v.signedUrl : "";
+                                    const href = v?.isLink && v?.link ? v.link : v?.signedUrl ? v.signedUrl : "";
                                     const fileLabel = v?.isLink ? (v?.originalName || v?.link || "") : (v?.originalName || v?.filename || "");
-
                                     return (
                                     <tr key={v._id}>
-                                        <td>
-                                        {v.dateVideoRecorded
-                                            ? new Date(v.dateVideoRecorded).toLocaleString()
-                                            : "—"}
-                                        </td>
+                                        <td>{formatDate(v.dateVideoRecorded)}</td>
                                         <td>{toText(v.videoDescription)}</td>
-                                        <td>
-                                        {href ? (
-                                            <a href={href} target="_blank" rel="noreferrer">
-                                            {toText(fileLabel) || "View file"}
-                                            </a>
-                                        ) : (
-                                            toText(fileLabel) || "—"
-                                        )}
-                                        </td>
+                                        <td>{href ? <a href={href} target="_blank" rel="noreferrer">{toText(fileLabel) || "View file"}</a> : (toText(fileLabel) || "—")}</td>
+                                        <td><button className={styles.moreBtn} onClick={() => setSelectedDetail({ title: 'Video Details', fields: [
+                                          { label: 'Recorded On', value: formatDate(v.dateVideoRecorded) },
+                                          { label: 'Entered By', value: toText(v.enteredBy) },
+                                          { label: 'Date Entered', value: formatDate(v.enteredDate) },
+                                          { label: 'Description', value: toText(v.videoDescription) },
+                                          { label: 'File', href: href || '', linkText: fileLabel || '' },
+                                        ]})}>More</button></td>
                                     </tr>
                                     );
                                 })}
+                                </tbody>
+                            </table>
+                            </div>
+                        );
+                        }
+
+                        // Notes
+                        if (grouped.notes.length) {
+                        detailSections.push(
+                            <div key="notes" className={styles.tableBlock}>
+                            <Link className={styles.tableHeader} to="/LRScratchpad" state={{ caseDetails: selectedCase, leadDetails: selectedLead }}>Notes</Link>
+                            <table className={styles.simpleTable}>
+                                <thead>
+                                <tr>
+                                    <th style={{ width: '13%' }}>Date</th>
+                                    <th style={{ width: '17%' }}>Entered By</th>
+                                    <th>Note</th>
+                                    <th style={{ width: '8%' }}>More</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {grouped.notes.map((n) => (
+                                    <tr key={n._id}>
+                                    <td>{formatDate(n.enteredDate)}</td>
+                                    <td>{toText(n.enteredBy)}</td>
+                                    <td className={styles.truncCell}>{toText(n.text)}</td>
+                                    <td><button className={styles.moreBtn} onClick={() => setSelectedDetail({ title: 'Note Details', fields: [
+                                      { label: 'Date', value: formatDate(n.enteredDate) },
+                                      { label: 'Entered By', value: toText(n.enteredBy) },
+                                      { label: 'Note', value: toText(n.text) },
+                                    ]})}>More</button></td>
+                                    </tr>
+                                ))}
+                                </tbody>
+                            </table>
+                            </div>
+                        );
+                        }
+
+                        // Timeline
+                        if (timeline.length) {
+                        detailSections.push(
+                            <div key="timeline" className={styles.tableBlock}>
+                            <Link className={styles.tableHeader} to="/LRTimeline" state={{ caseDetails: selectedCase, leadDetails: selectedLead }}>Timeline Details</Link>
+                            <table className={styles.simpleTable}>
+                                <thead>
+                                <tr>
+                                    <th style={{ width: '12%' }}>Start Date</th>
+                                    <th style={{ width: '12%' }}>End Date</th>
+                                    <th style={{ width: '10%' }}>Start Time</th>
+                                    <th style={{ width: '10%' }}>End Time</th>
+                                    <th style={{ width: '18%' }}>Location</th>
+                                    <th style={{ width: '30%' }}>Description</th>
+                                    <th style={{ width: '8%' }}>More</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {timeline.map((t) => (
+                                    <tr key={t._id}>
+                                    <td className={styles.truncCell}>{formatDate(t.eventStartDate || t.eventDate)}</td>
+                                    <td className={styles.truncCell}>{formatDate(t.eventEndDate)}</td>
+                                    <td className={styles.truncCell}>{t.eventStartTime ? new Date(t.eventStartTime).toLocaleTimeString() : "—"}</td>
+                                    <td className={styles.truncCell}>{t.eventEndTime ? new Date(t.eventEndTime).toLocaleTimeString() : "—"}</td>
+                                    <td className={styles.truncCell}>{toText(t.eventLocation)}</td>
+                                    <td className={styles.truncCell}>{toText(t.eventDescription)}</td>
+                                    <td><button className={styles.moreBtn} onClick={() => setSelectedTimeline(t)}>More</button></td>
+                                    </tr>
+                                ))}
                                 </tbody>
                             </table>
                             </div>
@@ -1109,9 +1110,16 @@ const actuallyDoSubmitReport = async () => {
             <h2 className={styles.tlModalTitle}>Timeline Entry Details</h2>
 
             <table className={styles.tlGroupTable}>
-              <thead><tr><th>Event Date</th><th>Location</th></tr></thead>
+              <thead><tr><th>Start Date</th><th>End Date</th></tr></thead>
               <tbody><tr>
-                <td>{selectedTimeline.eventDate ? new Date(selectedTimeline.eventDate).toLocaleDateString() : '—'}</td>
+                <td>{formatDate(selectedTimeline.eventStartDate || selectedTimeline.eventDate)}</td>
+                <td>{formatDate(selectedTimeline.eventEndDate)}</td>
+              </tr></tbody>
+            </table>
+
+            <table className={styles.tlGroupTable}>
+              <thead><tr><th>Location</th></tr></thead>
+              <tbody><tr>
                 <td>{toText(selectedTimeline.eventLocation)}</td>
               </tr></tbody>
             </table>
@@ -1137,6 +1145,30 @@ const actuallyDoSubmitReport = async () => {
                 <tbody><tr><td>{selectedTimeline.timelineFlag.join(', ')}</td></tr></tbody>
               </table>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Generic detail modal ── */}
+      {selectedDetail && (
+        <div className={styles.tlModalOverlay} onClick={() => setSelectedDetail(null)}>
+          <div className={styles.tlModal} onClick={e => e.stopPropagation()}>
+            <button className={styles.tlModalClose} onClick={() => setSelectedDetail(null)}>&times;</button>
+            <h2 className={styles.tlModalTitle}>{selectedDetail.title}</h2>
+            <table className={styles.tlGroupTable}>
+              <tbody>
+                {selectedDetail.fields.map(({ label, value, href, linkText }) => (
+                  <tr key={label}>
+                    <th style={{ width: '35%', textAlign: 'left', paddingRight: 8 }}>{label}</th>
+                    <td style={{ wordBreak: 'break-word' }}>
+                      {href
+                        ? <a href={href} target="_blank" rel="noreferrer">{linkText || 'File'}</a>
+                        : (value || '—')}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

@@ -243,9 +243,9 @@ useEffect(() => {
     if (!dateString) return '';
     const date = new Date(dateString);
     if (isNaN(date)) return '';
-    const mm = (date.getMonth() + 1).toString().padStart(2, '0');
-    const dd = date.getDate().toString().padStart(2, '0');
-    const yy = date.getFullYear().toString().slice(-2);
+    const mm = (date.getUTCMonth() + 1).toString().padStart(2, '0');
+    const dd = date.getUTCDate().toString().padStart(2, '0');
+    const yy = date.getUTCFullYear().toString().slice(-2);
     return `${mm}/${dd}/${yy}`;
   };
 

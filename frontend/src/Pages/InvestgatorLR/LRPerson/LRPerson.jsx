@@ -56,7 +56,7 @@ const attachFiles = async (items, idFieldName, filesEndpoint) => {
 const mapPersonToRow = (person) => ({
   _id:          person._id,
   returnId:     person.leadReturnId,
-  dateEntered:  new Date(person.enteredDate).toLocaleDateString(),
+  dateEntered:  (() => { const d = new Date(person.enteredDate); return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()).toLocaleDateString(); })(),
   name:         [person.firstName, person.middleInitial, person.lastName].filter(Boolean).join(' '),
   dateOfBirth:  person.dateOfBirth
     ? (() => { const d = new Date(person.dateOfBirth); return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()).toLocaleDateString(); })()
