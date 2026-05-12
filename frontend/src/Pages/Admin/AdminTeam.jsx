@@ -72,6 +72,7 @@ const NO_ADD_ROLES = new Set(["detectiveSupervisors", "caseManagers", "investiga
 export const TeamModal = ({ caseData, allUsers, onClose, onSaved }) => {
   const [team, setTeam]             = useState({ detectiveSupervisors: [], caseManagers: [], investigators: [], officers: [], readOnly: [] });
   const [initialReadOnly, setInitialReadOnly] = useState([]);
+  const [initialTeam, setInitialTeam] = useState({ detectiveSupervisors: [], caseManagers: [], investigators: [], officers: [] });
   const [blocked, setBlocked]       = useState(new Set()); // usernames whose access is revoked
   const [loading, setLoading]       = useState(true);
   const [saving, setSaving]         = useState(false);
@@ -92,14 +93,19 @@ export const TeamModal = ({ caseData, allUsers, onClose, onSaved }) => {
           headers: { Authorization: `Bearer ${token}` },
         });
         const ro = data.readOnly || [];
+        const ds = data.detectiveSupervisors || [];
+        const cm = data.caseManagers || [];
+        const inv = data.investigators || [];
+        const off = data.officers || [];
         setTeam({
-          detectiveSupervisors: data.detectiveSupervisors || [],
-          caseManagers:         data.caseManagers || [],
-          investigators:        data.investigators || [],
-          officers:             data.officers || [],
+          detectiveSupervisors: ds,
+          caseManagers:         cm,
+          investigators:        inv,
+          officers:             off,
           readOnly:             ro,
         });
         setInitialReadOnly(ro);
+        setInitialTeam({ detectiveSupervisors: ds, caseManagers: cm, investigators: inv, officers: off });
         setBlocked(new Set(data.blocked || []));
         setAssignedCaseManager(data.assignedCaseManager || "");
       } catch {
@@ -181,30 +187,43 @@ export const TeamModal = ({ caseData, allUsers, onClose, onSaved }) => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // Send a notification to every Read Only user that was just added
-      const newReadOnly = team.readOnly.filter((u) => !initialReadOnly.includes(u));
-      await Promise.allSettled(
-        newReadOnly.map((username) =>
-          api.post(
-            "/api/notifications",
-            {
-              notificationId: `${Date.now()}-${username}`,
-              assignedBy:     adminUsername,
-              assignedTo:     [{ username, role: "Read Only", status: "pending", unread: true }],
-              action1:        "has granted you Read Only access to the case",
-              post1:          `${caseData.caseNo}: ${caseData.caseName}`,
-              caseId:         caseData._id || undefined,
-              caseNo:         caseData.caseNo,
-              caseName:       caseData.caseName,
-              caseStatus:     "Open",
-              unread:         true,
-              type:           "Case",
-              time:           new Date().toISOString(),
-            },
-            { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` } }
-          )
-        )
-      );
+      // Send notifications to all newly added team members
+      const roleNotifConfig = [
+        { key: "detectiveSupervisors", role: "Detective Supervisor", action: "assigned you to a new case" },
+        { key: "caseManagers",         role: "Case Manager",         action: "assigned you to a new case" },
+        { key: "investigators",        role: "Investigator",         action: "assigned you to a new case" },
+        { key: "officers",             role: "Officer",              action: "assigned you to a new case" },
+        { key: "readOnly",             role: "Read Only",            action: "has granted you Read Only access to the case" },
+      ];
+      const baseTs = Date.now();
+      const notifPayloads = [];
+      roleNotifConfig.forEach(({ key, role, action }, roleIdx) => {
+        const initial = key === "readOnly" ? initialReadOnly : (initialTeam[key] || []);
+        const newMembers = team[key].filter((u) => !initial.includes(u));
+        newMembers.forEach((username, memberIdx) => {
+          notifPayloads.push(
+            api.post(
+              "/api/notifications",
+              {
+                notificationId: `${baseTs}-${roleIdx}-${memberIdx}-${username}`,
+                assignedBy:     adminUsername,
+                assignedTo:     [{ username, role, status: "pending", unread: true }],
+                action1:        action,
+                post1:          `${caseData.caseNo}: ${caseData.caseName}`,
+                caseId:         caseData._id || undefined,
+                caseNo:         caseData.caseNo,
+                caseName:       caseData.caseName,
+                caseStatus:     "Open",
+                unread:         true,
+                type:           "Case",
+                time:           new Date().toISOString(),
+              },
+              { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` } }
+            )
+          );
+        });
+      });
+      await Promise.allSettled(notifPayloads);
 
       onSaved(caseData.caseNo, team);
       onClose();

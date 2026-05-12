@@ -16,8 +16,8 @@
 .main-container {
   margin-left: var(--sidebar-w);
   width: calc(100% - var(--sidebar-w));
-  padding-left: 32px;
-  padding-right: 32px;
+  padding-left: 20px;
+  padding-right: 20px;
   padding-top: var(--nav-h);
   box-sizing: border-box;
   height: 100dvh;
@@ -51,12 +51,12 @@
 .main-page-belowpart {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   justify-content: flex-start;
   width: 100%;
   box-sizing: border-box;
   margin-top: 4px;
-  padding: 0 8px;
+  padding: 0 4px;
   flex: 1;
   min-height: 0;
   overflow-y: auto;

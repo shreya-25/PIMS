@@ -623,8 +623,8 @@ export const HomePage = () => {
   // ─── Cases table: columns, filter/sort ───────────────────────────────────
 
   const columnWidths = treatAsDS
-    ? { "Case No.": "9%", "Case Name": "25%", "Created At": "13%", "Assigned To": "23%", "Status": "10%" }
-    : { "Case No.": "10%", "Case Name": "29%", "Created At": "14%", "Assigned To": "25%", "Status": "10%" };
+    ? { "Case No.": "9%", "Case Name": "23%", "Created At": "13%", "Assigned To": "23%", "Status": "10%" }
+    : { "Case No.": "10%", "Case Name": "27%", "Created At": "14%", "Assigned To": "25%", "Status": "10%" };
   const colKey = { "Case No.": "id", "Case Name": "title", "Created At": "createdAt", "Assigned To": "assignedCaseManager", "Status": "status" };
 
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
@@ -707,7 +707,7 @@ export const HomePage = () => {
   };
   const assignedColWidths = {
     "Lead No.": "14%",
-    "Lead Name": "26%",
+    "Lead Name": "24%",
     "Case Name": "26%",
     "Assigned Officers": "20%",
   };
@@ -1001,7 +1001,7 @@ export const HomePage = () => {
                                 </th>
                               );
                             })}
-                            <th style={{ width: treatAsDS ? "20%" : "12%", textAlign: "center" }}>Actions</th>
+                            <th style={{ width: treatAsDS ? "22%" : "14%", textAlign: "center" }}>Actions</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1123,7 +1123,7 @@ export const HomePage = () => {
                                   </th>
                                 );
                               })}
-                              <th style={{ width: "14%", textAlign: "center" }}>Actions</th>
+                              <th style={{ width: "16%", textAlign: "center" }}>Actions</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1175,7 +1175,7 @@ export const HomePage = () => {
                                 };
                                 const dataKey = keyMap[col];
                                 return (
-                                  <th key={col} className={styles["column-header1"]} style={{ width: col === "Lead No." ? "14%" : "36%" }}>
+                                  <th key={col} className={styles["column-header1"]} style={{ width: col === "Lead No." ? "14%" : "35%" }}>
                                     <div className={styles["header-title"]}>
                                       {col}
                                       <span ref={(el) => (popupPendingRefs.current[col] = el)}>
@@ -1237,7 +1237,7 @@ export const HomePage = () => {
                                   </th>
                                 );
                               })}
-                              <th style={{ width: "14%", textAlign: "center" }}>Actions</th>
+                              <th style={{ width: "16%", textAlign: "center" }}>Actions</th>
                             </tr>
                           </thead>
                           <tbody>
