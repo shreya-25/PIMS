@@ -42,6 +42,21 @@ const formatTimeRangeNY = (startTime, endTime) => {
   return `${start.toLocaleTimeString('en-US', opts)} - ${end.toLocaleTimeString('en-US', opts)}`;
 };
 
+// ---------- Helper to format date+time as MM/DD/YY h:mm AM/PM (local time) ----------
+const formatDateTime = (dateString) => {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  if (isNaN(date)) return "";
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  const day = date.getDate().toString().padStart(2, "0");
+  const year = date.getFullYear().toString().slice(-2);
+  const hours = date.getHours();
+  const mins = date.getMinutes().toString().padStart(2, "0");
+  const ampm = hours >= 12 ? "PM" : "AM";
+  const h12 = (hours % 12 || 12).toString();
+  return `${month}/${day}/${year} ${h12}:${mins} ${ampm}`;
+};
+
 // ---------- Helper to format dates as MM/DD/YYYY (4-digit year) ----------
 const formatDateFull = (dateString) => {
   if (!dateString) return "";
@@ -234,6 +249,8 @@ export const LeadsDesk = () => {
   };
   const [hierarchyChains, setHierarchyChains] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [updatedAfter, setUpdatedAfter] = useState("");
+  const [updatedBefore, setUpdatedBefore] = useState("");
   const [selectedSubCategories, setSelectedSubCategories] = useState([]);
   const [subCategoryDropdownOpen, setSubCategoryDropdownOpen] = useState(false);
   const subCategoryDropdownRef = useRef(null);
@@ -1019,6 +1036,16 @@ useEffect(() => {
                 </td>
               </tr>
               <tr>
+                <td className={styles["label-cell"]}>Lead Status</td>
+                <td className={styles["input-cell"]} colSpan={3}>
+                  <input type="text" value={lead.leadStatus || ""} readOnly />
+                </td>
+                <td className={styles["label-cell"]}>Last Updated</td>
+                <td className={styles["input-cell"]} colSpan={3}>
+                  <input type="text" value={formatDateTime(lead.updatedAt)} readOnly />
+                </td>
+              </tr>
+              <tr>
                 <td className={styles["label-cell"]}>Assigned Officers</td>
                 <td className={styles["input-cell"]} colSpan={7}>
                   <input
@@ -1554,6 +1581,18 @@ useEffect(() => {
       const cats = lead.subCategory || [];
       return selectedSubCategories.every((sc) => cats.includes(sc));
     })
+    .filter((lead) => {
+      if (!updatedAfter && !updatedBefore) return true;
+      const lastUpdated = lead.updatedAt ? new Date(lead.updatedAt) : null;
+      if (!lastUpdated) return false;
+      if (updatedAfter && lastUpdated < new Date(updatedAfter)) return false;
+      if (updatedBefore) {
+        const end = new Date(updatedBefore);
+        end.setHours(23, 59, 59, 999);
+        if (lastUpdated > end) return false;
+      }
+      return true;
+    })
     .sort((a, b) =>
       leadSortOrder === "asc" ? Number(a.leadNo) - Number(b.leadNo) : Number(b.leadNo) - Number(a.leadNo)
     );
@@ -1896,26 +1935,52 @@ useEffect(() => {
 </CollapsibleSection> */}
 
 
-              <div className={styles["search-lead-portion"]}>
-            <div className={styles["search-lead-head"]}>
-            <label className={styles["input-label1"]}>Search Lead</label>
-            </div>
-            <div className={styles["search_and_hierarchy_container"]}>
-              <div className={styles["search-bar"]}>
-                <div className={styles["search-container1"]}>
-                  <i className="fa-solid fa-magnifying-glass"></i>
-                  <input type="text" className={styles["search-input1"]} placeholder="Search Lead"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      console.log("Enter pressed, calling handleSearch");
-                      handleSearch();
-                    }
-                  }} />
+              <div className={styles["search-toolbar"]}>
+                <div className={styles["search-toolbar__group"]}>
+                  <span className={styles["search-toolbar__label"]}>Search Lead</span>
+                  <div className={styles["search-container1"]}>
+                    <i className="fa-solid fa-magnifying-glass"></i>
+                    <input
+                      type="text"
+                      className={styles["search-input1"]}
+                      placeholder="Search leads…"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
+                    />
+                  </div>
                 </div>
-              </div>
-              </div>
+
+                <div className={styles["search-toolbar__divider"]} />
+
+                <div className={styles["search-toolbar__group"]}>
+                  <span className={styles["search-toolbar__label"]}>Last Updated</span>
+                  <div className={styles["search-toolbar__dates"]}>
+                    <input
+                      type="date"
+                      className={styles["updated-filter__input"]}
+                      value={updatedAfter}
+                      onChange={(e) => setUpdatedAfter(e.target.value)}
+                      aria-label="Updated after"
+                    />
+                    <span className={styles["search-toolbar__dash"]}>—</span>
+                    <input
+                      type="date"
+                      className={styles["updated-filter__input"]}
+                      value={updatedBefore}
+                      onChange={(e) => setUpdatedBefore(e.target.value)}
+                      aria-label="Updated before"
+                    />
+                    {(updatedAfter || updatedBefore) && (
+                      <button
+                        className={styles["search-toolbar__clear"]}
+                        onClick={() => { setUpdatedAfter(""); setUpdatedBefore(""); }}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
                <div className={styles["p-6"]}>
                   <Pagination
