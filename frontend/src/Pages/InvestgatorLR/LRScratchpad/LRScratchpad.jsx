@@ -12,7 +12,7 @@
  *  - Read-only enforcement based on lead status
  */
 
-import { useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import { useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import Navbar from '../../../components/Navbar/Navbar';
 import { SideBar } from '../../../components/Sidebar/Sidebar';
@@ -28,6 +28,7 @@ import lrStyles    from '../LR.module.css';
 import localStyles from './LRScratchpad.module.css';
 import { LRTopMenu } from '../LRTopMenu';
 import { safeEncode } from '../../../utils/encode';
+import Filter from '../../../components/Filter/Filter';
 
 const styles = { ...lrStyles, ...localStyles };
 
@@ -71,6 +72,14 @@ export const LRScratchpad = () => {
   const [confirmOpen, setConfirmOpen]               = useState(false);
   const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
   const [expandedRows, setExpandedRows]             = useState(new Set());
+
+  // Filter / sort state
+  const filterButtonRefs = useRef({});
+  const [openFilter, setOpenFilter]                   = useState(null);
+  const [tempFilterSelections, setTempFilterSelections] = useState({});
+  const [filterSearch, setFilterSearch]               = useState({});
+  const [sortConfig, setSortConfig]                   = useState({ key: null, direction: 'asc' });
+  const [filterConfig, setFilterConfig]               = useState({ returnId: [], dateEntered: [], enteredBy: [] });
 
   const isEditing = editingIndex !== null;
 
@@ -421,6 +430,52 @@ export const LRScratchpad = () => {
     });
   }, []);
 
+  // ── Filter / sort derived state ───────────────────────────────────────────
+
+  const distinctValues = useMemo(() => {
+    const map = { returnId: new Set(), dateEntered: new Set(), enteredBy: new Set() };
+    notes.forEach(n => {
+      if (n.returnId)    map.returnId.add(String(n.returnId));
+      if (n.dateEntered) map.dateEntered.add(n.dateEntered);
+      if (n.enteredBy)   map.enteredBy.add(n.enteredBy);
+    });
+    return Object.fromEntries(Object.entries(map).map(([k, s]) => [k, [...s]]));
+  }, [notes]);
+
+  const sortedNotes = useMemo(() => {
+    const filtered = notes.filter(n =>
+      Object.entries(filterConfig).every(([field, sel]) => {
+        if (!sel.length) return true;
+        return sel.includes(String(n[field] ?? ''));
+      })
+    );
+    if (!sortConfig.key) return filtered;
+    return [...filtered].sort((a, b) => {
+      const aV = String(a[sortConfig.key] ?? '');
+      const bV = String(b[sortConfig.key] ?? '');
+      return sortConfig.direction === 'asc' ? aV.localeCompare(bV) : bV.localeCompare(aV);
+    });
+  }, [notes, filterConfig, sortConfig]);
+
+  const sortColumn = (dataKey, direction) => setSortConfig({ key: dataKey, direction });
+  const handleFilterSearch = (dataKey, txt) => setFilterSearch(fs => ({ ...fs, [dataKey]: txt }));
+  const toggleSelectAll = (dataKey) => {
+    const all = distinctValues[dataKey] || [];
+    setTempFilterSelections(ts => ({ ...ts, [dataKey]: ts[dataKey]?.length === all.length ? [] : [...all] }));
+  };
+  const allChecked = (dataKey) => {
+    const sel = tempFilterSelections[dataKey] || [];
+    return sel.length === (distinctValues[dataKey] || []).length;
+  };
+  const handleCheckboxToggle = (dataKey, v) => setTempFilterSelections(ts => {
+    const sel = ts[dataKey] || [];
+    return { ...ts, [dataKey]: sel.includes(v) ? sel.filter(x => x !== v) : [...sel, v] };
+  });
+  const applyFilter = (dataKey) => {
+    setFilterConfig(fc => ({ ...fc, [dataKey]: tempFilterSelections[dataKey] || [] }));
+    setOpenFilter(null);
+  };
+
   // ── Render ─────────────────────────────────────────────────────────────────
 
   const casePageRoute = selectedCase?.role === 'Investigator' ? '/Investigator' : '/CasePageManager';
@@ -582,16 +637,25 @@ export const LRScratchpad = () => {
               <table className={styles.leadsTable}>
                 <thead>
                   <tr>
-                    <th style={{ width: '5%' }}>Id</th>
-                    <th style={{ width: '8%' }}>Date</th>
-                    <th style={{ width: '12%' }}>Entered By</th>
+                    {[['Id','returnId','5%'],['Date','dateEntered','8%'],['Entered By','enteredBy','12%']].map(([label, key, w]) => (
+                      <th key={key} style={{ width: w, position: 'relative' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                          {label}
+                          <button ref={el => (filterButtonRefs.current[key] = el)} onClick={() => setOpenFilter(prev => prev === key ? null : key)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px', lineHeight: 1 }}>
+                            <img src="/Materials/fs.png" alt="filter" style={{ width: '13px', height: '13px', verticalAlign: 'middle' }} />
+                          </button>
+                          <Filter dataKey={key} distinctValues={distinctValues} open={openFilter === key} anchorRef={{ current: filterButtonRefs.current[key] }} searchValue={filterSearch[key] || ''} selections={tempFilterSelections[key] || []} onSort={sortColumn} onSearch={handleFilterSearch} allChecked={allChecked} onToggleAll={toggleSelectAll} onToggleOne={handleCheckboxToggle} onApply={applyFilter} onCancel={() => setOpenFilter(null)} />
+                        </div>
+                      </th>
+                    ))}
                     <th>Notes</th>
                     <th style={{ width: '10%' }}>Actions</th>
                     {isCaseManager && <th style={{ width: '15%' }}>Access</th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {notes.length > 0 ? notes.map((note, idx) => {
+                  {sortedNotes.length > 0 ? sortedNotes.map((note) => {
+                    const idx = notes.indexOf(note);
                     const canModify  = isCaseManager || (note.enteredByUserId && signedInUserId
                       ? note.enteredByUserId === signedInUserId
                       : note.enteredBy?.trim() === signedInOfficer?.trim());
@@ -649,7 +713,7 @@ export const LRScratchpad = () => {
                   }) : (
                     <tr>
                       <td colSpan={isCaseManager ? 6 : 5} style={{ textAlign: 'center' }}>
-                        No Notes Added
+                        {notes.length > 0 ? 'No notes match the current filter.' : 'No Notes Added'}
                       </td>
                     </tr>
                   )}

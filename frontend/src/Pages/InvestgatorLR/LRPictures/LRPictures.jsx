@@ -26,6 +26,7 @@ import styles from "../LR.module.css";
 import { formatDate, alphabetToNumber, buildLeadCaseIdPath, isHttpUrl } from "../lrUtils";
 import { useLeadReport } from "../useLeadReport";
 import { LRTopMenu } from "../LRTopMenu";
+import Filter from "../../../components/Filter/Filter";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -138,6 +139,14 @@ export const LRPictures = () => {
   const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
 
   const fileInputRef = useRef();
+
+  // Filter / sort state
+  const filterButtonRefs = useRef({});
+  const [openFilter, setOpenFilter] = useState(null);
+  const [tempFilterSelections, setTempFilterSelections] = useState({});
+  const [filterSearch, setFilterSearch] = useState({});
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  const [filterConfig, setFilterConfig] = useState({ returnId: [], dateEntered: [], enteredBy: [], description: [] });
 
   // ── Report generation (shared hook) ────────────────────────────────────────
   const { isGenerating, handleViewLeadReturn } = useLeadReport({
@@ -584,6 +593,53 @@ export const LRPictures = () => {
     }
   };
 
+  // ── Filter / sort derived state ───────────────────────────────────────────
+
+  const distinctValues = useMemo(() => {
+    const map = { returnId: new Set(), dateEntered: new Set(), enteredBy: new Set(), description: new Set() };
+    pictures.forEach(p => {
+      if (p.returnId != null)  map.returnId.add(String(p.returnId));
+      if (p.dateEntered)       map.dateEntered.add(p.dateEntered);
+      if (p.enteredBy)         map.enteredBy.add(p.enteredBy);
+      if (p.description)       map.description.add(p.description);
+    });
+    return Object.fromEntries(Object.entries(map).map(([k, s]) => [k, [...s]]));
+  }, [pictures]);
+
+  const sortedPictures = useMemo(() => {
+    const filtered = pictures.filter(p =>
+      Object.entries(filterConfig).every(([field, sel]) => {
+        if (!sel.length) return true;
+        return sel.includes(String(p[field] ?? ''));
+      })
+    );
+    if (!sortConfig.key) return filtered;
+    return [...filtered].sort((a, b) => {
+      const aV = String(a[sortConfig.key] ?? '');
+      const bV = String(b[sortConfig.key] ?? '');
+      return sortConfig.direction === 'asc' ? aV.localeCompare(bV) : bV.localeCompare(aV);
+    });
+  }, [pictures, filterConfig, sortConfig]);
+
+  const sortColumn = (dataKey, direction) => setSortConfig({ key: dataKey, direction });
+  const handleFilterSearch = (dataKey, txt) => setFilterSearch(fs => ({ ...fs, [dataKey]: txt }));
+  const toggleSelectAll = (dataKey) => {
+    const all = distinctValues[dataKey] || [];
+    setTempFilterSelections(ts => ({ ...ts, [dataKey]: ts[dataKey]?.length === all.length ? [] : [...all] }));
+  };
+  const allChecked = (dataKey) => {
+    const sel = tempFilterSelections[dataKey] || [];
+    return sel.length === (distinctValues[dataKey] || []).length;
+  };
+  const handleCheckboxToggle = (dataKey, v) => setTempFilterSelections(ts => {
+    const sel = ts[dataKey] || [];
+    return { ...ts, [dataKey]: sel.includes(v) ? sel.filter(x => x !== v) : [...sel, v] };
+  });
+  const applyFilter = (dataKey) => {
+    setFilterConfig(fc => ({ ...fc, [dataKey]: tempFilterSelections[dataKey] || [] }));
+    setOpenFilter(null);
+  };
+
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
@@ -790,23 +846,31 @@ export const LRPictures = () => {
                 <table className={styles.leadsTable}>
                   <thead>
                     <tr>
-                      <th style={{ width: '5%'  }}>Id</th>
-                      <th style={{ width: '8%'  }}>Date</th>
-                      <th style={{ width: '12%' }}>Entered By</th>
-                      <th style={{ width: '23%' }}>Description</th>
+                      {[['Id','returnId','5%'],['Date','dateEntered','8%'],['Entered By','enteredBy','12%'],['Description','description','23%']].map(([label, key, w]) => (
+                        <th key={key} style={{ width: w, position: 'relative' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                            {label}
+                            <button ref={el => (filterButtonRefs.current[key] = el)} onClick={() => setOpenFilter(prev => prev === key ? null : key)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px', lineHeight: 1 }}>
+                              <img src="/Materials/fs.png" alt="filter" style={{ width: '13px', height: '13px', verticalAlign: 'middle' }} />
+                            </button>
+                            <Filter dataKey={key} distinctValues={distinctValues} open={openFilter === key} anchorRef={{ current: filterButtonRefs.current[key] }} searchValue={filterSearch[key] || ''} selections={tempFilterSelections[key] || []} onSort={sortColumn} onSearch={handleFilterSearch} allChecked={allChecked} onToggleAll={toggleSelectAll} onToggleOne={handleCheckboxToggle} onApply={applyFilter} onCancel={() => setOpenFilter(null)} />
+                          </div>
+                        </th>
+                      ))}
                       <th style={{ width: '18%' }}>File Link</th>
                       <th style={{ width: '10%' }}>Actions</th>
                       {isCaseManager && <th style={{ width: "15%" }}>Access</th>}
                     </tr>
                   </thead>
                   <tbody>
-                    {pictures.length > 0 ? (
-                      pictures.map((picture, index) => {
+                    {sortedPictures.length > 0 ? (
+                      sortedPictures.map((picture) => {
+                        const index = pictures.indexOf(picture);
                         const canModify = isCaseManager || (picture.enteredByUserId && signedInUserId
                           ? picture.enteredByUserId === signedInUserId
                           : picture.enteredBy?.trim() === signedInOfficer?.trim());
                         return (
-                        <tr key={index}>
+                        <tr key={`${picture.returnId ?? ''}-${index}`}>
                           <td>{picture.returnId}</td>
                           <td>{picture.dateEntered}</td>
                           <td>{picture.enteredBy}</td>

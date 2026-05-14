@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import styles from "./AdminUserList.module.css";
 import Navbar from "../../components/Navbar/Navbar";
 import { SideBar } from "../../components/Sidebar/Sidebar";
@@ -197,8 +198,7 @@ export const AdminUserList = () => {
         </div>
       </div>
 
-      {/* ── Centered modal overlay — outside main-container so fixed positioning is truly full-viewport ── */}
-      {editUser && (
+      {editUser && createPortal(
         <div className={styles["modal-overlay"]} onClick={closeEdit}>
           <div className={styles["modal-card"]} onClick={(e) => e.stopPropagation()}>
 
@@ -311,7 +311,8 @@ export const AdminUserList = () => {
             </form>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

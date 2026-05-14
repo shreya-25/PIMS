@@ -18,6 +18,7 @@ import { AlertModal } from '../../../components/AlertModal/AlertModal';
 import { pickHigherStatus } from '../../../utils/status';
 import { useLeadStatus } from '../../../hooks/useLeadStatus';
 import { safeEncode } from '../../../utils/encode';
+import Filter from '../../../components/Filter/Filter';
 
 // ─── Module-level utilities ───────────────────────────────────────────────────
 
@@ -206,6 +207,14 @@ useEffect(() => {
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
   const [isGenerating,  setIsGenerating]  = useState(false);
   const [showNarrativePopup, setShowNarrativePopup] = useState(false);
+
+  // Filter / sort state
+  const filterButtonRefs = useRef({});
+  const [openFilter, setOpenFilter] = useState(null);
+  const [tempFilterSelections, setTempFilterSelections] = useState({});
+  const [filterSearch, setFilterSearch] = useState({});
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  const [filterConfig, setFilterConfig] = useState({ leadReturnId: [], enteredDate: [], enteredBy: [] });
 
   /**
    * Refs that suppress the first sessionStorage write that fires
@@ -786,6 +795,53 @@ useEffect(() => {
     }
   };
 
+  // ─── Filter / sort derived state ─────────────────────────────────────────────
+
+  const distinctValues = useMemo(() => {
+    const map = { leadReturnId: new Set(), enteredDate: new Set(), enteredBy: new Set() };
+    returns.forEach(r => {
+      if (r.leadReturnId != null) map.leadReturnId.add(String(r.leadReturnId));
+      map.enteredDate.add(formatDate(r.enteredDate));
+      if (r.enteredBy) map.enteredBy.add(r.enteredBy);
+    });
+    return Object.fromEntries(Object.entries(map).map(([k, s]) => [k, [...s]]));
+  }, [returns]);
+
+  const sortedReturns = useMemo(() => {
+    const filtered = returns.filter(r =>
+      Object.entries(filterConfig).every(([field, sel]) => {
+        if (!sel.length) return true;
+        const cell = field === 'enteredDate' ? formatDate(r.enteredDate) : String(r[field] ?? '');
+        return sel.includes(cell);
+      })
+    );
+    if (!sortConfig.key) return filtered;
+    return [...filtered].sort((a, b) => {
+      const aV = sortConfig.key === 'enteredDate' ? formatDate(a.enteredDate) : String(a[sortConfig.key] ?? '');
+      const bV = sortConfig.key === 'enteredDate' ? formatDate(b.enteredDate) : String(b[sortConfig.key] ?? '');
+      return sortConfig.direction === 'asc' ? aV.localeCompare(bV) : bV.localeCompare(aV);
+    });
+  }, [returns, filterConfig, sortConfig]);
+
+  const sortColumn = (dataKey, direction) => setSortConfig({ key: dataKey, direction });
+  const handleFilterSearch = (dataKey, txt) => setFilterSearch(fs => ({ ...fs, [dataKey]: txt }));
+  const toggleSelectAll = (dataKey) => {
+    const all = distinctValues[dataKey] || [];
+    setTempFilterSelections(ts => ({ ...ts, [dataKey]: ts[dataKey]?.length === all.length ? [] : [...all] }));
+  };
+  const allChecked = (dataKey) => {
+    const sel = tempFilterSelections[dataKey] || [];
+    return sel.length === (distinctValues[dataKey] || []).length;
+  };
+  const handleCheckboxToggle = (dataKey, v) => setTempFilterSelections(ts => {
+    const sel = ts[dataKey] || [];
+    return { ...ts, [dataKey]: sel.includes(v) ? sel.filter(x => x !== v) : [...sel, v] };
+  });
+  const applyFilter = (dataKey) => {
+    setFilterConfig(fc => ({ ...fc, [dataKey]: tempFilterSelections[dataKey] || [] }));
+    setOpenFilter(null);
+  };
+
   // ─── Guard ────────────────────────────────────────────────────────────────────
   if (!selectedCase && !caseDetails) {
     return <div>Loading case/lead…</div>;
@@ -951,17 +1007,26 @@ useEffect(() => {
                 <table className={styles.leadsTable}>
                   <thead>
                     <tr>
-                      <th style={{ width: '8%' }}>Id</th>
-                      <th style={{ width: '9%' }}>Date</th>
-                      <th style={{ width: '12%' }}>Entered By</th>
+                      {[['Id','leadReturnId','8%'],['Date','enteredDate','9%'],['Entered By','enteredBy','17%']].map(([label, key, w]) => (
+                        <th key={key} style={{ width: w, position: 'relative' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                            {label}
+                            <button ref={el => (filterButtonRefs.current[key] = el)} onClick={() => setOpenFilter(prev => prev === key ? null : key)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px', lineHeight: 1 }}>
+                              <img src="/Materials/fs.png" alt="filter" style={{ width: '13px', height: '13px', verticalAlign: 'middle' }} />
+                            </button>
+                            <Filter dataKey={key} distinctValues={distinctValues} open={openFilter === key} anchorRef={{ current: filterButtonRefs.current[key] }} searchValue={filterSearch[key] || ''} selections={tempFilterSelections[key] || []} onSort={sortColumn} onSearch={handleFilterSearch} allChecked={allChecked} onToggleAll={toggleSelectAll} onToggleOne={handleCheckboxToggle} onApply={applyFilter} onCancel={() => setOpenFilter(null)} />
+                          </div>
+                        </th>
+                      ))}
                       <th className={styles.resultsCol}>Narrative</th>
                       <th style={{ width: '10%' }}>Actions</th>
                       {isCaseManager && <th style={{ width: '15%' }}>Access</th>}
                     </tr>
                   </thead>
                   <tbody>
-                    {returns.length > 0 ? (
-                      returns.map((ret, idx) => {
+                    {sortedReturns.length > 0 ? (
+                      sortedReturns.map((ret) => {
+                        const idx = returns.indexOf(ret);
                         const canModify    = isCaseManager || ret.enteredBy.trim() === officerName.trim();
                         const isExpanded   = expandedRows.has(ret.leadReturnId);
                         const shouldTruncate = (ret.leadReturnResult || '').length > 150;

@@ -15,7 +15,7 @@
  *  - Read-only enforcement based on lead status
  */
 
-import { useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import { useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import Navbar from '../../../components/Navbar/Navbar';
 import { SideBar } from '../../../components/Sidebar/Sidebar';
@@ -31,6 +31,7 @@ import lrStyles    from '../LR.module.css';
 import localStyles from './LRTimeline.module.css';
 import { LRTopMenu } from '../LRTopMenu';
 import { safeEncode } from '../../../utils/encode';
+import Filter from '../../../components/Filter/Filter';
 
 const styles = { ...lrStyles, ...localStyles };
 
@@ -136,6 +137,14 @@ export const LRTimeline = () => {
   const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
   const [selectedEntry, setSelectedEntry]           = useState(null);
   const [showEntryModal, setShowEntryModal]         = useState(false);
+
+  // Filter / sort state
+  const filterButtonRefs = useRef({});
+  const [openFilter, setOpenFilter] = useState(null);
+  const [tempFilterSelections, setTempFilterSelections] = useState({});
+  const [filterSearch, setFilterSearch] = useState({});
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  const [filterConfig, setFilterConfig] = useState({ leadReturnId: [], dateEntered: [], enteredBy: [], eventStartDate: [], eventEndDate: [], location: [] });
 
   const isEditing = editingIndex !== null;
 
@@ -565,6 +574,55 @@ export const LRTimeline = () => {
   const openEntryModal  = (entry) => { setSelectedEntry(entry); setShowEntryModal(true); };
   const closeEntryModal = ()      => { setShowEntryModal(false); setSelectedEntry(null); };
 
+  // ── Filter / sort derived state ───────────────────────────────────────────
+
+  const distinctValues = useMemo(() => {
+    const map = { leadReturnId: new Set(), dateEntered: new Set(), enteredBy: new Set(), eventStartDate: new Set(), eventEndDate: new Set(), location: new Set() };
+    timelineEntries.forEach(e => {
+      if (e.leadReturnId != null)  map.leadReturnId.add(String(e.leadReturnId));
+      if (e.dateEntered)           map.dateEntered.add(e.dateEntered);
+      if (e.enteredBy)             map.enteredBy.add(e.enteredBy);
+      if (e.eventStartDate)        map.eventStartDate.add(e.eventStartDate);
+      if (e.eventEndDate)          map.eventEndDate.add(e.eventEndDate);
+      if (e.location)              map.location.add(e.location);
+    });
+    return Object.fromEntries(Object.entries(map).map(([k, s]) => [k, [...s]]));
+  }, [timelineEntries]);
+
+  const sortedTimeline = useMemo(() => {
+    const filtered = timelineEntries.filter(e =>
+      Object.entries(filterConfig).every(([field, sel]) => {
+        if (!sel.length) return true;
+        return sel.includes(String(e[field] ?? ''));
+      })
+    );
+    if (!sortConfig.key) return filtered;
+    return [...filtered].sort((a, b) => {
+      const aV = String(a[sortConfig.key] ?? '');
+      const bV = String(b[sortConfig.key] ?? '');
+      return sortConfig.direction === 'asc' ? aV.localeCompare(bV) : bV.localeCompare(aV);
+    });
+  }, [timelineEntries, filterConfig, sortConfig]);
+
+  const sortColumn = (dataKey, direction) => setSortConfig({ key: dataKey, direction });
+  const handleFilterSearch = (dataKey, txt) => setFilterSearch(fs => ({ ...fs, [dataKey]: txt }));
+  const toggleSelectAll = (dataKey) => {
+    const all = distinctValues[dataKey] || [];
+    setTempFilterSelections(ts => ({ ...ts, [dataKey]: ts[dataKey]?.length === all.length ? [] : [...all] }));
+  };
+  const allChecked = (dataKey) => {
+    const sel = tempFilterSelections[dataKey] || [];
+    return sel.length === (distinctValues[dataKey] || []).length;
+  };
+  const handleCheckboxToggle = (dataKey, v) => setTempFilterSelections(ts => {
+    const sel = ts[dataKey] || [];
+    return { ...ts, [dataKey]: sel.includes(v) ? sel.filter(x => x !== v) : [...sel, v] };
+  });
+  const applyFilter = (dataKey) => {
+    setFilterConfig(fc => ({ ...fc, [dataKey]: tempFilterSelections[dataKey] || [] }));
+    setOpenFilter(null);
+  };
+
   // ── Render ─────────────────────────────────────────────────────────────────
 
   const casePageRoute = selectedCase?.role === 'Investigator' ? '/Investigator' : '/CasePageManager';
@@ -805,19 +863,25 @@ export const LRTimeline = () => {
                 <table className={styles.leadsTable}>
                   <thead>
                     <tr>
-                      <th style={{ width: '5%' }}>Id</th>
-                      <th style={{ width: '9%' }}>Date</th>
-                      <th style={{ width: '13%' }}>Entered By</th>
-                      <th style={{ width: '11%' }}>Event Start</th>
-                      <th style={{ width: '11%' }}>Event End</th>
-                      <th style={{ width: isCaseManager ? '18%' : '24%' }}>Location</th>
+                      {[['Id','leadReturnId','5%'],['Date','dateEntered','9%'],['Entered By','enteredBy','13%'],['Event Start','eventStartDate','11%'],['Event End','eventEndDate','11%'],['Location','location', isCaseManager ? '18%' : '24%']].map(([label, key, w]) => (
+                        <th key={key} style={{ width: w, position: 'relative' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                            {label}
+                            <button ref={el => (filterButtonRefs.current[key] = el)} onClick={() => setOpenFilter(prev => prev === key ? null : key)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px', lineHeight: 1 }}>
+                              <img src="/Materials/fs.png" alt="filter" style={{ width: '13px', height: '13px', verticalAlign: 'middle' }} />
+                            </button>
+                            <Filter dataKey={key} distinctValues={distinctValues} open={openFilter === key} anchorRef={{ current: filterButtonRefs.current[key] }} searchValue={filterSearch[key] || ''} selections={tempFilterSelections[key] || []} onSort={sortColumn} onSearch={handleFilterSearch} allChecked={allChecked} onToggleAll={toggleSelectAll} onToggleOne={handleCheckboxToggle} onApply={applyFilter} onCancel={() => setOpenFilter(null)} />
+                          </div>
+                        </th>
+                      ))}
                       <th style={{ width: '7%' }}>More</th>
                       <th style={{ width: isCaseManager ? '10%' : '20%' }}>Actions</th>
                       {isCaseManager && <th style={{ width: '16%' }}>Access</th>}
                     </tr>
                   </thead>
                   <tbody>
-                    {timelineEntries.length > 0 ? timelineEntries.map((entry, idx) => {
+                    {sortedTimeline.length > 0 ? sortedTimeline.map((entry) => {
+                      const idx = timelineEntries.indexOf(entry);
                       const canModify = isCaseManager || (entry.enteredByUserId && signedInUserId
                         ? entry.enteredByUserId === signedInUserId
                         : entry.enteredBy?.trim() === signedInOfficer?.trim());

@@ -286,7 +286,12 @@ export const SideBar = ({
 
   // Home variant (kept minimal)
   if (variant === "home") {
-    const showArchivedTab = isDSProp !== null ? isDSProp : isUserDS;
+    const canViewClosedCases =
+      systemRole === ROLES.ADMIN ||
+      systemRole === ROLES.DETECTIVE_SUPERVISOR ||
+      systemRole === ROLES.DETECTIVE ||
+      (isDSProp !== null ? isDSProp : isUserDS);
+    const showArchivedTab = canViewClosedCases;
     return (
       <aside className="sidebar">
         <ul className="sidebar-list">
@@ -364,7 +369,7 @@ export const SideBar = ({
           {/* Other Open Cases */}
           <li className="sidebar-item" onClick={() => setCaseDropdownOpen((o) => !o)}>
             <img src={folderIcon} className="sidebar-icon" alt="" />
-            <span>Other Open Cases {caseDropdownOpen ? "▲" : "▼"}</span>
+            <span>Open Cases {caseDropdownOpen ? "▲" : "▼"}</span>
           </li>
           {caseDropdownOpen && (
             <ul className="dropdown-list1">
@@ -497,7 +502,7 @@ export const SideBar = ({
         {systemRole !== "Admin" && (
           <li className="sidebar-item" onClick={() => setCaseDropdownOpen((o) => !o)}>
             <img src={folderIcon} className="sidebar-icon" alt="" />
-            <span>Other Open Cases {caseDropdownOpen ? "▲" : "▼"}</span>
+            <span>Open Cases {caseDropdownOpen ? "▲" : "▼"}</span>
           </li>
         )}
 
@@ -522,13 +527,6 @@ export const SideBar = ({
                 );
               })}
           </ul>
-        )}
-
-        {isUserDS && (
-          <li className="sidebar-item" onClick={() => navigate("/ClosedCase")}>
-            <img src={folderIcon} className="sidebar-icon" alt="" />
-            <span>Closed Cases</span>
-          </li>
         )}
 
         {/* {["Case Manager", "Detective Supervisor", "Investigator"].includes(selectedCase?.role) && (

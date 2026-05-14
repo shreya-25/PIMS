@@ -7,7 +7,7 @@
  * Role-aware: Case Managers see all records; Investigators see only permitted ones.
  */
 
-import { useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import { useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import styles from './LRVehicle.module.css';
 import { LRTopMenu } from '../LRTopMenu';
@@ -19,6 +19,7 @@ import { SideBar } from '../../../components/Sidebar/Sidebar';
 import { AlertModal } from '../../../components/AlertModal/AlertModal';
 import { useLeadStatus } from '../../../hooks/useLeadStatus';
 import { safeEncode } from '../../../utils/encode';
+import Filter from '../../../components/Filter/Filter';
 
 // ─── Module-level constants ──────────────────────────────────────────────────
 
@@ -208,6 +209,14 @@ export const LRVehicle = () => {
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
   const [auditLogRefresh, setAuditLogRefresh] = useState(0);
+
+  // Filter / sort state
+  const filterButtonRefs = useRef({});
+  const [openFilter, setOpenFilter] = useState(null);
+  const [tempFilterSelections, setTempFilterSelections] = useState({});
+  const [filterSearch, setFilterSearch] = useState({});
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  const [filterConfig, setFilterConfig] = useState({ returnId: [], dateEntered: [], enteredBy: [], type: [], model: [], color: [] });
 
   // ── Lead status hook ──────────────────────────────────────────────────────
   const { status, isReadOnly } = useLeadStatus({
@@ -655,6 +664,55 @@ export const LRVehicle = () => {
 
 
 
+  // ── Filter / sort derived state ───────────────────────────────────────────
+
+  const distinctValues = useMemo(() => {
+    const map = { returnId: new Set(), dateEntered: new Set(), enteredBy: new Set(), type: new Set(), model: new Set(), color: new Set() };
+    vehicles.forEach(v => {
+      if (v.returnId != null) map.returnId.add(String(v.returnId));
+      if (v.dateEntered) map.dateEntered.add(v.dateEntered);
+      if (v.enteredBy)   map.enteredBy.add(v.enteredBy);
+      if (v.type)        map.type.add(v.type);
+      if (v.model)       map.model.add(v.model);
+      if (v.color)       map.color.add(v.color);
+    });
+    return Object.fromEntries(Object.entries(map).map(([k, s]) => [k, [...s]]));
+  }, [vehicles]);
+
+  const sortedVehicles = useMemo(() => {
+    const filtered = vehicles.filter(v =>
+      Object.entries(filterConfig).every(([field, sel]) => {
+        if (!sel.length) return true;
+        return sel.includes(String(v[field] ?? ''));
+      })
+    );
+    if (!sortConfig.key) return filtered;
+    return [...filtered].sort((a, b) => {
+      const aV = String(a[sortConfig.key] ?? '');
+      const bV = String(b[sortConfig.key] ?? '');
+      return sortConfig.direction === 'asc' ? aV.localeCompare(bV) : bV.localeCompare(aV);
+    });
+  }, [vehicles, filterConfig, sortConfig]);
+
+  const sortColumn = (dataKey, direction) => setSortConfig({ key: dataKey, direction });
+  const handleFilterSearch = (dataKey, txt) => setFilterSearch(fs => ({ ...fs, [dataKey]: txt }));
+  const toggleSelectAll = (dataKey) => {
+    const all = distinctValues[dataKey] || [];
+    setTempFilterSelections(ts => ({ ...ts, [dataKey]: ts[dataKey]?.length === all.length ? [] : [...all] }));
+  };
+  const allChecked = (dataKey) => {
+    const sel = tempFilterSelections[dataKey] || [];
+    return sel.length === (distinctValues[dataKey] || []).length;
+  };
+  const handleCheckboxToggle = (dataKey, v) => setTempFilterSelections(ts => {
+    const sel = ts[dataKey] || [];
+    return { ...ts, [dataKey]: sel.includes(v) ? sel.filter(x => x !== v) : [...sel, v] };
+  });
+  const applyFilter = (dataKey) => {
+    setFilterConfig(fc => ({ ...fc, [dataKey]: tempFilterSelections[dataKey] || [] }));
+    setOpenFilter(null);
+  };
+
   // ── Guard ─────────────────────────────────────────────────────────────────
 
   if (!selectedCase && !caseDetails) {
@@ -899,20 +957,26 @@ export const LRVehicle = () => {
                 <table className={styles.leadsTable}>
                   <thead>
                     <tr>
-                      <th style={{ width: '4%'  }}>Id</th>
-                      <th style={{ width: '11%' }}>Date</th>
-                      <th style={{ width: '15%' }}>Entered By</th>
-                      <th style={{ width: '10%' }}>Type</th>
-                      <th style={{ width: '10%' }}>Model</th>
-                      <th style={{ width: '12%' }}>Color</th>
+                      {[['Id','returnId','4%'],['Date','dateEntered','11%'],['Entered By','enteredBy','15%'],['Type','type','10%'],['Model','model','10%'],['Color','color','12%']].map(([label, key, w]) => (
+                        <th key={key} style={{ width: w, position: 'relative' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                            {label}
+                            <button ref={el => (filterButtonRefs.current[key] = el)} onClick={() => setOpenFilter(prev => prev === key ? null : key)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px', lineHeight: 1 }}>
+                              <img src="/Materials/fs.png" alt="filter" style={{ width: '13px', height: '13px', verticalAlign: 'middle' }} />
+                            </button>
+                            <Filter dataKey={key} distinctValues={distinctValues} open={openFilter === key} anchorRef={{ current: filterButtonRefs.current[key] }} searchValue={filterSearch[key] || ''} selections={tempFilterSelections[key] || []} onSort={sortColumn} onSearch={handleFilterSearch} allChecked={allChecked} onToggleAll={toggleSelectAll} onToggleOne={handleCheckboxToggle} onApply={applyFilter} onCancel={() => setOpenFilter(null)} />
+                          </div>
+                        </th>
+                      ))}
                       <th style={{ width: '8%'  }}>More</th>
                       <th style={{ width: '12%' }}>Actions</th>
                       {isCaseManager && <th style={{ width: '15%', fontSize: '20px' }}>Access</th>}
                     </tr>
                   </thead>
                   <tbody>
-                    {vehicles.length > 0 ? (
-                      vehicles.map((vehicle, index) => {
+                    {sortedVehicles.length > 0 ? (
+                      sortedVehicles.map((vehicle) => {
+                        const index = vehicles.indexOf(vehicle);
                         // Only the record's author can edit/delete it
                         const canModify      = isCaseManager || (vehicle.enteredByUserId && signedInUserId
                           ? vehicle.enteredByUserId === signedInUserId
@@ -920,7 +984,7 @@ export const LRVehicle = () => {
                         const disableActions = isLeadReadOnly || !canModify;
 
                         return (
-                          <tr key={index}>
+                          <tr key={`${vehicle.returnId ?? ''}-${index}`}>
                             <td>{vehicle.returnId}</td>
                             <td>{vehicle.dateEntered}</td>
                             <td>{vehicle.enteredBy}</td>

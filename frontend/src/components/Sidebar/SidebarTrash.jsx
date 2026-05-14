@@ -400,7 +400,7 @@ const leadCountByCase = useMemo(() => {
           onClick={() => setCaseDropdownOpen((o) => !o)}
         >
           <img src={folderIcon} className="sidebar-icon" alt="" />
-          <span>Other Ongoing Cases {caseDropdownOpen ? "▲" : "▼"}</span>
+          <span>Open Cases {caseDropdownOpen ? "▲" : "▼"}</span>
         </li>
 
         {caseDropdownOpen && (

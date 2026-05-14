@@ -27,7 +27,7 @@ export const ClosedCase = () => {
   const signedInOfficer = localStorage.getItem("loggedInUser");
 
   const systemRole = localStorage.getItem("systemRole") || localStorage.getItem("role");
-  const treatAsDS = isDetectiveSupervisor(systemRole) || systemRole === "Admin";
+  const treatAsDS = isDetectiveSupervisor(systemRole) || systemRole === "Admin" || systemRole === "Detective";
 
   const [cases, setCases] = useState([]);
   const [allUsers, setAllUsers] = useState([]);

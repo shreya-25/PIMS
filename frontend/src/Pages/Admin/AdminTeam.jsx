@@ -740,7 +740,21 @@ export const AdminTeam = () => {
                             <tr key={c._id}>
                               <td>{c.caseNo}</td>
                               <td>{c.caseName}</td>
-                              <td>{isArchived ? c.closedAtFmt : c.createdAtFmt}</td>
+                              <td>
+                                {isArchived ? c.closedAtFmt : c.createdAtFmt}
+                                {!isArchived && c.createdAt && (() => {
+                                  const now = new Date();
+                                  const created = new Date(c.createdAt);
+                                  const nowDay     = Date.UTC(now.getFullYear(),     now.getMonth(),     now.getDate());
+                                  const createdDay = Date.UTC(created.getFullYear(), created.getMonth(), created.getDate());
+                                  const days = Math.round((nowDay - createdDay) / 86400000);
+                                  return (
+                                    <span style={{ color: "#000", fontSize: "0.82em", marginLeft: "4px" }}>
+                                      ({days}d)
+                                    </span>
+                                  );
+                                })()}
+                              </td>
                               <td>{c.assignedTo}</td>
                               <td style={{ textAlign: "center" }}>
                                 <span className={`${styles["status-badge"]} ${c.statusLabel === "Submitted" ? styles["status-submitted"] : c.statusLabel === "Closed" ? styles["status-closed"] : styles["status-ongoing"]}`}>

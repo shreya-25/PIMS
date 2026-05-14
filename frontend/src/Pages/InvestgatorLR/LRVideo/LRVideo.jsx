@@ -28,6 +28,7 @@ import { formatDate, normalizeId, alphabetToNumber, isHttpUrl } from '../lrUtils
 import styles from '../LR.module.css';
 import { LRTopMenu } from '../LRTopMenu';
 import { safeEncode } from '../../../utils/encode';
+import Filter from '../../../components/Filter/Filter';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -100,6 +101,14 @@ export const LRVideo = () => {
   const [deleteOpen, setDeleteOpen]                 = useState(false);
   const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
   const [expandedRows, setExpandedRows]             = useState(new Set());
+
+  // Filter / sort state
+  const filterButtonRefs = useRef({});
+  const [openFilter, setOpenFilter] = useState(null);
+  const [tempFilterSelections, setTempFilterSelections] = useState({});
+  const [filterSearch, setFilterSearch] = useState({});
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  const [filterConfig, setFilterConfig] = useState({ returnId: [], dateEntered: [], enteredBy: [], description: [] });
 
   const isEditing = editingIndex !== null;
 
@@ -501,6 +510,53 @@ export const LRVideo = () => {
     });
   }, []);
 
+  // ── Filter / sort derived state ───────────────────────────────────────────
+
+  const distinctValues = useMemo(() => {
+    const map = { returnId: new Set(), dateEntered: new Set(), enteredBy: new Set(), description: new Set() };
+    videos.forEach(v => {
+      if (v.returnId != null)  map.returnId.add(String(v.returnId));
+      if (v.dateEntered)       map.dateEntered.add(v.dateEntered);
+      if (v.enteredBy)         map.enteredBy.add(v.enteredBy);
+      if (v.description)       map.description.add(v.description);
+    });
+    return Object.fromEntries(Object.entries(map).map(([k, s]) => [k, [...s]]));
+  }, [videos]);
+
+  const sortedVideos = useMemo(() => {
+    const filtered = videos.filter(v =>
+      Object.entries(filterConfig).every(([field, sel]) => {
+        if (!sel.length) return true;
+        return sel.includes(String(v[field] ?? ''));
+      })
+    );
+    if (!sortConfig.key) return filtered;
+    return [...filtered].sort((a, b) => {
+      const aV = String(a[sortConfig.key] ?? '');
+      const bV = String(b[sortConfig.key] ?? '');
+      return sortConfig.direction === 'asc' ? aV.localeCompare(bV) : bV.localeCompare(aV);
+    });
+  }, [videos, filterConfig, sortConfig]);
+
+  const sortColumn = (dataKey, direction) => setSortConfig({ key: dataKey, direction });
+  const handleFilterSearch = (dataKey, txt) => setFilterSearch(fs => ({ ...fs, [dataKey]: txt }));
+  const toggleSelectAll = (dataKey) => {
+    const all = distinctValues[dataKey] || [];
+    setTempFilterSelections(ts => ({ ...ts, [dataKey]: ts[dataKey]?.length === all.length ? [] : [...all] }));
+  };
+  const allChecked = (dataKey) => {
+    const sel = tempFilterSelections[dataKey] || [];
+    return sel.length === (distinctValues[dataKey] || []).length;
+  };
+  const handleCheckboxToggle = (dataKey, v) => setTempFilterSelections(ts => {
+    const sel = ts[dataKey] || [];
+    return { ...ts, [dataKey]: sel.includes(v) ? sel.filter(x => x !== v) : [...sel, v] };
+  });
+  const applyFilter = (dataKey) => {
+    setFilterConfig(fc => ({ ...fc, [dataKey]: tempFilterSelections[dataKey] || [] }));
+    setOpenFilter(null);
+  };
+
   // ── Render ─────────────────────────────────────────────────────────────────
 
   const casePageRoute = selectedCase?.role === 'Investigator' ? '/Investigator' : '/CasePageManager';
@@ -723,17 +779,25 @@ export const LRVideo = () => {
                 <table className={styles.leadsTable}>
                   <thead>
                     <tr>
-                      <th style={{ width: '5%' }}>Id</th>
-                      <th style={{ width: '8%' }}>Date</th>
-                      <th style={{ width: '12%' }}>Entered By</th>
-                      <th style={{ width: '23%' }}>Description</th>
+                      {[['Id','returnId','5%'],['Date','dateEntered','8%'],['Entered By','enteredBy','12%'],['Description','description','23%']].map(([label, key, w]) => (
+                        <th key={key} style={{ width: w, position: 'relative' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                            {label}
+                            <button ref={el => (filterButtonRefs.current[key] = el)} onClick={() => setOpenFilter(prev => prev === key ? null : key)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px', lineHeight: 1 }}>
+                              <img src="/Materials/fs.png" alt="filter" style={{ width: '13px', height: '13px', verticalAlign: 'middle' }} />
+                            </button>
+                            <Filter dataKey={key} distinctValues={distinctValues} open={openFilter === key} anchorRef={{ current: filterButtonRefs.current[key] }} searchValue={filterSearch[key] || ''} selections={tempFilterSelections[key] || []} onSort={sortColumn} onSearch={handleFilterSearch} allChecked={allChecked} onToggleAll={toggleSelectAll} onToggleOne={handleCheckboxToggle} onApply={applyFilter} onCancel={() => setOpenFilter(null)} />
+                          </div>
+                        </th>
+                      ))}
                       <th style={{ width: '18%' }}>File Link</th>
                       <th style={{ width: '10%' }}>Actions</th>
                       {isCaseManager && <th style={{ width: '15%' }}>Access</th>}
                     </tr>
                   </thead>
                   <tbody>
-                    {videos.length > 0 ? videos.map((video, idx) => {
+                    {sortedVideos.length > 0 ? sortedVideos.map((video) => {
+                      const idx = videos.indexOf(video);
                       const canModify  = isCaseManager || (video.enteredByUserId && signedInUserId
                         ? video.enteredByUserId === signedInUserId
                         : video.enteredBy?.trim() === signedInOfficer?.trim());

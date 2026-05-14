@@ -6,7 +6,7 @@
  * own. Case managers additionally control access levels per record and
  * can generate a full lead report as a PDF.
  */
-import { useContext, useState, useEffect, useCallback } from 'react';
+import { useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { CaseContext } from '../../CaseContext';
 import PersonModal from '../../../components/PersonModal/PersonModel';
@@ -18,6 +18,7 @@ import { SideBar } from '../../../components/Sidebar/Sidebar';
 import { AlertModal } from '../../../components/AlertModal/AlertModal';
 import { useLeadStatus } from '../../../hooks/useLeadStatus';
 import { safeEncode } from '../../../utils/encode';
+import Filter from '../../../components/Filter/Filter';
 
 // ─── Module-level utilities ───────────────────────────────────────────────────
 
@@ -136,6 +137,14 @@ export const LRPerson = () => {
 
   // Report generation state
   const [isGenerating, setIsGenerating] = useState(false);
+
+  // Filter / sort state
+  const filterButtonRefs = useRef({});
+  const [openFilter, setOpenFilter] = useState(null);
+  const [tempFilterSelections, setTempFilterSelections] = useState({});
+  const [filterSearch, setFilterSearch] = useState({});
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  const [filterConfig, setFilterConfig] = useState({ returnId: [], dateEntered: [], enteredBy: [], name: [], dateOfBirth: [] });
 
   // ─── Derived investigator-role values ───────────────────────────────────────
   const primaryInvestigatorUserId = leadData?.primaryInvestigatorUserId || '';
@@ -446,6 +455,54 @@ export const LRPerson = () => {
     }
   };
 
+  // ─── Filter / sort derived state ─────────────────────────────────────────────
+
+  const distinctValues = useMemo(() => {
+    const map = { returnId: new Set(), dateEntered: new Set(), enteredBy: new Set(), name: new Set(), dateOfBirth: new Set() };
+    persons.forEach(p => {
+      if (p.returnId != null) map.returnId.add(String(p.returnId));
+      if (p.dateEntered)     map.dateEntered.add(p.dateEntered);
+      if (p.enteredBy)       map.enteredBy.add(p.enteredBy);
+      if (p.name)            map.name.add(p.name);
+      if (p.dateOfBirth)     map.dateOfBirth.add(p.dateOfBirth);
+    });
+    return Object.fromEntries(Object.entries(map).map(([k, s]) => [k, [...s]]));
+  }, [persons]);
+
+  const sortedPersons = useMemo(() => {
+    const filtered = persons.filter(p =>
+      Object.entries(filterConfig).every(([field, sel]) => {
+        if (!sel.length) return true;
+        return sel.includes(String(p[field] ?? ''));
+      })
+    );
+    if (!sortConfig.key) return filtered;
+    return [...filtered].sort((a, b) => {
+      const aV = String(a[sortConfig.key] ?? '');
+      const bV = String(b[sortConfig.key] ?? '');
+      return sortConfig.direction === 'asc' ? aV.localeCompare(bV) : bV.localeCompare(aV);
+    });
+  }, [persons, filterConfig, sortConfig]);
+
+  const sortColumn = (dataKey, direction) => setSortConfig({ key: dataKey, direction });
+  const handleFilterSearch = (dataKey, txt) => setFilterSearch(fs => ({ ...fs, [dataKey]: txt }));
+  const toggleSelectAll = (dataKey) => {
+    const all = distinctValues[dataKey] || [];
+    setTempFilterSelections(ts => ({ ...ts, [dataKey]: ts[dataKey]?.length === all.length ? [] : [...all] }));
+  };
+  const allChecked = (dataKey) => {
+    const sel = tempFilterSelections[dataKey] || [];
+    return sel.length === (distinctValues[dataKey] || []).length;
+  };
+  const handleCheckboxToggle = (dataKey, v) => setTempFilterSelections(ts => {
+    const sel = ts[dataKey] || [];
+    return { ...ts, [dataKey]: sel.includes(v) ? sel.filter(x => x !== v) : [...sel, v] };
+  });
+  const applyFilter = (dataKey) => {
+    setFilterConfig(fc => ({ ...fc, [dataKey]: tempFilterSelections[dataKey] || [] }));
+    setOpenFilter(null);
+  };
+
   // ─── Render ───────────────────────────────────────────────────────────────────
   return (
     <div className={styles.personPage}>
@@ -544,19 +601,26 @@ export const LRPerson = () => {
               <table className={styles.leadsTable}>
                 <thead>
                   <tr>
-                    <th style={{ width: '7%' }}>Id</th>
-                    <th style={{ width: '9%' }}>Date</th>
-                    <th style={{ width: '14%' }}>Entered By</th>
-                    <th style={{ width: '20%' }}>Name</th>
-                    <th style={{ width: '14%' }}>Birth Date</th>
+                    {[['Id','returnId','7%'],['Date','dateEntered','9%'],['Entered By','enteredBy','14%'],['Name','name','20%'],['Birth Date','dateOfBirth','14%']].map(([label, key, w]) => (
+                      <th key={key} style={{ width: w, position: 'relative' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                          {label}
+                          <button ref={el => (filterButtonRefs.current[key] = el)} onClick={() => setOpenFilter(prev => prev === key ? null : key)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px', lineHeight: 1 }}>
+                            <img src="/Materials/fs.png" alt="filter" style={{ width: '13px', height: '13px', verticalAlign: 'middle' }} />
+                          </button>
+                          <Filter dataKey={key} distinctValues={distinctValues} open={openFilter === key} anchorRef={{ current: filterButtonRefs.current[key] }} searchValue={filterSearch[key] || ''} selections={tempFilterSelections[key] || []} onSort={sortColumn} onSearch={handleFilterSearch} allChecked={allChecked} onToggleAll={toggleSelectAll} onToggleOne={handleCheckboxToggle} onApply={applyFilter} onCancel={() => setOpenFilter(null)} />
+                        </div>
+                      </th>
+                    ))}
                     <th style={{ width: '8%' }}>More</th>
                     <th style={{ width: '8%' }}>Actions</th>
                     {isCaseManager && <th style={{ width: '24%' }}>Access</th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {persons.length > 0 ? (
-                    persons.map((person, index) => {
+                  {sortedPersons.length > 0 ? (
+                    sortedPersons.map((person) => {
+                      const realIndex = persons.indexOf(person);
                       const canModify = isCaseManager || (person.enteredByUserId && signedInUserId
                         ? person.enteredByUserId === signedInUserId
                         : person.enteredBy?.trim() === signedInOfficer?.trim());
@@ -568,9 +632,9 @@ export const LRPerson = () => {
 
                       return (
                         <tr
-                          key={person._id || index}
-                          className={selectedRow === index ? styles.selectedRow : ''}
-                          onClick={() => setSelectedRow(index)}
+                          key={person._id || realIndex}
+                          className={selectedRow === realIndex ? styles.selectedRow : ''}
+                          onClick={() => setSelectedRow(realIndex)}
                         >
                           <td>{person.returnId}</td>
                           <td>{person.dateEntered}</td>
@@ -590,14 +654,14 @@ export const LRPerson = () => {
                           </td>
                           <td>
                             <div className={styles.lrTableBtn}>
-                              <button onClick={() => handleEditPerson(index)} disabled={disableActions}>
+                              <button onClick={() => handleEditPerson(realIndex)} disabled={disableActions}>
                                 <img
                                   src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
                                   alt="Edit"
                                   className={styles.editIcon}
                                 />
                               </button>
-                              <button onClick={() => requestDeletePerson(index)} disabled={disableActions}>
+                              <button onClick={() => requestDeletePerson(realIndex)} disabled={disableActions}>
                                 <img
                                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                                   alt="Delete"
@@ -611,7 +675,7 @@ export const LRPerson = () => {
                               <select
                                 className={styles.accessDropdown}
                                 value={person.accessLevel}
-                                onChange={(e) => handleAccessChange(index, e.target.value)}
+                                onChange={(e) => handleAccessChange(realIndex, e.target.value)}
                               >
                                 <option value="Everyone">All</option>
                                 <option value="Case Manager Only">Case Manager</option>

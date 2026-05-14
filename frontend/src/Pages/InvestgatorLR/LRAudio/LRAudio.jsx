@@ -17,6 +17,7 @@ import api from '../../../api';
 import styles from './LRAudio.module.css';
 import { LRTopMenu } from '../LRTopMenu';
 import { safeEncode } from '../../../utils/encode';
+import Filter from '../../../components/Filter/Filter';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -258,6 +259,14 @@ export const LRAudio = () => {
   // Delete-confirm modal
   const [deleteOpen, setDeleteOpen]               = useState(false);
   const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
+
+  // Filter / sort state
+  const filterButtonRefs = useRef({});
+  const [openFilter, setOpenFilter] = useState(null);
+  const [tempFilterSelections, setTempFilterSelections] = useState({});
+  const [filterSearch, setFilterSearch] = useState({});
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  const [filterConfig, setFilterConfig] = useState({ returnId: [], dateEntered: [], enteredBy: [], description: [] });
 
   const isEditing = editingId !== null;
 
@@ -729,6 +738,53 @@ export const LRAudio = () => {
     }
   };
 
+  // ── Filter / sort derived state ───────────────────────────────────────────
+
+  const distinctValues = useMemo(() => {
+    const map = { returnId: new Set(), dateEntered: new Set(), enteredBy: new Set(), description: new Set() };
+    audioFiles.forEach(a => {
+      if (a.returnId != null)  map.returnId.add(String(a.returnId));
+      if (a.dateEntered)       map.dateEntered.add(a.dateEntered);
+      if (a.enteredBy)         map.enteredBy.add(a.enteredBy);
+      if (a.description)       map.description.add(a.description);
+    });
+    return Object.fromEntries(Object.entries(map).map(([k, s]) => [k, [...s]]));
+  }, [audioFiles]);
+
+  const sortedAudioFiles = useMemo(() => {
+    const filtered = audioFiles.filter(a =>
+      Object.entries(filterConfig).every(([field, sel]) => {
+        if (!sel.length) return true;
+        return sel.includes(String(a[field] ?? ''));
+      })
+    );
+    if (!sortConfig.key) return filtered;
+    return [...filtered].sort((x, y) => {
+      const aV = String(x[sortConfig.key] ?? '');
+      const bV = String(y[sortConfig.key] ?? '');
+      return sortConfig.direction === 'asc' ? aV.localeCompare(bV) : bV.localeCompare(aV);
+    });
+  }, [audioFiles, filterConfig, sortConfig]);
+
+  const sortColumn = (dataKey, direction) => setSortConfig({ key: dataKey, direction });
+  const handleFilterSearch = (dataKey, txt) => setFilterSearch(fs => ({ ...fs, [dataKey]: txt }));
+  const toggleSelectAll = (dataKey) => {
+    const all = distinctValues[dataKey] || [];
+    setTempFilterSelections(ts => ({ ...ts, [dataKey]: ts[dataKey]?.length === all.length ? [] : [...all] }));
+  };
+  const allChecked = (dataKey) => {
+    const sel = tempFilterSelections[dataKey] || [];
+    return sel.length === (distinctValues[dataKey] || []).length;
+  };
+  const handleCheckboxToggle = (dataKey, v) => setTempFilterSelections(ts => {
+    const sel = ts[dataKey] || [];
+    return { ...ts, [dataKey]: sel.includes(v) ? sel.filter(x => x !== v) : [...sel, v] };
+  });
+  const applyFilter = (dataKey) => {
+    setFilterConfig(fc => ({ ...fc, [dataKey]: tempFilterSelections[dataKey] || [] }));
+    setOpenFilter(null);
+  };
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -938,18 +994,27 @@ export const LRAudio = () => {
               <table className={styles.leadsTable}>
                 <thead>
                   <tr>
-                    <th style={{ width: '5%'  }}>Id</th>
-                    <th style={{ width: '8%'  }}>Date</th>
-                    <th style={{ width: '12%' }}>Entered By</th>
-                    <th style={{ width: '23%' }}>Description</th>
+                    {[['Id','returnId','5%'],['Date','dateEntered','8%'],['Entered By','enteredBy','12%'],['Description','description','23%']].map(([label, key, w]) => (
+                      <th key={key} style={{ width: w, position: 'relative' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                          {label}
+                          <button ref={el => (filterButtonRefs.current[key] = el)} onClick={() => setOpenFilter(prev => prev === key ? null : key)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px', lineHeight: 1 }}>
+                            <img src="/Materials/fs.png" alt="filter" style={{ width: '13px', height: '13px', verticalAlign: 'middle' }} />
+                          </button>
+                          <Filter dataKey={key} distinctValues={distinctValues} open={openFilter === key} anchorRef={{ current: filterButtonRefs.current[key] }} searchValue={filterSearch[key] || ''} selections={tempFilterSelections[key] || []} onSort={sortColumn} onSearch={handleFilterSearch} allChecked={allChecked} onToggleAll={toggleSelectAll} onToggleOne={handleCheckboxToggle} onApply={applyFilter} onCancel={() => setOpenFilter(null)} />
+                        </div>
+                      </th>
+                    ))}
                     <th style={{ width: '18%' }}>File Link</th>
                     <th style={{ width: '10%' }}>Actions</th>
                     {isCaseManager && <th style={{ width: '15%' }}>Access</th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {audioFiles.length > 0 ? (
-                    audioFiles.map((audio, index) => (
+                  {sortedAudioFiles.length > 0 ? (
+                    sortedAudioFiles.map((audio) => {
+                      const index = audioFiles.indexOf(audio);
+                      return (
                       <AudioTableRow
                         key={audio.id || index}
                         audio={audio}
@@ -966,7 +1031,8 @@ export const LRAudio = () => {
                         isExpanded={expandedRows.has(index)}
                         onToggleExpand={toggleRowExpand}
                       />
-                    ))
+                      );
+                    })
                   ) : (
                     <tr>
                       <td colSpan={isCaseManager ? 7 : 6} className={styles.emptyRow}>

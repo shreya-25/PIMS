@@ -26,6 +26,7 @@ import styles from "../LR.module.css";
 import { formatDate, alphabetToNumber, buildLeadCaseIdPath } from "../lrUtils";
 import { useLeadReport } from "../useLeadReport";
 import { LRTopMenu } from "../LRTopMenu";
+import Filter from "../../../components/Filter/Filter";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -153,6 +154,14 @@ export const LREvidence = () => {
   const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
 
   const fileInputRef = useRef();
+
+  // Filter / sort state
+  const filterButtonRefs = useRef({});
+  const [openFilter, setOpenFilter] = useState(null);
+  const [tempFilterSelections, setTempFilterSelections] = useState({});
+  const [filterSearch, setFilterSearch] = useState({});
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  const [filterConfig, setFilterConfig] = useState({ returnId: [], dateEntered: [], enteredBy: [], type: [], evidenceDescription: [] });
 
   // ── Report generation (shared hook) ────────────────────────────────────────
   const { isGenerating, handleViewLeadReturn } = useLeadReport({
@@ -589,6 +598,54 @@ export const LREvidence = () => {
     }
   };
 
+  // ── Filter / sort derived state ───────────────────────────────────────────
+
+  const distinctValues = useMemo(() => {
+    const map = { returnId: new Set(), dateEntered: new Set(), enteredBy: new Set(), type: new Set(), evidenceDescription: new Set() };
+    evidences.forEach(e => {
+      if (e.returnId != null)          map.returnId.add(String(e.returnId));
+      if (e.dateEntered)               map.dateEntered.add(e.dateEntered);
+      if (e.enteredBy)                 map.enteredBy.add(e.enteredBy);
+      if (e.type)                      map.type.add(e.type);
+      if (e.evidenceDescription)       map.evidenceDescription.add(e.evidenceDescription);
+    });
+    return Object.fromEntries(Object.entries(map).map(([k, s]) => [k, [...s]]));
+  }, [evidences]);
+
+  const sortedEvidences = useMemo(() => {
+    const filtered = evidences.filter(e =>
+      Object.entries(filterConfig).every(([field, sel]) => {
+        if (!sel.length) return true;
+        return sel.includes(String(e[field] ?? ''));
+      })
+    );
+    if (!sortConfig.key) return filtered;
+    return [...filtered].sort((a, b) => {
+      const aV = String(a[sortConfig.key] ?? '');
+      const bV = String(b[sortConfig.key] ?? '');
+      return sortConfig.direction === 'asc' ? aV.localeCompare(bV) : bV.localeCompare(aV);
+    });
+  }, [evidences, filterConfig, sortConfig]);
+
+  const sortColumn = (dataKey, direction) => setSortConfig({ key: dataKey, direction });
+  const handleFilterSearch = (dataKey, txt) => setFilterSearch(fs => ({ ...fs, [dataKey]: txt }));
+  const toggleSelectAll = (dataKey) => {
+    const all = distinctValues[dataKey] || [];
+    setTempFilterSelections(ts => ({ ...ts, [dataKey]: ts[dataKey]?.length === all.length ? [] : [...all] }));
+  };
+  const allChecked = (dataKey) => {
+    const sel = tempFilterSelections[dataKey] || [];
+    return sel.length === (distinctValues[dataKey] || []).length;
+  };
+  const handleCheckboxToggle = (dataKey, v) => setTempFilterSelections(ts => {
+    const sel = ts[dataKey] || [];
+    return { ...ts, [dataKey]: sel.includes(v) ? sel.filter(x => x !== v) : [...sel, v] };
+  });
+  const applyFilter = (dataKey) => {
+    setFilterConfig(fc => ({ ...fc, [dataKey]: tempFilterSelections[dataKey] || [] }));
+    setOpenFilter(null);
+  };
+
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
@@ -814,19 +871,26 @@ export const LREvidence = () => {
                 <table className={styles.leadsTable}>
                   <thead>
                     <tr>
-                      <th style={{ width: '5%'  }}>Id</th>
-                      <th style={{ width: '8%'  }}>Date</th>
-                      <th style={{ width: '12%' }}>Entered By</th>
-                      <th style={{ width: '10%' }}>Type</th>
-                      <th style={{ width: '23%' }}>Description</th>
+                      {[['Id','returnId','5%'],['Date','dateEntered','8%'],['Entered By','enteredBy','12%'],['Type','type','10%'],['Description','evidenceDescription','23%']].map(([label, key, w]) => (
+                        <th key={key} style={{ width: w, position: 'relative' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                            {label}
+                            <button ref={el => (filterButtonRefs.current[key] = el)} onClick={() => setOpenFilter(prev => prev === key ? null : key)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px', lineHeight: 1 }}>
+                              <img src="/Materials/fs.png" alt="filter" style={{ width: '13px', height: '13px', verticalAlign: 'middle' }} />
+                            </button>
+                            <Filter dataKey={key} distinctValues={distinctValues} open={openFilter === key} anchorRef={{ current: filterButtonRefs.current[key] }} searchValue={filterSearch[key] || ''} selections={tempFilterSelections[key] || []} onSort={sortColumn} onSearch={handleFilterSearch} allChecked={allChecked} onToggleAll={toggleSelectAll} onToggleOne={handleCheckboxToggle} onApply={applyFilter} onCancel={() => setOpenFilter(null)} />
+                          </div>
+                        </th>
+                      ))}
                       <th style={{ width: '18%' }}>File Link</th>
                       <th style={{ width: '10%' }}>Actions</th>
                       {isCaseManager && <th style={{ width: "15%" }}>Access</th>}
                     </tr>
                   </thead>
                   <tbody>
-                    {evidences.length > 0 ? (
-                      evidences.map((item, index) => {
+                    {sortedEvidences.length > 0 ? (
+                      sortedEvidences.map((item) => {
+                        const index = evidences.indexOf(item);
                         const canModify = isCaseManager || (item.enteredByUserId && signedInUserId
                           ? item.enteredByUserId === signedInUserId
                           : item.enteredBy?.trim() === signedInOfficer?.trim());
