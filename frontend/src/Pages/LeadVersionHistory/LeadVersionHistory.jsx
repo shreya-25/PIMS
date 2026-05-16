@@ -1,10 +1,18 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import api from "../../api";
 import { CaseContext } from "../CaseContext";
+import Navbar from "../../components/Navbar/Navbar";
+import { SideBar } from "../../components/Sidebar/Sidebar";
+import { LRTopMenu } from "../InvestgatorLR/LRTopMenu";
+import styles from "./LeadVersionHistory.module.css";
 import "./LeadVersionHistory.css";
 
 export const LeadVersionHistory = () => {
-  const { selectedLead, selectedCase } = useContext(CaseContext);
+  const { selectedLead, selectedCase, leadStatus } = useContext(CaseContext);
+  const navigate = useNavigate();
+  const systemRole = localStorage.getItem("systemRole") || localStorage.getItem("role");
+  const caseRoute = selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager";
   const [versions, setVersions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -280,7 +288,22 @@ export const LeadVersionHistory = () => {
 
   const renderHumanReadableDiff = (log) => {
     const { action, oldValue, newValue, entityType } = log;
-    if (action === 'CREATE') return null;
+
+    // For CREATE: show meaningful fields of the created record
+    if (action === 'CREATE' && newValue) {
+      const rows = Object.entries(newValue).filter(([key]) => !SKIP_FIELDS.has(key) && newValue[key] !== null && newValue[key] !== undefined && newValue[key] !== '');
+      if (rows.length === 0) return null;
+      return (
+        <div style={{ marginTop: '6px', fontSize: '16px', background: '#f0fdf4', padding: '8px', borderRadius: '4px' }}>
+          {rows.map(([key, val]) => (
+            <div key={key} style={{ marginBottom: '4px' }}>
+              <span style={{ fontWeight: 600, color: '#555' }}>{FIELD_LABELS[key] || key}: </span>
+              <span style={{ color: '#333', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{formatFieldValue(val)}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
 
     const source = action === 'DELETE' ? oldValue : oldValue;
     const target = action === 'UPDATE' ? newValue : null;
@@ -289,15 +312,24 @@ export const LeadVersionHistory = () => {
 
     // For UPDATE: show only fields that actually changed
     if (action === 'UPDATE' && source && target) {
+      const ALWAYS_SHOW = new Set(['lastModifiedBy', 'modifiedBy']);
       const changedRows = [];
       const allKeys = new Set([...Object.keys(source), ...Object.keys(target)]);
       allKeys.forEach(key => {
         if (SKIP_FIELDS.has(key)) return;
-        const oldVal = source[key];
+        let oldVal = source[key];
         const newVal = target[key];
+        // First update: use creator name as the previous modifier
+        if ((oldVal === null || oldVal === undefined || oldVal === '') && (key === 'lastModifiedBy' || key === 'modifiedBy')) {
+          oldVal = source.enteredBy || source.createdBy || oldVal;
+        }
+        if ((oldVal === null || oldVal === undefined || oldVal === '') && (key === 'lastModifiedDate' || key === 'modifiedDate' || key === 'modifiedAt')) {
+          oldVal = source.lastModifiedDate || source.enteredDate || source.createdAt || oldVal;
+        }
         const oldStr = formatFieldValue(oldVal);
         const newStr = formatFieldValue(newVal);
-        if (oldStr === newStr) return; // unchanged
+        if (oldStr === newStr && !ALWAYS_SHOW.has(key)) return;
+        if (!newVal && !oldVal) return;
         const label = FIELD_LABELS[key] || key;
         changedRows.push({ label, oldStr, newStr });
       });
@@ -1024,47 +1056,67 @@ export const LeadVersionHistory = () => {
     return renderableFields.length > 0 ? renderableFields : null;
   };
 
+  const PageShell = ({ children }) => (
+    <div className={styles.pageWrapper}>
+      <Navbar />
+      <div className={styles.mainContainer}>
+        <SideBar activePage="LeadReview" />
+        <div className={styles.leftContent}>
+          <LRTopMenu
+            activePage="chainOfCustody"
+            selectedCase={selectedCase}
+            selectedLead={selectedLead}
+            styles={styles}
+          />
+          <div className={styles.contentArea}>
+            {children}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   if (!selectedLead?.leadNo) {
     return (
-      <div className="version-history-container">
-        <p className="no-lead-message">Please select a lead to view version history.</p>
-        <p style={{ fontSize: '12px', color: '#666', marginTop: '10px' }}>
-          Debug: selectedLead = {JSON.stringify(selectedLead)}
-        </p>
-      </div>
+      <PageShell>
+        <div className="version-history-container">
+          <p className="no-lead-message">Please select a lead to view version history.</p>
+        </div>
+      </PageShell>
     );
   }
 
   return (
-    <div className="version-history-container">
-      <div className="version-history-header">
-        <h3>Lead Return Version History</h3>
-        <h3 className="lead-info">
-          LEAD {selectedLead.leadNo}: {selectedLead.leadName?.toUpperCase()}
-        </h3>
-        {/* Debug info */}
-        <div style={{ fontSize: '18px', color: '#666', marginTop: '5px' }}>
-          Case: {selectedLead.caseNo || selectedCase?.caseNo || 'N/A'} - {selectedLead.caseName || selectedCase?.caseName || 'N/A'}
-        </div>
-        {/* <div className="header-actions">
-          <button className="btn-primary" onClick={createManualSnapshot}>
-            Create Manual Snapshot
-          </button>
-          <button
-            className="btn-secondary"
-            onClick={() => {
-              setCompareMode(!compareMode);
-              setCompareFrom(null);
-              setCompareTo(null);
-              setComparisonResult(null);
-              setActivityLog([]);
-            }}
-          >
-            {compareMode ? "Cancel Compare" : "Compare Versions"}
-          </button>
-        </div> */}
+    <PageShell>
+    <div className={styles.breadcrumbBarFull}>
+      <div className={styles.ldHead}>
+        <span
+          className={styles.crumb}
+          onClick={() => systemRole === "Admin" ? navigate("/AdminTeam") : navigate("/HomePage")}
+        >
+          PIMS Home
+        </span>
+        <span className={styles.sep}>{" >> "}</span>
+        <Link to={caseRoute} state={{ caseDetails: selectedCase }} className={styles.crumb}>
+          Case: {selectedCase?.caseNo || selectedLead.caseNo || ""}
+        </Link>
+        <span className={styles.sep}>{" >> "}</span>
+        <Link to="/LeadReview" state={{ leadDetails: selectedLead }} className={styles.crumb}>
+          Lead {selectedLead.leadNo}
+        </Link>
+        <span className={styles.sep}>{" >> "}</span>
+        <Link to="/ChainOfCustody" state={{ caseDetails: selectedCase, leadDetails: selectedLead }} className={styles.crumb}>
+          Chain of Custody
+        </Link>
+        <span className={styles.sep}>{" >> "}</span>
+        <span className={styles.crumbCurrent}>Version History</span>
       </div>
+      <span className={styles.leadStatusLabel}>
+        {selectedLead?.leadNo ? <>Lead Status: <strong>{leadStatus || ""}</strong></> : ""}
+      </span>
+    </div>
 
+    <div className="version-history-container">
       {loading && <div className="loading-spinner">Loading...</div>}
       {error && <div className="error-message">{error}</div>}
 
@@ -1242,7 +1294,7 @@ export const LeadVersionHistory = () => {
       )}
 
       <div className="versions-list">
-        <h3>All Versions ({versions.length})</h3>
+        <h3 style={{ fontSize: '18px', fontWeight: 700, margin: '0 0 12px', color: '#0f172a' }}>All Versions ({versions.length})</h3>
         {versions.length === 0 && !loading && (
           <div className="no-versions">
             <p>No versions found for this lead.</p>
@@ -1323,117 +1375,143 @@ export const LeadVersionHistory = () => {
               </div>
             </div>
 
-            {/* Audit log count badge - always visible on card */}
-            {(() => {
-              const count = getVersionAuditLogs(version, versionIndex, versions).length;
-              if (count === 0) return null;
+{(() => {
+              const actLogs = versionActivityLogs[version.versionId];
+              const auditLogs = getVersionAuditLogs(version, versionIndex, versions);
+              const hasActivityLogs = actLogs?.length > 0;
+              const hasAuditLogs = auditLogs.length > 0;
+              if (!hasActivityLogs && !hasAuditLogs) return null;
+
+              const renderActivityItem = (activity, idx) => (
+                <div key={idx} className={`activity-item activity-${activity.action}`}>
+                  <div className="activity-header">
+                    <span className={`activity-badge ${activity.action}`}>
+                      {activity.action === 'created' && '➕ Created'}
+                      {activity.action === 'updated' && '✏️ Updated'}
+                      {activity.action === 'deleted' && '🗑️ Deleted'}
+                    </span>
+                    <span className="activity-entity">{activity.entityType}</span>
+                    <span className="activity-officer">by {version.versionCreatedBy}</span>
+                    <span className="activity-timestamp">{formatDate(version.versionCreatedAt)}</span>
+                  </div>
+                  {(!activity.details || FILE_ENTITY_TYPES.includes(activity.entityType)) && (
+                    <div className="activity-description">
+                      {!activity.details && activity.description}
+                      {!activity._consolidated && FILE_ENTITY_TYPES.includes(activity.entityType) && getEntityId(activity.details, activity.entityType) && (
+                        <span className="file-link" onClick={() => viewFile(activity.entityType, getEntityId(activity.details, activity.entityType))} title="Click to view file" style={{ marginLeft: '8px' }}>
+                          {activity.details.originalName || 'View File'}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  {activity._consolidated && renderConsolidatedChanges(activity)}
+                  {activity.field && activity.entityType === 'Narrative' && activity.action === 'updated' && (
+                    <div className="activity-field-change">
+                      <div className="value-change">
+                        <div className="old-value"><span className="label">Previous Narrative:</span><span className="value narrative-text">{formatValue(activity.oldValue, activity.field)}</span></div>
+                        <span className="arrow">→</span>
+                        <div className="new-value"><span className="label">Updated Narrative:</span><span className="value narrative-text">{formatValue(activity.newValue, activity.field)}</span></div>
+                      </div>
+                    </div>
+                  )}
+                  {activity.field && activity.entityType !== 'Narrative' && (
+                    <div className="activity-field-change">
+                      <span className="field-name">Field: {activity.field}</span>
+                      <div className="value-change">
+                        <div className="old-value"><span className="label">Old:</span><span className="value">{formatValue(activity.oldValue, activity.field)}</span></div>
+                        <span className="arrow">→</span>
+                        <div className="new-value"><span className="label">New:</span><span className="value">{formatValue(activity.newValue, activity.field)}</span></div>
+                      </div>
+                    </div>
+                  )}
+                  {activity.details && (
+                    <div className="activity-entity-details">
+                      {(() => {
+                        const formattedFields = formatEntityDetails(activity.details, activity.entityType);
+                        if (!formattedFields) return null;
+                        return (
+                          <div className="entity-fields">
+                            {formattedFields.map((field, fieldIdx) => (
+                              <div key={fieldIdx} className="entity-field-row">
+                                <span className="field-label">{field.label}:</span>
+                                {field.entityId ? (
+                                  <span className="field-value file-link" onClick={() => viewFile(field.entityType, field.entityId)} title="Click to view file">{field.value}</span>
+                                ) : (
+                                  <span className="field-value">{field.value}</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+                </div>
+              );
+
+              const renderAuditItem = (log, idx) => {
+                const action = log.action === 'CREATE' ? 'created' : log.action === 'UPDATE' ? 'updated' : 'deleted';
+                const displayType = log.entityType === 'LeadReturnResult' ? 'Narrative' : log.entityType;
+                const createDetails = log.newValue;
+                const mappedCreateDetails = log.entityType === 'LeadReturnResult' && createDetails
+                  ? { leadReturnId: createDetails.leadReturnId, leadReturnResult: createDetails.leadReturnResult }
+                  : createDetails;
+                const description = log.action === 'CREATE' && createDetails?.leadReturnResult
+                  ? `Created narrative: ${String(createDetails.leadReturnResult).substring(0, 80)}`
+                  : log.metadata?.description || '';
+                return (
+                  <div key={idx} className={`activity-item activity-${action}`}>
+                    <div className="activity-header">
+                      <span className={`activity-badge ${action}`}>
+                        {action === 'created' && '➕ Created'}
+                        {action === 'updated' && '✏️ Updated'}
+                        {action === 'deleted' && '🗑️ Deleted'}
+                      </span>
+                      <span className="activity-entity">{displayType}</span>
+                      <span className="activity-officer">by {log.performedBy?.username || version.versionCreatedBy}</span>
+                      <span className="activity-timestamp">{formatDate(log.timestamp)}</span>
+                    </div>
+                    {description && !mappedCreateDetails && <div className="activity-description">{description}</div>}
+                    {/* CREATE: show fields of created record */}
+                    {log.action === 'CREATE' && mappedCreateDetails && (
+                      <div className="activity-entity-details">
+                        {(() => {
+                          const formattedFields = formatEntityDetails(mappedCreateDetails, displayType);
+                          if (!formattedFields) return null;
+                          return (
+                            <div className="entity-fields">
+                              {formattedFields.map((field, fieldIdx) => (
+                                <div key={fieldIdx} className="entity-field-row">
+                                  <span className="field-label">{field.label}:</span>
+                                  <span className="field-value">{field.value}</span>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
+                    {/* UPDATE / DELETE: show before → after comparison */}
+                    {(log.action === 'UPDATE' || log.action === 'DELETE') && (log.oldValue || log.newValue) && (
+                      <div className="activity-field-change">
+                        {renderHumanReadableDiff(log)}
+                      </div>
+                    )}
+                  </div>
+                );
+              };
+
+              const items = hasActivityLogs
+                ? consolidateEntityActivities(actLogs).map(renderActivityItem)
+                : auditLogs.map(renderAuditItem);
+
               return (
-                <div style={{ marginTop: '8px', fontSize: '16px', color: '#0077cc' }}>
-                  📋 {count} audit log{count !== 1 ? 's' : ''} — click <strong>View Details</strong> to see Audit Trail
+                <div className="activity-log-section">
+                  <h5>Changes in This Version ({hasActivityLogs ? actLogs.length : auditLogs.length} changes)</h5>
+                  <div className="activity-log-container1">{items}</div>
                 </div>
               );
             })()}
-            {versionActivityLogs[version.versionId] && versionActivityLogs[version.versionId].length > 0 && (
-              <div className="activity-log-section">
-                <h5>Changes in This Version ({versionActivityLogs[version.versionId].length} changes)</h5>
-                <div className="activity-log-container1">
-                  {consolidateEntityActivities(versionActivityLogs[version.versionId]).map((activity, idx) => (
-                    <div key={idx} className={`activity-item activity-${activity.action}`}>
-                      <div className="activity-header">
-                        <span className={`activity-badge ${activity.action}`}>
-                          {activity.action === 'created' && '➕ Created'}
-                          {activity.action === 'updated' && '✏️ Updated'}
-                          {activity.action === 'deleted' && '🗑️ Deleted'}
-                        </span>
-                        <span className="activity-entity">{activity.entityType}</span>
-                        {/* {activity.action === 'created' && getActivityEntityName(activity) && (
-                          <span className="activity-entity-name">: {getActivityEntityName(activity)}</span>
-                        )} */}
-                        <span className="activity-officer">by {version.versionCreatedBy}</span>
-                        <span className="activity-timestamp">{formatDate(version.versionCreatedAt)}</span>
-                      </div>
-                      <div className="activity-description">
-                        {activity.description}
-                        {!activity._consolidated && FILE_ENTITY_TYPES.includes(activity.entityType) && getEntityId(activity.details, activity.entityType) && (
-                          <span
-                            className="file-link"
-                            onClick={() => viewFile(activity.entityType, getEntityId(activity.details, activity.entityType))}
-                            title="Click to view file"
-                            style={{ marginLeft: '8px' }}
-                          >
-                            {activity.details.originalName || 'View File'}
-                          </span>
-                        )}
-                      </div>
-                      {/* Show consolidated file type change */}
-                      {activity._consolidated && renderConsolidatedChanges(activity)}
-                      {/* Show field changes for updated narratives */}
-                      {activity.field && activity.entityType === 'Narrative' && activity.action === 'updated' && (
-                        <div className="activity-field-change">
-                          <div className="value-change">
-                            <div className="old-value">
-                              <span className="label">Previous Narrative:</span>
-                              <span className="value narrative-text">{formatValue(activity.oldValue, activity.field)}</span>
-                            </div>
-                            <span className="arrow">→</span>
-                            <div className="new-value">
-                              <span className="label">Updated Narrative:</span>
-                              <span className="value narrative-text">{formatValue(activity.newValue, activity.field)}</span>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                      {/* Show field changes for non-Narrative entities */}
-                      {activity.field && activity.entityType !== 'Narrative' && (
-                        <div className="activity-field-change">
-                          <span className="field-name">Field: {activity.field}</span>
-                          <div className="value-change">
-                            <div className="old-value">
-                              <span className="label">Old:</span>
-                              <span className="value">{formatValue(activity.oldValue, activity.field)}</span>
-                            </div>
-                            <span className="arrow">→</span>
-                            <div className="new-value">
-                              <span className="label">New:</span>
-                              <span className="value">{formatValue(activity.newValue, activity.field)}</span>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                      {/* Show entity details for all entities */}
-                      {activity.details && (
-                        <div className="activity-entity-details">
-                          {(() => {
-                            const formattedFields = formatEntityDetails(activity.details, activity.entityType);
-                            if (!formattedFields) return null;
-                            return (
-                              <div className="entity-fields">
-                                {formattedFields.map((field, fieldIdx) => (
-                                  <div key={fieldIdx} className="entity-field-row">
-                                    <span className="field-label">{field.label}:</span>
-                                    {field.entityId ? (
-                                      <span
-                                        className="field-value file-link"
-                                        onClick={() => viewFile(field.entityType, field.entityId)}
-                                        title="Click to view file"
-                                      >
-                                        {field.value}
-                                      </span>
-                                    ) : (
-                                      <span className="field-value">{field.value}</span>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            );
-                          })()}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {selectedVersion === version.versionId && versionDetails && (
               // <div className="version-details"
@@ -1570,10 +1648,10 @@ export const LeadVersionHistory = () => {
                                   : log.metadata.changedFields}
                               </div>
                             )}
-                            {(log.action === 'UPDATE' || log.action === 'DELETE') && (log.oldValue || log.newValue) && (
+                            {(log.oldValue || log.newValue) && (
                               <details style={{ marginTop: '6px' }}>
                                 <summary style={{ cursor: 'pointer', fontSize: '16px', color: '#0077cc' }}>
-                                  {log.action === 'DELETE' ? 'View deleted data' : 'View changes'}
+                                  {log.action === 'DELETE' ? 'View deleted data' : log.action === 'CREATE' ? 'View created data' : 'View changes'}
                                 </summary>
                                 {renderHumanReadableDiff(log)}
                               </details>
@@ -1586,7 +1664,7 @@ export const LeadVersionHistory = () => {
                 })()}
 
                 {/* Activity Log - Show what changed in this version */}
-                {versionActivityLogs[version.versionId] !== undefined && (
+                {versionActivityLogs[version.versionId]?.length > 0 && (
                   <div className="details-section">
                     <h6>Activity Log ({versionActivityLogs[version.versionId]?.length || 0} changes)</h6>
                     <div className="version-info-bar" style={{
@@ -1849,5 +1927,6 @@ export const LeadVersionHistory = () => {
       )}
 
     </div>
+    </PageShell>
   );
 };

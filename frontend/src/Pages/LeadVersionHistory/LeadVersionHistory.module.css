@@ -1,0 +1,153 @@
+.pageWrapper {
+  display: flex;
+  flex-direction: column;
+  font-family: Arial, sans-serif;
+}
+
+.mainContainer {
+  display: flex;
+}
+
+.leftContent {
+  margin-left: var(--sidebar-w);
+  margin-top: 110px;
+  width: calc(100% - var(--sidebar-w));
+  min-height: calc(100dvh - 110px);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  padding-left: 20px;
+}
+
+/* Top menu — mirrors ChainOfCustody */
+.topMenuNav {
+  position: fixed;
+  top: 110px;
+  left: var(--sidebar-w);
+  width: calc(100% - var(--sidebar-w));
+  height: 56px;
+  z-index: 150;
+  box-sizing: border-box;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 2px solid #e8eaf0;
+  box-shadow: 0 2px 6px rgba(41, 41, 139, 0.08);
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.menuItems {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.menuItem {
+  color: #111;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: 4px;
+  white-space: nowrap;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.menuItem:hover {
+  background-color: #eef0fa;
+  color: #29298b;
+}
+
+.menuItemActive {
+  color: #29298b !important;
+  font-weight: 700;
+  border-bottom: 2px solid #29298b;
+  border-radius: 0;
+}
+
+/* Content area below fixed top menu */
+.contentArea {
+  margin-top: 56px;
+  padding: 0;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Full-width breadcrumb — matches LRInstruction .caseandleadinfo exactly */
+.breadcrumbBarFull {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 10px 24px;
+  background: #ffffff;
+  border-bottom: 1px solid #e8eaf0;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+/* Breadcrumb + status bar */
+.breadcrumbBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 6px 0 8px;
+  border-bottom: 1px solid #e8eaf0;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+}
+
+.ldHead {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  font-size: 18px;
+  color: #555;
+}
+
+.crumb {
+  color: #29298b;
+  text-decoration: none;
+  font-size: 18px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+}
+
+.crumb:hover {
+  text-decoration: underline;
+  color: #1a3faa;
+}
+
+.crumbCurrent {
+  color: #29298b;
+  font-weight: 700;
+  font-size: 18px;
+  white-space: nowrap;
+}
+
+.sep {
+  color: #999;
+  font-size: 18px;
+  white-space: nowrap;
+}
+
+.leadStatusLabel {
+  margin: 0;
+  font-size: 18px;
+  color: #666;
+  white-space: nowrap;
+  flex-shrink: 0;
+}

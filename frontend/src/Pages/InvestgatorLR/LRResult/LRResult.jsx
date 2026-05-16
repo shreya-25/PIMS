@@ -1110,29 +1110,6 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* Narrative-submit reminder popup */}
-      {showNarrativePopup && (
-        <div className={styles.narrativePopup}>
-          <button
-            className={styles.narrativePopupClose}
-            onClick={() => setShowNarrativePopup(false)}
-            aria-label="Dismiss"
-          >
-            ✕
-          </button>
-          <p className={styles.narrativePopupText}>
-            To submit this lead return for Case Manager approval, go to the {' '}
-            <Link
-              to="/viewLR"
-              state={{ caseDetails: effectiveCase, leadDetails: effectiveLead }}
-              className={styles.narrativePopupLink}
-            >
-              Review
-            </Link>{' '}
-            page.
-          </p>
-        </div>
-      )}
 
     </div>
   );
