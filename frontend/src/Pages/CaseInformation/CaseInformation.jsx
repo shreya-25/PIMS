@@ -58,6 +58,12 @@ export const CaseInformation = () => {
 
   // ── Expanded rows (description toggle) ───────────────────────────────────
   const [expandedRows, setExpandedRows] = useState(new Set());
+  const [overflowMap, setOverflowMap] = useState({});
+  const measureNarrative = (id) => (el) => {
+    if (!el || expandedRows.has(id)) return;
+    const overflows = el.scrollHeight > el.clientHeight + 1;
+    setOverflowMap(prev => prev[id] === overflows ? prev : { ...prev, [id]: overflows });
+  };
   const toggleRow = (id) => setExpandedRows(prev => {
     const next = new Set(prev);
     next.has(id) ? next.delete(id) : next.add(id);
@@ -492,10 +498,13 @@ export const CaseInformation = () => {
                 <td>{r.enteredBy}</td>
                 {cols.some(c => c.key === 'type') && <td>{r.type || '—'}</td>}
                 <td className={styles['description-cell']}>
-                  <div className={expandedRows.has(r._id) ? styles['narrative-expanded'] : styles['narrative-collapsed']}>
+                  <div
+                    ref={measureNarrative(r._id)}
+                    className={expandedRows.has(r._id) ? styles['narrative-expanded'] : styles['narrative-collapsed']}
+                  >
                     {r[descField] || '—'}
                   </div>
-                  {r[descField] && (
+                  {r[descField] && (overflowMap[r._id] || expandedRows.has(r._id)) && (
                     <button className={styles['view-toggle-btn']} onClick={() => toggleRow(r._id)}>
                       {expandedRows.has(r._id) ? 'View Less ▲' : 'View ▶'}
                     </button>
@@ -597,10 +606,13 @@ export const CaseInformation = () => {
                   <td>{ev.enteredBy}</td>
                   <td>{ev.type || '—'}</td>
                   <td className={styles['description-cell']}>
-                    <div className={expandedRows.has(ev._id) ? styles['narrative-expanded'] : styles['narrative-collapsed']}>
+                    <div
+                      ref={measureNarrative(ev._id)}
+                      className={expandedRows.has(ev._id) ? styles['narrative-expanded'] : styles['narrative-collapsed']}
+                    >
                       {ev.evidenceDescription || '—'}
                     </div>
-                    {ev.evidenceDescription && (
+                    {ev.evidenceDescription && (overflowMap[ev._id] || expandedRows.has(ev._id)) && (
                       <button className={styles['view-toggle-btn']} onClick={() => toggleRow(ev._id)}>
                         {expandedRows.has(ev._id) ? 'View Less ▲' : 'View ▶'}
                       </button>

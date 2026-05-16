@@ -512,18 +512,58 @@
 .collapsibleHeaderParent {
   display: flex;
   align-items: center;
-  gap: 6px;
+  flex-wrap: wrap;
+  gap: 8px;
   cursor: pointer;
   user-select: none;
-  padding: 5px 10px;
-  border-radius: 4px;
-  background: #e4e6f5;
-  border: 1px solid #b8bce0;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: #f0f1fa;
+  border: 1px solid #d0d3ed;
   margin-bottom: 0;
   font-weight: 700;
   font-size: 20px;
   color: #29298b;
   transition: background 0.15s;
+}
+
+.lrSummaryTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #29298b;
+  white-space: nowrap;
+  margin-right: 2px;
+}
+
+.lrCategoryChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.lrCategoryChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #eef0fb;
+  border: 1px solid #b8bce0;
+  border-radius: 6px;
+  padding: 4px 14px;
+  font-size: 18px;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(41,41,139,0.08);
+}
+
+.lrChipLabel {
+  font-weight: 600;
+  color: #1e1e6e;
+}
+
+.lrChipCount {
+  font-size: 18px;
+  font-weight: 800;
+  color: #1e1e6e;
 }
 
 .collapsibleHeaderParent:hover {

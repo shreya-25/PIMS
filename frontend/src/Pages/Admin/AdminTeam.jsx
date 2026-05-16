@@ -456,7 +456,7 @@ export const AdminTeam = () => {
   const [pageSize, setPageSize]       = useState(50);
 
   const emptyFilter = () => ({ caseNo: [], caseName: [], createdAtFmt: [], closedAtFmt: [], statusLabel: [], assignedTo: [] });
-  const [sortConfig, setSortConfig]                     = useState({ key: null, direction: "asc" });
+  const [sortConfig, setSortConfig]                     = useState({ key: "createdAt", direction: "desc" });
   const [filterConfig, setFilterConfig]                 = useState(emptyFilter());
   const [openFilter, setOpenFilter]                     = useState(null);
   const [filterSearch, setFilterSearch]                 = useState({});
@@ -485,7 +485,7 @@ export const AdminTeam = () => {
 
   useEffect(() => {
     setFilterConfig(emptyFilter());
-    setSortConfig({ key: null, direction: "asc" });
+    setSortConfig({ key: "createdAt", direction: "desc" });
     setTempFilterSelections({});
     setFilterSearch({});
     setOpenFilter(null);
@@ -572,6 +572,11 @@ export const AdminTeam = () => {
     );
     if (!sortConfig.key) return filtered;
     return [...filtered].sort((a, b) => {
+      if (sortConfig.key === "createdAt" || sortConfig.key === "closedAtFmt") {
+        const aT = new Date(a.createdAt || a.closedAt || 0).getTime();
+        const bT = new Date(b.createdAt || b.closedAt || 0).getTime();
+        return sortConfig.direction === "asc" ? aT - bT : bT - aT;
+      }
       const aV = String(a[sortConfig.key] ?? "");
       const bV = String(b[sortConfig.key] ?? "");
       const cmp = aV.localeCompare(bV);
@@ -736,10 +741,10 @@ export const AdminTeam = () => {
                             <td colSpan={6} style={{ textAlign: "center", padding: "8px" }}>No cases found.</td>
                           </tr>
                         ) : (
-                          paginatedCases.map((c) => (
+                          paginatedCases.map((c, index) => (
                             <tr key={c._id}>
-                              <td>{c.caseNo}</td>
-                              <td>{c.caseName}</td>
+                              <td><span style={isArchived || index > 0 ? { filter: "blur(4px)", userSelect: "none", pointerEvents: "none", display: "inline-block" } : {}}>{c.caseNo}</span></td>
+                              <td><span style={isArchived || index > 0 ? { filter: "blur(4px)", userSelect: "none", pointerEvents: "none", display: "inline-block" } : {}}>{c.caseName}</span></td>
                               <td>
                                 {isArchived ? c.closedAtFmt : c.createdAtFmt}
                                 {!isArchived && c.createdAt && (() => {

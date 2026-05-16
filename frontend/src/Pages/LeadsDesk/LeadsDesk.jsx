@@ -1142,7 +1142,28 @@ useEffect(() => {
                         {/* Parent collapsible */}
                         <h3 className={styles.collapsibleHeaderParent} onClick={() => toggleSection(`${returnItem.leadReturnId}-all`)}>
                           <span className={`${styles.collapsibleChevron}${expandedSections.has(`${returnItem.leadReturnId}-all`) ? ` ${styles.collapsibleChevronOpen}` : ''}`}>▶</span>
-                          Other Lead Return Details
+                          <span className={styles.lrSummaryTitle}>Other Return Entries:</span>
+                          <div className={styles.lrCategoryChips}>
+                            {(() => {
+                              const rid = String(returnItem.leadReturnId);
+                              return [
+                                { label: 'Person',     count: returnItem.persons?.length || 0 },
+                                { label: 'Vehicle',    count: returnItem.vehicles?.length || 0 },
+                                { label: 'Enclosures', count: (lead.enclosures||[]).filter(e=>String(e.leadReturnId)===rid).length },
+                                { label: 'Evidence',   count: (lead.evidence||[]).filter(e=>String(e.leadReturnId)===rid).length },
+                                { label: 'Picture',    count: (lead.pictures||[]).filter(p=>String(p.leadReturnId)===rid).length },
+                                { label: 'Audio',      count: (lead.audio||[]).filter(a=>String(a.leadReturnId)===rid).length },
+                                { label: 'Video',      count: (lead.videos||[]).filter(v=>String(v.leadReturnId)===rid).length },
+                                { label: 'Notes',      count: lead.notes?.length || 0 },
+                                { label: 'Timeline',   count: (lead.timeline||[]).filter(t=>String(t.leadReturnId)===rid).length },
+                              ].filter(cat => cat.count > 0).map(cat => (
+                                <span key={cat.label} className={styles.lrCategoryChip}>
+                                  <span className={styles.lrChipLabel}>{cat.label}:</span>
+                                  <strong className={styles.lrChipCount}>{cat.count}</strong>
+                                </span>
+                              ));
+                            })()}
+                          </div>
                         </h3>
                         {expandedSections.has(`${returnItem.leadReturnId}-all`) && (
                           <div className={styles.sectionGroupContent}>
