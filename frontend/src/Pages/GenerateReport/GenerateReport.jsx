@@ -53,6 +53,7 @@ export const GenerateReport = () => {
     handleSearch, handleShowSingleLead, handleShowHierarchy,
     handleShowAllLeads, handleShowLeadsInRange,
     handleExecSummaryFileChange, handleLeadCardClick,
+    handleGenerateAISummary, isGeneratingSummary,
   } = useGenerateReport(selectedCase);
 
   // ===== Leads display logic =====
@@ -177,10 +178,21 @@ export const GenerateReport = () => {
               {/* Executive Summary side panel — only for "All leads" + "type" mode */}
               {reportType === "all" && summaryMode === "type" && (
                 <div className={styles["exec-summary-sec"]}>
-                  <h3 style={{ marginTop: 0 }}>Executive Summary</h3>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                    <h3 style={{ margin: 0 }}>Executive Summary</h3>
+                    <button
+                      type="button"
+                      className={styles["btn-generate-summary"]}
+                      onClick={handleGenerateAISummary}
+                      disabled={isGeneratingSummary}
+                      title="Auto-fill from case data"
+                    >
+                      {isGeneratingSummary ? "Generating…" : "⚡ Auto-generate"}
+                    </button>
+                  </div>
                   <textarea
                     className={styles["summary-input"]}
-                    placeholder="Type your executive summary here… (auto-saved)"
+                    placeholder="Type your executive summary here, or click 'Auto-generate' to auto-fill from case data…"
                     value={typedSummary}
                     onChange={(e) => setTypedSummary(e.target.value)}
                   />
@@ -195,6 +207,8 @@ export const GenerateReport = () => {
                     reportType={reportType}          setReportType={setReportType}
                     summaryMode={summaryMode}         setSummaryMode={setSummaryMode}
                     handleExecSummaryFileChange={handleExecSummaryFileChange}
+                    handleGenerateAISummary={handleGenerateAISummary}
+                    isGeneratingSummary={isGeneratingSummary}
                     isGeneratingReport={isGeneratingReport}
                     handleRunReportWithSummary={handleRunReportWithSummary}
                     handleRegenerateReport={handleRegenerateReport}

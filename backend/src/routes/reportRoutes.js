@@ -10,6 +10,7 @@ const {
   getSavedReportUrl,
   deleteSavedReport,
 } = require("../controller/reportSaveController.js");
+const { generateCaseSummary } = require("../controller/summaryCaseController.js");
 const verifyToken = require("../middleware/authMiddleware");
 const { roleMiddleware } = require("../middleware/roleMiddleware");
 const getUploadMiddleware = require("../middleware/upload");
@@ -44,6 +45,9 @@ router.post(
   upload.single("execSummaryFile"),
   generateCaseReportwithExecSummary
 );
+
+// ── Auto-generate case summary from case data (no external API) ──────────────
+router.post("/generateSummary", verifyToken, generateCaseSummary);
 
 // ── Saved-report workflow (generate-once, fetch-always) ───────────────────────
 // Trigger background generation and save to Azure; returns { status, reportId }

@@ -46,11 +46,12 @@ export function useGenerateReport(selectedCase) {
   const [isMultiFlag,         setIsMultiFlag]         = useState(true);
 
   // Executive summary
-  const [summaryMode,       setSummaryMode]       = useState("none");
-  const [typedSummary,      setTypedSummary]      = useState("");
-  const [useWebpageSummary, setUseWebpageSummary] = useState(true);
-  const [useFileUpload,     setUseFileUpload]     = useState(false);
-  const [execSummaryFile,   setExecSummaryFile]   = useState(null);
+  const [summaryMode,          setSummaryMode]          = useState("none");
+  const [typedSummary,         setTypedSummary]         = useState("");
+  const [useWebpageSummary,    setUseWebpageSummary]    = useState(true);
+  const [useFileUpload,        setUseFileUpload]        = useState(false);
+  const [execSummaryFile,      setExecSummaryFile]      = useState(null);
+  const [isGeneratingSummary,  setIsGeneratingSummary]  = useState(false);
 
   // Alert modal
   const [alertOpen,    setAlertOpen]    = useState(false);
@@ -648,6 +649,28 @@ export function useGenerateReport(selectedCase) {
     if (e.target.files && e.target.files[0]) setExecSummaryFile(e.target.files[0]);
   };
 
+  const handleGenerateAISummary = async () => {
+    const caseId = selectedCase?._id || selectedCase?.id;
+    if (!caseId) return;
+    const token = localStorage.getItem("token");
+    setIsGeneratingSummary(true);
+    try {
+      const { data } = await api.post(
+        "/api/report/generateSummary",
+        { caseId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (data?.summary) {
+        setTypedSummary(data.summary);
+        setSummaryMode("type");
+      }
+    } catch (err) {
+      showAlert("Failed to generate summary. Please try again.");
+    } finally {
+      setIsGeneratingSummary(false);
+    }
+  };
+
   const handleLeadCardClick = (e, lead) => {
     if (reportType !== "single") return;
     const tag = e.target?.tagName?.toLowerCase();
@@ -699,5 +722,6 @@ export function useGenerateReport(selectedCase) {
     handleSearch, handleShowSingleLead, handleShowHierarchy,
     handleShowAllLeads, handleShowLeadsInRange,
     handleExecSummaryFileChange, handleLeadCardClick,
+    handleGenerateAISummary, isGeneratingSummary,
   };
 }

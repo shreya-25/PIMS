@@ -309,7 +309,7 @@ export const ClosedCase = () => {
         <div className={styles['left-content']}>
           <div className={styles['main-page-abovepart']}>
             <div className={styles['case-header']}>
-              <h2>ARCHIVED CASES</h2>
+              <h2>CLOSED CASES</h2>
             </div>
           </div>
 
@@ -394,10 +394,10 @@ export const ClosedCase = () => {
                         </td>
                       </tr>
                     ) : paginatedCases.length ? (
-                      paginatedCases.map((c) => (
+                      paginatedCases.map((c, index) => (
                         <tr key={c.id}>
-                          <td>{c.id}</td>
-                          <td>{c.title}</td>
+                          <td><span style={{ filter: "blur(4px)", userSelect: "none", pointerEvents: "none", display: "inline-block" }}>{c.id}</span></td>
+                          <td><span style={{ filter: "blur(4px)", userSelect: "none", pointerEvents: "none", display: "inline-block" }}>{c.title}</span></td>
                           <td>{formatDate(c.closedAt)}</td>
                           <td>
                             {(c.caseManagerNames || []).length > 0

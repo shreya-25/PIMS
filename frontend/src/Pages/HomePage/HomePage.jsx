@@ -627,7 +627,7 @@ export const HomePage = () => {
     : { "Case No.": "10%", "Case Name": "27%", "Created At": "14%", "Assigned To": "25%", "Status": "10%" };
   const colKey = { "Case No.": "id", "Case Name": "title", "Created At": "createdAt", "Assigned To": "assignedCaseManager", "Status": "status" };
 
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+  const [sortConfig, setSortConfig] = useState({ key: "createdAt", direction: "desc" });
   const [filterConfig, setFilterConfig] = useState({ id: [], title: [], createdAt: [], role: [], assignedCaseManager: [], status: [] });
   const [openFilter, setOpenFilter] = useState(null);
   const [filterSearch, setFilterSearch] = useState({});
@@ -664,6 +664,11 @@ export const HomePage = () => {
     if (!sortConfig.key) return filtered;
     const PRIORITY_ORDER = { Low: 1, Medium: 2, High: 3 };
     return [...filtered].sort((a, b) => {
+      if (sortConfig.key === "createdAt") {
+        const aT = new Date(a.createdAt || 0).getTime();
+        const bT = new Date(b.createdAt || 0).getTime();
+        return sortConfig.direction === "asc" ? aT - bT : bT - aT;
+      }
       let aV = a[sortConfig.key], bV = b[sortConfig.key];
       if (sortConfig.key === "priority") { aV = PRIORITY_ORDER[aV] || 0; bV = PRIORITY_ORDER[bV] || 0; }
       if (sortConfig.key === "id") { return sortConfig.direction === "asc" ? Number(aV) - Number(bV) : Number(bV) - Number(aV); }
@@ -1006,10 +1011,10 @@ export const HomePage = () => {
                         </thead>
                         <tbody>
                           {paginatedCases.length > 0 ? (
-                            paginatedCases.map((c) => (
+                            paginatedCases.map((c, index) => (
                               <tr key={c.id}>
-                                <td>{c.id}</td>
-                                <td>{c.title}</td>
+                                <td style={index > 0 ? { filter: "blur(4px)", userSelect: "none", pointerEvents: "none" } : {}}>{c.id}</td>
+                                <td style={index > 0 ? { filter: "blur(4px)", userSelect: "none", pointerEvents: "none" } : {}}>{c.title}</td>
                                 <td>
                                   {formatDate(c.createdAt)}
                                   {c.createdAt && (() => {

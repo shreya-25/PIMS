@@ -322,6 +322,30 @@
   font-family: Arial, sans-serif;
 }
 
+.btn-generate-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: 6px;
+  border: none;
+  background: #2563eb;
+  color: #fff;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.btn-generate-summary:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+.btn-generate-summary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 /* ===== Pagination wrapper ===== */
 .p-6 {
   width: 100%;

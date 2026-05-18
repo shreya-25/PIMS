@@ -17,6 +17,7 @@ export default function ReportControlsSection({
   reportType, setReportType,
   summaryMode, setSummaryMode,
   handleExecSummaryFileChange,
+  handleGenerateAISummary, isGeneratingSummary,
   isGeneratingReport,
   handleRunReportWithSummary,
   handleRegenerateReport,
