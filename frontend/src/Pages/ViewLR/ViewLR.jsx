@@ -1004,8 +1004,7 @@ const actuallyDoSubmitReport = async () => {
                                 <tr>
                                     <th style={{ width: '12%' }}>Start Date</th>
                                     <th style={{ width: '12%' }}>End Date</th>
-                                    <th style={{ width: '10%' }}>Start Time</th>
-                                    <th style={{ width: '10%' }}>End Time</th>
+                                    <th style={{ width: '20%' }}>Start Time</th>
                                     <th style={{ width: '18%' }}>Location</th>
                                     <th style={{ width: '30%' }}>Description</th>
                                     <th style={{ width: '8%' }}>More</th>
@@ -1017,7 +1016,6 @@ const actuallyDoSubmitReport = async () => {
                                     <td className={styles.truncCell}>{formatDate(t.eventStartDate || t.eventDate)}</td>
                                     <td className={styles.truncCell}>{formatDate(t.eventEndDate)}</td>
                                     <td className={styles.truncCell}>{t.eventStartTime ? new Date(t.eventStartTime).toLocaleTimeString() : "—"}</td>
-                                    <td className={styles.truncCell}>{t.eventEndTime ? new Date(t.eventEndTime).toLocaleTimeString() : "—"}</td>
                                     <td className={styles.truncCell}>{toText(t.eventLocation)}</td>
                                     <td className={styles.truncCell}>{toText(t.eventDescription)}</td>
                                     <td><button className={styles.moreBtn} onClick={() => setSelectedTimeline(t)}>More</button></td>
@@ -1125,10 +1123,9 @@ const actuallyDoSubmitReport = async () => {
             </table>
 
             <table className={styles.tlGroupTable}>
-              <thead><tr><th>Start Time</th><th>End Time</th></tr></thead>
+              <thead><tr><th>Start Time</th></tr></thead>
               <tbody><tr>
                 <td>{selectedTimeline.eventStartTime ? new Date(selectedTimeline.eventStartTime).toLocaleTimeString() : '—'}</td>
-                <td>{selectedTimeline.eventEndTime   ? new Date(selectedTimeline.eventEndTime).toLocaleTimeString()   : '—'}</td>
               </tr></tbody>
             </table>
 

@@ -200,6 +200,26 @@ export const LREnclosures = () => {
   const [alertOpen,    setAlertOpen]    = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
 
+  // ── All users (for display names) ────────────────────────────────────────
+  const [allUsers, setAllUsers] = useState([]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    api.get('/api/users/usernames', { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => setAllUsers(Array.isArray(res.data?.users) ? res.data.users : []))
+      .catch(() => {});
+  }, []);
+
+  const displayUser = (username) => {
+    if (!username) return '—';
+    const u = allUsers.find(u => u.username === username);
+    if (!u) return username;
+    const last  = (u.lastName  || '').trim();
+    const first = (u.firstName || '').trim();
+    const name  = last && first ? `${last}, ${first}` : last || first || '';
+    return name ? `${name} (${username})` : username;
+  };
+
   // ── Lead status hook ──────────────────────────────────────────────────────
   const { status, isReadOnly } = useLeadStatus({
     caseId:   selectedCase?._id || selectedCase?.id,
@@ -1095,7 +1115,7 @@ export const LREnclosures = () => {
                         <tr key={`${enclosure.returnId ?? ''}-${index}`}>
                           <td>{enclosure.returnId}</td>
                           <td>{enclosure.dateEntered}</td>
-                          <td>{enclosure.enteredBy}</td>
+                          <td>{displayUser(enclosure.enteredBy)}</td>
                           <td>{enclosure.type}</td>
                           <td className={styles.descriptionCell}>
                             <div
