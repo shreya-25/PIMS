@@ -1088,7 +1088,7 @@ export const LREnclosures = () => {
                 <table className={styles.leadsTable}>
                   <thead>
                     <tr>
-                      {[['Id','returnId','5%'],['Date','dateEntered','8%'],['Entered By','enteredBy','12%'],['Type','type','10%'],['Description','enclosure','23%']].map(([label, key, w]) => (
+                      {[['Id','returnId','5%'],['Date','dateEntered','8%'],['Entered By','enteredBy','20%'],['Type','type','10%'],['Description','enclosure','15%']].map(([label, key, w]) => (
                         <th key={key} style={{ width: w, position: 'relative' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
                             {label}

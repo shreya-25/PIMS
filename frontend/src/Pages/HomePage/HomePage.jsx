@@ -1013,8 +1013,8 @@ export const HomePage = () => {
                           {paginatedCases.length > 0 ? (
                             paginatedCases.map((c, index) => (
                               <tr key={c.id}>
-                                <td style={index > 0 ? { filter: "blur(4px)", userSelect: "none", pointerEvents: "none" } : {}}>{c.id}</td>
-                                <td style={index > 0 ? { filter: "blur(4px)", userSelect: "none", pointerEvents: "none" } : {}}>{c.title}</td>
+                                <td style={index > 0 && c.title !== "The Walgreens Photo Trail" ? { filter: "blur(4px)", userSelect: "none", pointerEvents: "none" } : {}}>{c.id}</td>
+                                <td style={index > 0 && c.title !== "The Walgreens Photo Trail" ? { filter: "blur(4px)", userSelect: "none", pointerEvents: "none" } : {}}>{c.title}</td>
                                 <td>
                                   {formatDate(c.createdAt)}
                                   {c.createdAt && (() => {
