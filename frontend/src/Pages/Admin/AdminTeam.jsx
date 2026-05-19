@@ -743,8 +743,8 @@ export const AdminTeam = () => {
                         ) : (
                           paginatedCases.map((c, index) => (
                             <tr key={c._id}>
-                              <td><span style={isArchived || index > 0 ? { filter: "blur(4px)", userSelect: "none", pointerEvents: "none", display: "inline-block" } : {}}>{c.caseNo}</span></td>
-                              <td><span style={isArchived || index > 0 ? { filter: "blur(4px)", userSelect: "none", pointerEvents: "none", display: "inline-block" } : {}}>{c.caseName}</span></td>
+                              <td>{c.caseNo}</td>
+                              <td>{c.caseName}</td>
                               <td>
                                 {isArchived ? c.closedAtFmt : c.createdAtFmt}
                                 {!isArchived && c.createdAt && (() => {

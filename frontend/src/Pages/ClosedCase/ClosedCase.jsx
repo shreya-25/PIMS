@@ -396,8 +396,8 @@ export const ClosedCase = () => {
                     ) : paginatedCases.length ? (
                       paginatedCases.map((c, index) => (
                         <tr key={c.id}>
-                          <td><span style={{ filter: "blur(4px)", userSelect: "none", pointerEvents: "none", display: "inline-block" }}>{c.id}</span></td>
-                          <td><span style={{ filter: "blur(4px)", userSelect: "none", pointerEvents: "none", display: "inline-block" }}>{c.title}</span></td>
+                          <td>{c.id}</td>
+                          <td>{c.title}</td>
                           <td>{formatDate(c.closedAt)}</td>
                           <td>
                             {(c.caseManagerNames || []).length > 0
