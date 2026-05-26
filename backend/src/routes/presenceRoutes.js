@@ -49,12 +49,28 @@ router.post("/heartbeat", async (req, res) => {
 
     const roomKey = roomKeyFor({ caseNo, caseName: cName });
 
-    // upsert + bump lastSeen (Mongo presence model)
-    await Presence.findOneAndUpdate(
-      { roomKey, username },
-      { $set: { role, roomKey, username }, $currentDate: { lastSeen: true } },
-      { upsert: true }
-    );
+    // upsert + bump lastSeen (Mongo presence model).
+    // findOneAndUpdate with upsert:true can hit a race condition when two
+    // concurrent heartbeats for the same user both see no document and both
+    // try to insert — the second one gets E11000.  Fix: catch and retry as a
+    // plain update (no upsert) since the first request already created the doc.
+    try {
+      await Presence.findOneAndUpdate(
+        { roomKey, username },
+        { $set: { role }, $currentDate: { lastSeen: true } },
+        { upsert: true, setDefaultsOnInsert: true }
+      );
+    } catch (upsertErr) {
+      if (upsertErr.code === 11000) {
+        // Concurrent insert beat us to it — the doc exists now, just update it
+        await Presence.updateOne(
+          { roomKey, username },
+          { $set: { role }, $currentDate: { lastSeen: true } }
+        );
+      } else {
+        throw upsertErr;
+      }
+    }
 
     const cutoff = new Date(Date.now() - TTL_MS);
     const users = await Presence.find(
