@@ -51,7 +51,6 @@ export function useGenerateReport(selectedCase) {
   const [useWebpageSummary,    setUseWebpageSummary]    = useState(true);
   const [useFileUpload,        setUseFileUpload]        = useState(false);
   const [execSummaryFile,      setExecSummaryFile]      = useState(null);
-  const [isGeneratingSummary,  setIsGeneratingSummary]  = useState(false);
 
   // Alert modal
   const [alertOpen,    setAlertOpen]    = useState(false);
@@ -454,20 +453,60 @@ export function useGenerateReport(selectedCase) {
     const isAllReport    = String(reportType).toLowerCase() === "all";
     const hasWebSummary  = Boolean(useWebpageSummary && typedSummary?.trim());
     const hasFileSummary = Boolean(useFileUpload && execSummaryFile);
-    const includeExec    = isAllReport && (hasWebSummary || hasFileSummary);
 
     setIsGeneratingReport(true);
     startProgress();
+
+    // ── File exec summary → bypass triggerSave; POST directly with the file ──
+    if (hasFileSummary) {
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+      try {
+        const formData = new FormData();
+        formData.append("user",            localStorage.getItem("loggedInUser") || "Unknown");
+        formData.append("reportTimestamp", new Date().toLocaleString());
+        formData.append("caseNo",          selectedCase?.caseNo   || "");
+        formData.append("caseName",        selectedCase?.caseName || "");
+        formData.append("leadsData",       JSON.stringify(leadsForReport));
+        formData.append("selectedReports", JSON.stringify({ FullReport: true }));
+        formData.append("execSummaryFile", execSummaryFile);
+        formData.append("summaryMode",     "file");
+        const response = await axios.post(
+          `${api.defaults.baseURL || ""}/api/report/generateCaseExecSummary`,
+          formData,
+          { headers: { Authorization: `Bearer ${token}` }, responseType: "blob", signal: controller.signal }
+        );
+        openPdfBlob(response.data);
+        completeProgress();
+      } catch (error) {
+        if (axios.isCancel(error) || error.name === "CanceledError" || error.name === "AbortError") return;
+        // responseType:"blob" means even error responses arrive as Blobs — read the real message
+        try {
+          if (error.response?.data instanceof Blob) {
+            const text = await error.response.data.text();
+            let msg = text;
+            try { msg = JSON.parse(text)?.error || JSON.parse(text)?.message || text; } catch (_) {}
+            console.error("Exec-summary report error:", msg);
+            showAlert(`Error generating PDF: ${msg}`);
+          } else {
+            console.error("Exec-summary report error:", error);
+            showAlert("Error generating PDF. Please try again.");
+          }
+        } catch (_) {
+          showAlert("Error generating PDF. Please try again.");
+        }
+        completeProgress();
+      }
+      return;
+    }
 
     // ── "All leads" → save to Azure and fetch on next click ─────────────────
     if (isAllReport) {
       const caseId = selectedCase?._id || selectedCase?.id;
       if (!caseId) { showAlert("No case selected."); completeProgress(); return; }
 
-      const resolvedSummaryMode = includeExec && hasWebSummary  ? "web"
-                                : includeExec && hasFileSummary ? "file"
-                                : "none";
-      const resolvedSummary = (includeExec && hasWebSummary) ? typedSummary : "";
+      const resolvedSummaryMode = hasWebSummary ? "web" : "none";
+      const resolvedSummary     = hasWebSummary ? typedSummary : "";
 
       try {
         const { data } = await api.post(
@@ -506,27 +545,6 @@ export function useGenerateReport(selectedCase) {
     abortControllerRef.current = controller;
 
     try {
-      // File-upload exec summary path (only for "all" type, kept for safety)
-      if (includeExec && hasFileSummary) {
-        const formData = new FormData();
-        formData.append("user",            localStorage.getItem("loggedInUser") || "Unknown");
-        formData.append("reportTimestamp", new Date().toLocaleString());
-        formData.append("caseNo",          selectedCase.caseNo);
-        formData.append("caseName",        selectedCase.caseName);
-        formData.append("leadsData",       JSON.stringify(leadsForReport));
-        formData.append("selectedReports", JSON.stringify({ FullReport: true }));
-        formData.append("execSummaryFile", execSummaryFile);
-        formData.append("summaryMode",     "file");
-        const response = await axios.post(
-          `${api.defaults.baseURL || ""}/api/report/generateCaseExecSummary`,
-          formData,
-          { headers: { Authorization: `Bearer ${token}` }, responseType: "blob", signal: controller.signal }
-        );
-        openPdfBlob(response.data);
-        completeProgress();
-        return;
-      }
-
       // Standard streaming path
       const payload = {
         user:            localStorage.getItem("loggedInUser") || "Unknown",
@@ -649,28 +667,6 @@ export function useGenerateReport(selectedCase) {
     if (e.target.files && e.target.files[0]) setExecSummaryFile(e.target.files[0]);
   };
 
-  const handleGenerateAISummary = async () => {
-    const caseId = selectedCase?._id || selectedCase?.id;
-    if (!caseId) return;
-    const token = localStorage.getItem("token");
-    setIsGeneratingSummary(true);
-    try {
-      const { data } = await api.post(
-        "/api/report/generateSummary",
-        { caseId },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      if (data?.summary) {
-        setTypedSummary(data.summary);
-        setSummaryMode("type");
-      }
-    } catch (err) {
-      showAlert("Failed to generate summary. Please try again.");
-    } finally {
-      setIsGeneratingSummary(false);
-    }
-  };
-
   const handleLeadCardClick = (e, lead) => {
     if (reportType !== "single") return;
     const tag = e.target?.tagName?.toLowerCase();
@@ -722,6 +718,5 @@ export function useGenerateReport(selectedCase) {
     handleSearch, handleShowSingleLead, handleShowHierarchy,
     handleShowAllLeads, handleShowLeadsInRange,
     handleExecSummaryFileChange, handleLeadCardClick,
-    handleGenerateAISummary, isGeneratingSummary,
   };
 }

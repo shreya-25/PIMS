@@ -1925,27 +1925,37 @@ function formatOfficerList(arr) {
 }
 
 function drawTextBox(doc, x, y, width, title, content) {
-  const pad = 0, fs = 10; // border/bleed not needed now
+  const pad = 0, fs = 10;
   const bodyFont = "Helvetica", titleFont = "Helvetica-Bold";
   const innerW = width - 2 * pad;
 
   const topY    = doc.page.margins.top;
   const bottomY = doc.page.height - doc.page.margins.bottom;
 
-  const text = ((content ?? "") + "").replace(/\s+/g, " ").trim();
+  // Split on newlines first so paragraph / line breaks are preserved.
+  // Only collapse horizontal whitespace (spaces/tabs) within each line.
+  const inputLines = ((content ?? "") + "").split(/\r?\n/);
 
-  // Pre-wrap to lines so we can page-split cleanly
   doc.font(bodyFont).fontSize(fs);
   const lineH = doc.currentLineHeight();
-  const words = text ? text.split(" ") : [];
-  const lines = [];
-  let line = "";
-  for (const w of words) {
-    const cand = line ? line + " " + w : w;
-    if (doc.widthOfString(cand) <= innerW) line = cand;
-    else { if (line) lines.push(line); line = w; }
+
+  // Word-wrap each input line independently.
+  const displayLines = [];
+  for (const rawLine of inputLines) {
+    const para = rawLine.replace(/[ \t]+/g, " ");
+    if (!para.trim()) {
+      displayLines.push(""); // blank line → preserved paragraph break
+      continue;
+    }
+    const words = para.split(" ");
+    let line = "";
+    for (const w of words) {
+      const cand = line ? line + " " + w : w;
+      if (doc.widthOfString(cand) <= innerW) line = cand;
+      else { if (line) displayLines.push(line); line = w; }
+    }
+    if (line) displayLines.push(line);
   }
-  if (line) lines.push(line);
 
   // Title height (measured once)
   const titleH = title
@@ -1955,28 +1965,25 @@ function drawTextBox(doc, x, y, width, title, content) {
 
   let i = 0, currY = y, first = true;
 
-  while (i < lines.length || (first && title && !lines.length)) {
-    // we still need a minimum space check so text doesn’t clip at bottom
+  while (i < displayLines.length || (first && title && !displayLines.length)) {
     const minNeededH = (first ? titleH : 0) + lineH + 2 * pad;
     if (currY + minNeededH > bottomY) { doc.addPage(); currY = topY; }
 
     const available = bottomY - currY - 2 * pad - (first ? titleH : 0);
     const canLines  = Math.max(1, Math.floor(available / lineH));
-    const end       = Math.min(lines.length, i + canLines);
+    const end       = Math.min(displayLines.length, i + canLines);
 
-    // --- draw text only (no border) ---
     let textY = currY + pad;
 
     if (first && title) {
       doc.font(titleFont).fontSize(fs).text(title, x + pad, textY, { width: innerW });
-      textY = doc.y; // after title
+      textY = doc.y;
       doc.font(bodyFont).fontSize(fs);
     }
 
-    const block = lines.slice(i, end).join("\n");
-    doc.text(block, x + pad, textY, { width: innerW, align: "justify" });
+    const block = displayLines.slice(i, end).join("\n");
+    doc.text(block, x + pad, textY, { width: innerW, align: "left" });
 
-    // advance currY based on how much text was actually written
     const usedTextH = doc.y - textY;
     const sectionH = (first ? titleH : 0) + usedTextH + 2 * pad;
 
@@ -2251,64 +2258,27 @@ return y + rowH + 20;
    ============================== */
 
 async function convertDocxToPdf(inputPath, outputPath, user, reportTimestamp) {
-  try {
-    // Convert DOCX to HTML using Mammoth.
-    const { value: htmlContent } = await mammoth.convertToHtml({ path: inputPath });
-    
-    // Resolve absolute path for the logo and create a file URL.
-    const logoPath = path.join(__dirname, "../assets/newpolicelogo.png");
+  // Convert DOCX to HTML using Mammoth.
+  const { value: htmlContent } = await mammoth.convertToHtml({ path: inputPath });
 
-    // Read the image file and convert to base64.
-const logoBuffer = fs.readFileSync(logoPath);
-const logoBase64 = logoBuffer.toString('base64');
-const ext = path.extname(logoPath).substring(1); // e.g. 'png'
-const logoUrl = `data:image/${ext};base64,${logoBase64}`;
+  // Logo as base64 so Puppeteer can embed it without a file:// URL.
+  const logoPath = path.join(__dirname, "../assets/newpolicelogo.png");
+  const logoBase64 = fs.readFileSync(logoPath).toString("base64");
+  const logoUrl = `data:image/png;base64,${logoBase64}`;
 
-    // Build an HTML template replicating the PDFKit header.
-    const html = `
-      <!DOCTYPE html>
+  const html = `<!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8">
     <style>
-      /* Set only left and right margins to 50px; top and bottom are 0 */
       @page { margin: 0; }
-      body {
-        margin: 0;
-        padding: 0;
-        font-family: Helvetica, Arial, sans-serif;
-      }
-      /* Header will now start at the very top of the physical page */
-      .header {
-        width: 100%;
-        height: 100px;
-        background-color: #003366;
-      }
-      .header-logo {
-        float: left;
-        margin: calc((80px - 70px) / 2) 10px calc((80px - 70px) / 2) 10px;
-        width: 80px;
-        height: 80px;
-      }
-      .header-text {
-        text-align: center;
-        color: white;
-        padding-top: 30px;
-      }
-      .header-text .title {
-        font-size: 16px;
-        font-weight: bold;
-        line-height: 1.2;
-      }
-      .header-text .details {
-        font-size: 14px;
-        line-height: 1.2;
-      }
-      /* If you want the main content to start after the header,
-         you can add a margin-top to main equal to the header’s height. */
-      main {
-        margin: 0 50px 0 50px; /* top: 80px, left/right: 50px, bottom: 0 */
-      }
+      body { margin: 0; padding: 0; font-family: Helvetica, Arial, sans-serif; }
+      .header { width: 100%; height: 100px; background-color: #003366; }
+      .header-logo { float: left; margin: 5px 10px; width: 80px; height: 80px; }
+      .header-text { text-align: center; color: white; padding-top: 30px; }
+      .header-text .title { font-size: 16px; font-weight: bold; line-height: 1.2; }
+      .header-text .details { font-size: 14px; line-height: 1.2; }
+      main { margin: 0 50px; }
     </style>
   </head>
   <body>
@@ -2316,49 +2286,38 @@ const logoUrl = `data:image/${ext};base64,${logoBase64}`;
       <img src="${logoUrl}" alt="Logo" class="header-logo" />
       <div class="header-text">
         <div class="title">Final Case Report</div>
-        <div class="details">
-          Generated by: ${user} | Timestamp: ${reportTimestamp}
-        </div>
+        <div class="details">Generated by: ${user} | Timestamp: ${reportTimestamp}</div>
       </div>
     </div>
-    <main>
-      ${htmlContent}
-    </main>
+    <main>${htmlContent}</main>
   </body>
-</html>
+</html>`;
 
-    `;
-    
-    // Launch Puppeteer to render the HTML and generate a PDF.
-    const browser = await puppeteer.launch();
+  const browser = await puppeteer.launch({
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+  });
+  try {
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "networkidle0" });
     await page.pdf({
       path: outputPath,
       format: "Letter",
       printBackground: true,
-      margin: { top: '0px', bottom: '0px', left: '0px', right: '0px' }
+      margin: { top: "0px", bottom: "0px", left: "0px", right: "0px" },
     });
+  } finally {
     await browser.close();
-    console.log(`PDF conversion complete! File saved at: ${outputPath}`);
-  } catch (error) {
-    console.error("Error during conversion:", error);
   }
 }
 
-async function mergeWithWordFileAtStart(pdfKitBuffer, wordPdfPath) {
-  // Load the main PDF (generated by PDFKit)
+async function mergeWithWordFileAtStart(pdfKitBuffer, execPdfBuffer) {
   const mainDoc = await PDFLibDocument.load(pdfKitBuffer);
-  // Read and load the external PDF (converted from the Word file)
-  const externalBuffer = fs.readFileSync(wordPdfPath);
-  const externalDoc = await PDFLibDocument.load(externalBuffer);
-  // Copy every page from the external PDF and insert at the beginning
+  const externalDoc = await PDFLibDocument.load(execPdfBuffer);
   const externalPages = await mainDoc.copyPages(externalDoc, externalDoc.getPageIndices());
   for (let i = externalPages.length - 1; i >= 0; i--) {
     mainDoc.insertPage(0, externalPages[i]);
   }
-  const mergedPdfBytes = await mainDoc.save();
-  return Buffer.from(mergedPdfBytes);
+  return Buffer.from(await mainDoc.save());
 }
 
 /* ==============================
@@ -2419,14 +2378,16 @@ async function generateCaseReportwithExecSummary(req, res) {
 
     const includeAll = selectedReports && selectedReports.FullReport;
 
-    const caseDoc = await Case.findOne({ caseNo: caseNoParam }).lean();
-    const characterOfCase = caseDoc?.characterOfCase || "";
-
-  // 1) Make sure a file was uploaded
+  // 1) Make sure a file was uploaded (check before any heavy work)
   if (!req.file || !req.file.path) {
     return res.status(400).json({ error: "No executive summary file uploaded." });
   }
 
+  let characterOfCase = "";
+  try {
+    const caseDoc = await Case.findOne({ caseNo: caseNoParam }).lean();
+    characterOfCase = caseDoc?.characterOfCase || "";
+  } catch (_) { /* non-fatal – characterOfCase stays "" */ }
 
   try {
     // Create the PDFDocument instance.
@@ -2436,33 +2397,44 @@ async function generateCaseReportwithExecSummary(req, res) {
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", "inline; filename=report.pdf");
 
-    // Define paths for DOCX conversion.
-    // const inputPath = path.join(__dirname, 'executive_summary.docx');
-    // const outputPath = path.join(__dirname, 'output.pdf');
-    
-    const inputPath  = req.file.path;                     
-    const outputPath = inputPath.replace(/\.\w+$/, ".pdf");    
+    // ── Convert uploaded file to a PDF buffer ───────────────────────────────
+    const inputPath  = req.file.path;
+    const ext        = path.extname(req.file.originalname).toLowerCase();
+    let execPdfBuffer;
 
-    // Use await since convertDocxToPdf returns a promise.
-    await convertDocxToPdf(inputPath, outputPath, "Officer 123", "10/15/2025, 3:47 AM");
+    if (ext === ".pdf") {
+      // Already a PDF — read directly, no conversion needed
+      execPdfBuffer = fs.readFileSync(inputPath);
+    } else {
+      // DOCX / DOC — convert via Mammoth + Puppeteer
+      const outputPath = inputPath.replace(/\.\w+$/, ".pdf");
+      await convertDocxToPdf(
+        inputPath,
+        outputPath,
+        user || "Unknown",
+        reportTimestamp || new Date().toLocaleString()
+      );
+      execPdfBuffer = fs.readFileSync(outputPath);
+      // Clean up temp conversion file
+      try { fs.unlinkSync(outputPath); } catch (_) {}
+    }
+
+    // Clean up the uploaded temp file
+    try { fs.unlinkSync(inputPath); } catch (_) {}
 
     // Collect PDFKit output chunks.
     const chunks = [];
     doc.on("data", (chunk) => chunks.push(chunk));
     doc.on("end", async () => {
       const pdfKitBuffer = Buffer.concat(chunks);
-      // const wordPdfPath = path.join(__dirname, "output.pdf");
-      const wordPdfPath = outputPath;
-      
       try {
-        // Merge the external Word PDF at the beginning.
-        const mergedBuffer = await mergeWithWordFileAtStart(pdfKitBuffer, wordPdfPath);
+        const mergedBuffer = await mergeWithWordFileAtStart(pdfKitBuffer, execPdfBuffer);
         res.setHeader("Content-Type", "application/pdf");
-        res.setHeader("Content-Disposition", "inline; filename=merged.pdf");
+        res.setHeader("Content-Disposition", "inline; filename=report.pdf");
         res.send(mergedBuffer);
       } catch (err) {
-        console.error("Merge error:", err);
-        res.status(500).json({ error: "Failed to merge PDF" });
+        console.error("Failed to merge exec-summary PDF:", err);
+        res.status(500).json({ error: `Failed to merge PDF: ${err.message}` });
       }
     });
 

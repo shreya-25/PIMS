@@ -16,8 +16,7 @@ const REPORT_TYPES = [
 export default function ReportControlsSection({
   reportType, setReportType,
   summaryMode, setSummaryMode,
-  handleExecSummaryFileChange,
-  handleGenerateAISummary, isGeneratingSummary,
+  handleExecSummaryFileChange, execSummaryFile,
   isGeneratingReport,
   handleRunReportWithSummary,
   handleRegenerateReport,
@@ -83,8 +82,22 @@ export default function ReportControlsSection({
           </div>
 
           {summaryMode === "file" && (
-            <div style={{ marginBottom: 16 }}>
-              <input type="file" accept=".doc,.docx,.pdf" onChange={handleExecSummaryFileChange} />
+            <div className={styles["file-upload-wrap"]}>
+              <span className={styles["file-upload-title"]}>Upload File</span>
+              <div className={styles["file-upload-box"]}>
+                <label className={styles["file-upload-label"]}>
+                  <input
+                    type="file"
+                    accept=".doc,.docx,.pdf"
+                    onChange={handleExecSummaryFileChange}
+                    className={styles["file-upload-input"]}
+                  />
+                  <span className={styles["file-upload-btn"]}>Choose File</span>
+                </label>
+                <span className={styles["file-upload-name"]}>
+                  {execSummaryFile ? execSummaryFile.name : "No file chosen"}
+                </span>
+              </div>
             </div>
           )}
 

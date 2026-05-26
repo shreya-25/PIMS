@@ -52,6 +52,13 @@ const storage = multer.diskStorage({
 });
 
 // Create and export the multer instance
-const upload = multer({ storage });
+// fieldSize raised to 50 MB so large leadsData JSON strings don't hit the default 1 MB cap.
+const upload = multer({
+  storage,
+  limits: {
+    fieldSize: 50 * 1024 * 1024, // 50 MB per field value
+    fileSize:  50 * 1024 * 1024, // 50 MB per uploaded file
+  },
+});
 module.exports = upload;
 

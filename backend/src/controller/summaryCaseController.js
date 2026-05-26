@@ -1,22 +1,6 @@
 const { fetchCaseLeadsData } = require("../utils/caseDataFetcher");
 const Case = require("../models/case");
 
-// Model state: null = not started, Promise = loading, function = ready
-let summarizerReady = null;
-let summarizerFn    = null;
-
-// Kick off model load in the background — doesn't block anything
-function warmupSummarizer() {
-  if (summarizerReady) return; // already loading or loaded
-  summarizerReady = import("@xenova/transformers")
-    .then(({ pipeline }) => pipeline("summarization", "Xenova/distilbart-cnn-12-6"))
-    .then((fn) => { summarizerFn = fn; console.log("[Summary] AI model ready."); })
-    .catch((err) => { console.warn("[Summary] AI model failed to load:", err.message); summarizerReady = null; });
-}
-
-// Start downloading the model immediately when the server starts
-warmupSummarizer();
-
 function fmt(date) {
   if (!date) return null;
   const d = new Date(date);
@@ -26,18 +10,6 @@ function fmt(date) {
 
 function plural(n, word) {
   return `${n} ${word}${n === 1 ? "" : "s"}`;
-}
-
-function buildNarrativeText(leadsData) {
-  const chunks = [];
-  for (const lead of leadsData) {
-    if (lead.description?.trim()) chunks.push(lead.description.trim());
-    if (lead.summary?.trim())     chunks.push(lead.summary.trim());
-    for (const lr of lead.leadReturns || []) {
-      if (lr.leadReturnResult?.trim()) chunks.push(lr.leadReturnResult.trim());
-    }
-  }
-  return chunks.join(" ").replace(/\s+/g, " ").trim().slice(0, 3500);
 }
 
 async function generateCaseSummary(req, res) {
@@ -94,31 +66,6 @@ async function generateCaseSummary(req, res) {
     const caseName   = caseDoc.caseName          || leadsData[0]?.caseName || "";
     const charOfCase = caseDoc.characterOfCase   || "";
 
-    // ── AI summarization — only if model is already loaded ───────────────────
-    warmupSummarizer();
-
-    let aiParagraph = "";
-    const narrativeText = buildNarrativeText(leadsData);
-
-    console.log("[Summary] summarizerFn ready:", !!summarizerFn);
-    console.log("[Summary] narrativeText length:", narrativeText.length);
-    console.log("[Summary] narrativeText preview:", narrativeText.slice(0, 200));
-
-    if (summarizerFn && narrativeText.length > 20) {
-      try {
-        console.log("[Summary] Running inference...");
-        const [result] = await summarizerFn(narrativeText, {
-          max_length: 120,
-          min_length: 10,
-          do_sample: false,
-        });
-        aiParagraph = result.summary_text?.trim() || "";
-        console.log("[Summary] AI result:", aiParagraph);
-      } catch (aiErr) {
-        console.warn("[Summary] Inference failed:", aiErr.message);
-      }
-    }
-
     // ── Build output ─────────────────────────────────────────────────────────
     const lines = [];
 
@@ -153,19 +100,12 @@ async function generateCaseSummary(req, res) {
 
     if (investigators) lines.push(`${plural(investigators, "investigator")} contributed to this case.`);
 
-    if (aiParagraph) {
-      lines.push("");
-      lines.push("Narrative summary:");
-      lines.push(aiParagraph);
-    }
-
     lines.push("");
     lines.push("[Add any additional context, key findings, or conclusions here.]");
 
     return res.json({ summary: lines.join("\n") });
 
   } catch (err) {
-    console.error("generateCaseSummary error:", err);
     return res.status(500).json({ error: "Failed to generate summary" });
   }
 }

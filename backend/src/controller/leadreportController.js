@@ -372,9 +372,7 @@ async function addPersonPhotoPage(doc, person, personIndex) {
       valign: "center",
     });
     */
-  } catch (e) {
-    console.warn(`Failed to add person photo page for person ${personIndex + 1}:`, e?.message);
-  }
+  } catch (e) { /* skip */ }
 }
 
 async function appendPersonPhotoPagesAtEnd(doc, persons = []) {
@@ -411,9 +409,7 @@ async function appendPersonPhotoPagesAtEnd(doc, persons = []) {
         valign: "center",
       });
 
-    } catch (e) {
-      console.warn(`Photo append failed for person ${i + 1}:`, e?.message);
-    }
+    } catch (e) { /* skip */ }
   }
 }
 
@@ -833,27 +829,37 @@ return y + rowH + 10;
 // }
 
 function drawTextBox(doc, x, y, width, title, content) {
-  const pad = 0, fs = 10; // border/bleed not needed now
+  const pad = 0, fs = 10;
   const bodyFont = "Helvetica", titleFont = "Helvetica-Bold";
   const innerW = width - 2 * pad;
 
   const topY    = doc.page.margins.top;
   const bottomY = doc.page.height - doc.page.margins.bottom;
 
-  const text = ((content ?? "") + "").replace(/\s+/g, " ").trim();
+  // Split on newlines first so paragraph / line breaks are preserved.
+  // Only collapse horizontal whitespace (spaces/tabs) within each line.
+  const inputLines = ((content ?? "") + "").split(/\r?\n/);
 
-  // Pre-wrap to lines so we can page-split cleanly
   doc.font(bodyFont).fontSize(fs);
   const lineH = doc.currentLineHeight();
-  const words = text ? text.split(" ") : [];
-  const lines = [];
-  let line = "";
-  for (const w of words) {
-    const cand = line ? line + " " + w : w;
-    if (doc.widthOfString(cand) <= innerW) line = cand;
-    else { if (line) lines.push(line); line = w; }
+
+  // Word-wrap each input line independently.
+  const displayLines = [];
+  for (const rawLine of inputLines) {
+    const para = rawLine.replace(/[ \t]+/g, " ");
+    if (!para.trim()) {
+      displayLines.push(""); // blank line → preserved paragraph break
+      continue;
+    }
+    const words = para.split(" ");
+    let line = "";
+    for (const w of words) {
+      const cand = line ? line + " " + w : w;
+      if (doc.widthOfString(cand) <= innerW) line = cand;
+      else { if (line) displayLines.push(line); line = w; }
+    }
+    if (line) displayLines.push(line);
   }
-  if (line) lines.push(line);
 
   // Title height (measured once)
   const titleH = title
@@ -863,28 +869,25 @@ function drawTextBox(doc, x, y, width, title, content) {
 
   let i = 0, currY = y, first = true;
 
-  while (i < lines.length || (first && title && !lines.length)) {
-    // we still need a minimum space check so text doesn't clip at bottom
+  while (i < displayLines.length || (first && title && !displayLines.length)) {
     const minNeededH = (first ? titleH : 0) + lineH + 2 * pad;
     if (currY + minNeededH > bottomY) { doc.addPage(); currY = topY; }
 
     const available = bottomY - currY - 2 * pad - (first ? titleH : 0);
     const canLines  = Math.max(1, Math.floor(available / lineH));
-    const end       = Math.min(lines.length, i + canLines);
+    const end       = Math.min(displayLines.length, i + canLines);
 
-    // --- draw text only (no border) ---
     let textY = currY + pad;
 
     if (first && title) {
       doc.font(titleFont).fontSize(fs).text(title, x + pad, textY, { width: innerW });
-      textY = doc.y; // after title
+      textY = doc.y;
       doc.font(bodyFont).fontSize(fs);
     }
 
-    const block = lines.slice(i, end).join("\n");
-    doc.text(block, x + pad, textY, { width: innerW, align: "justify" });
+    const block = displayLines.slice(i, end).join("\n");
+    doc.text(block, x + pad, textY, { width: innerW, align: "left" });
 
-    // advance currY based on how much text was actually written
     const usedTextH = doc.y - textY;
     const sectionH = (first ? titleH : 0) + usedTextH + 2 * pad;
 
@@ -955,8 +958,6 @@ async function generateReport(req, res) {
     leadVideos, leadScratchpad, leadTimeline, selectedReports, timezone
   } = req.body;
 
-  console.log('📦  req.body =', JSON.stringify(req.body, null, 2));
-
   const includeAll = selectedReports && selectedReports.FullReport;
   //  const pdfUploads   = req.files.pdfFiles   || [];
   // const imageUploads = req.files.imageFiles || [];
@@ -1014,9 +1015,7 @@ async function generateReport(req, res) {
         const rawBuf    = await getObjectBuffer(key);
         const scaledBuf = await scalePdfPagesToFit(rawBuf, { isPicture: false });
         pdfBuffer = await mergeWithAnotherPDF(pdfBuffer, scaledBuf);
-      } catch (e) {
-        console.warn("Skipping merge for key:", key, e.message);
-      }
+      } catch (e) { /* skip */ }
     }
 
        for (const key of picturePdfKeys) {
@@ -1024,9 +1023,7 @@ async function generateReport(req, res) {
         const rawBuf    = await getObjectBuffer(key);
         const scaledBuf = await scalePdfPagesToFit(rawBuf, { isPicture: true });
         pdfBuffer = await mergeWithAnotherPDF(pdfBuffer, scaledBuf);
-      } catch (e) {
-        console.warn("Skipping merge for key:", key, e.message);
-      }
+      } catch (e) { /* skip */ }
     }
 
       res.setHeader("Content-Type", "application/pdf");
@@ -1034,7 +1031,6 @@ async function generateReport(req, res) {
       res.send(pdfBuffer);
 
     } catch (err) {
-      console.error("Merge error:", err);
       res.status(500).json({ error: "Failed to merge external PDFs" });
     }
   });
@@ -1876,7 +1872,6 @@ let currentY = headerHeight + 20;
     await appendPersonPhotoPagesAtEnd(doc, leadPersons);
     doc.end();
   } catch (error) {
-    console.error("Error generating PDF:", error);
     res.status(500).json({ error: "Failed to generate PDF" });
   }
 }

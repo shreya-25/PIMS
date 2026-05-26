@@ -52,8 +52,7 @@ export const GenerateReport = () => {
     handleRegenerateReport,
     handleSearch, handleShowSingleLead, handleShowHierarchy,
     handleShowAllLeads, handleShowLeadsInRange,
-    handleExecSummaryFileChange, handleLeadCardClick,
-    handleGenerateAISummary, isGeneratingSummary,
+    handleExecSummaryFileChange, execSummaryFile, handleLeadCardClick,
   } = useGenerateReport(selectedCase);
 
   // ===== Leads display logic =====
@@ -180,19 +179,10 @@ export const GenerateReport = () => {
                 <div className={styles["exec-summary-sec"]}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
                     <h3 style={{ margin: 0 }}>Executive Summary</h3>
-                    <button
-                      type="button"
-                      className={styles["btn-generate-summary"]}
-                      onClick={handleGenerateAISummary}
-                      disabled={isGeneratingSummary}
-                      title="Auto-fill from case data"
-                    >
-                      {isGeneratingSummary ? "Generating…" : "⚡ Auto-generate"}
-                    </button>
                   </div>
                   <textarea
                     className={styles["summary-input"]}
-                    placeholder="Type your executive summary here, or click 'Auto-generate' to auto-fill from case data…"
+                    placeholder="Type your executive summary here…"
                     value={typedSummary}
                     onChange={(e) => setTypedSummary(e.target.value)}
                   />
@@ -207,8 +197,7 @@ export const GenerateReport = () => {
                     reportType={reportType}          setReportType={setReportType}
                     summaryMode={summaryMode}         setSummaryMode={setSummaryMode}
                     handleExecSummaryFileChange={handleExecSummaryFileChange}
-                    handleGenerateAISummary={handleGenerateAISummary}
-                    isGeneratingSummary={isGeneratingSummary}
+                    execSummaryFile={execSummaryFile}
                     isGeneratingReport={isGeneratingReport}
                     handleRunReportWithSummary={handleRunReportWithSummary}
                     handleRegenerateReport={handleRegenerateReport}
