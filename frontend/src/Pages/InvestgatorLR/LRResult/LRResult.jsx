@@ -815,7 +815,12 @@ useEffect(() => {
         return sel.includes(cell);
       })
     );
-    if (!sortConfig.key) return filtered;
+    // Default: always sort ascending by leadReturnId (A, B, C...)
+    if (!sortConfig.key) {
+      return [...filtered].sort((a, b) =>
+        String(a.leadReturnId ?? '').localeCompare(String(b.leadReturnId ?? ''), undefined, { numeric: true, sensitivity: 'base' })
+      );
+    }
     return [...filtered].sort((a, b) => {
       const aV = sortConfig.key === 'enteredDate' ? formatDate(a.enteredDate) : String(a[sortConfig.key] ?? '');
       const bV = sortConfig.key === 'enteredDate' ? formatDate(b.enteredDate) : String(b[sortConfig.key] ?? '');
@@ -1036,39 +1041,56 @@ useEffect(() => {
                           !canModify;
 
                         return (
-                          <tr key={ret.leadReturnId || idx}>
-                            <td>{ret.leadReturnId}</td>
+                          <tr key={ret.leadReturnId || idx} style={ret.isDeleted ? { backgroundColor: '#fff0f0' } : {}}>
+                            <td style={ret.isDeleted ? { color: '#c0392b' } : {}}>{ret.leadReturnId}</td>
                             <td>{formatDate(ret.enteredDate)}</td>
                             <td>{ret.enteredBy}</td>
                             <td className={styles.narrativeCell}>
-                              <div
-                                className={
-                                  isExpanded
-                                    ? styles.narrativeContentExpanded
-                                    : styles.narrativeContentCollapsed
-                                }
-                              >
-                                {ret.leadReturnResult}
-                              </div>
-                              {shouldTruncate && (
-                                <button
-                                  className={styles.viewToggleBtn}
-                                  onClick={() => toggleRowExpand(ret.leadReturnId)}
-                                >
-                                  {isExpanded ? 'View Less ▲' : 'View ▶'}
-                                </button>
+                              {ret.isDeleted ? (
+                                <div style={{
+                                  color: '#c0392b',
+                                  padding: '8px 12px',
+                                  border: '1.5px solid #e74c3c',
+                                  borderRadius: '6px',
+                                  backgroundColor: '#fff0f0',
+                                  fontSize: '14px',
+                                }}>
+                                  This narrative was deleted
+                                  {ret.deletedBy && <span> by <strong>{ret.deletedBy}</strong></span>}.
+                                  {' '}See chain of custody for detailed logs.
+                                </div>
+                              ) : (
+                                <>
+                                  <div
+                                    className={
+                                      isExpanded
+                                        ? styles.narrativeContentExpanded
+                                        : styles.narrativeContentCollapsed
+                                    }
+                                  >
+                                    {ret.leadReturnResult}
+                                  </div>
+                                  {shouldTruncate && (
+                                    <button
+                                      className={styles.viewToggleBtn}
+                                      onClick={() => toggleRowExpand(ret.leadReturnId)}
+                                    >
+                                      {isExpanded ? 'View Less ▲' : 'View ▶'}
+                                    </button>
+                                  )}
+                                </>
                               )}
                             </td>
                             <td>
                               <div className={styles.lrTableBtn}>
-                                <button onClick={() => handleEditReturn(ret)} disabled={disableActions}>
+                                <button onClick={() => handleEditReturn(ret)} disabled={disableActions || ret.isDeleted}>
                                   <img
                                     src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
                                     alt="Edit"
                                     className={styles.editIcon}
                                   />
                                 </button>
-                                <button onClick={() => requestDeleteReturn(ret.leadReturnId)} disabled={disableActions}>
+                                <button onClick={() => requestDeleteReturn(ret.leadReturnId)} disabled={disableActions || ret.isDeleted}>
                                   <img
                                     src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                                     alt="Delete"

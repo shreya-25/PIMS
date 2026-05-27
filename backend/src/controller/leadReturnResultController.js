@@ -185,11 +185,11 @@ const getLeadReturnResultByLeadNoandLeadName = async (req, res) => {
     const { leadNo, caseId } = req.params;
     const leadName = decodeParam(req.params.leadName || "");
 
+    // Include deleted returns so the frontend can display them in red
     const query = {
       leadNo: Number(leadNo),
       description: leadName,
       caseId,
-      isDeleted: { $ne: true },
     };
 
     const leadReturns = await LeadReturnResult.find(query).lean();
@@ -204,10 +204,10 @@ const getLeadReturnResultByLeadNo = async (req, res) => {
     try {
         const { leadNo, caseId } = req.params;
 
+        // Include deleted returns so the frontend can display them with a deletion notice
         const query = {
             leadNo: Number(leadNo),
             caseId,
-            isDeleted: { $ne: true },
         };
 
         const leadReturns = await LeadReturnResult.find(query).lean();

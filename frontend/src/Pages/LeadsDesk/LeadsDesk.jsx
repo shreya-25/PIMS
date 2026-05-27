@@ -1102,31 +1102,46 @@ useEffect(() => {
                   .sort((a, b) => String(a.leadReturnId).localeCompare(String(b.leadReturnId), undefined, { numeric: true, sensitivity: 'base' }))
                   .map((returnItem) => (
                   <React.Fragment key={returnItem._id || returnItem.leadReturnId}>
-                    <tr>
-                      <td style={{ textAlign: "center", fontSize: "18px" }}>
+                    <tr style={returnItem.isDeleted ? { backgroundColor: "#fff0f0" } : {}}>
+                      <td style={{ textAlign: "center", fontSize: "18px", color: returnItem.isDeleted ? "#c0392b" : "inherit" }}>
                         {`Lead Return ID: ${returnItem.leadReturnId}`}
                       </td>
                       <td>
-                        <textarea
-                          className={styles["lead-return-input"]}
-                          value={returnItem.leadReturnResult || ""}
-                          readOnly
-                          style={{
-                            fontSize: "18px",
-                            padding: "10px",
+                        {returnItem.isDeleted ? (
+                          <div style={{
+                            padding: "12px 16px",
+                            border: "1.5px solid #e74c3c",
                             borderRadius: "6px",
-                            width: "100%",
-                            resize: "none",
-                            height: "auto",
-                            fontFamily: "Arial",
-                            whiteSpace: "pre-wrap",
-                            wordWrap: "break-word",
-                          }}
-                          rows={Math.max(
-                            (returnItem.leadReturnResult || "").length / 50,
-                            2
-                          )}
-                        />
+                            backgroundColor: "#fff0f0",
+                            color: "#c0392b",
+                            fontSize: "15px",
+                          }}>
+                            This narrative was deleted
+                            {returnItem.deletedBy && <span> by <strong>{returnItem.deletedBy}</strong></span>}.
+                            {" "}See chain of custody for detailed logs.
+                          </div>
+                        ) : (
+                          <textarea
+                            className={styles["lead-return-input"]}
+                            value={returnItem.leadReturnResult || ""}
+                            readOnly
+                            style={{
+                              fontSize: "18px",
+                              padding: "10px",
+                              borderRadius: "6px",
+                              width: "100%",
+                              resize: "none",
+                              height: "auto",
+                              fontFamily: "Arial",
+                              whiteSpace: "pre-wrap",
+                              wordWrap: "break-word",
+                            }}
+                            rows={Math.max(
+                              (returnItem.leadReturnResult || "").length / 50,
+                              2
+                            )}
+                          />
+                        )}
                       </td>
                     </tr>
 
