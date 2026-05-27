@@ -78,6 +78,38 @@ router.get("/file-url", async (req, res) => {
 });
 
 /**
+ * @route   GET /api/leadreturn-versions/file-url-by-key
+ * @desc    Get a presigned URL for a file using its raw S3 key (used for original/old file in version history)
+ * @access  Private
+ * @query   s3Key - The raw S3/Azure blob key of the file
+ */
+router.get("/file-url-by-key", async (req, res) => {
+    try {
+        const { s3Key } = req.query;
+
+        if (!s3Key) {
+            return res.status(400).json({
+                success: false,
+                message: "s3Key query parameter is required"
+            });
+        }
+
+        const signedUrl = await getFileFromS3(s3Key);
+
+        res.json({
+            success: true,
+            signedUrl
+        });
+    } catch (error) {
+        console.error("Error generating file URL by key:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to generate file URL"
+        });
+    }
+});
+
+/**
  * @route   POST /api/leadreturn-versions/:leadNo/snapshot
  * @desc    Manually create a snapshot for a lead return
  * @access  Private

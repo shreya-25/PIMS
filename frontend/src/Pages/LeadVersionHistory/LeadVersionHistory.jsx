@@ -334,21 +334,91 @@ export const LeadVersionHistory = () => {
         changedRows.push({ label, oldStr, newStr });
       });
 
+      // Special: show file changes for file-type entities even though they're in SKIP_FIELDS
+      const isFileEntityType = FILE_ENTITY_TYPES.some(t =>
+        (entityType || '').toLowerCase().includes(t.toLowerCase())
+      );
+      if (isFileEntityType) {
+        const oldFile = source.originalName || source.filename;
+        const newFile = target.originalName || target.filename;
+        const oldIsLink = source.isLink;
+        const newIsLink = target.isLink;
+        const oldLink = source.link;
+        const newLink = target.link;
+        const fileChanged = oldFile !== newFile || oldIsLink !== newIsLink || oldLink !== newLink;
+        if (fileChanged) {
+          const resolvedEntityType = FILE_ENTITY_TYPES.find(t =>
+            (entityType || '').toLowerCase().includes(t.toLowerCase())
+          ) || entityType;
+          const entityId = getEntityId(target, resolvedEntityType) || getEntityId(source, resolvedEntityType);
+          const oldDisplay = oldIsLink ? (oldLink || oldFile || '(none)') : (oldFile || '(none)');
+          const newDisplay = newIsLink ? (newLink || newFile || '(none)') : (newFile || '(none)');
+          changedRows.push({
+            label: 'File',
+            oldStr: oldDisplay,
+            newStr: newDisplay,
+            _isFileChange: true,
+            _entityId: entityId,
+            _entityType: resolvedEntityType,
+            _oldIsLink: oldIsLink,
+            _oldLink: oldLink,
+            _oldS3Key: source.s3Key || null,
+            _newIsLink: newIsLink,
+            _newLink: newLink,
+            _newS3Key: target.s3Key || null,
+          });
+        }
+      }
+
       if (changedRows.length === 0) return <div style={{ fontSize: '16px', color: '#888', marginTop: '4px' }}>No meaningful field changes detected.</div>;
 
       return (
         <div style={{ marginTop: '6px', fontSize: '16px' }}>
-          {changedRows.map(({ label, oldStr, newStr }) => (
+          {changedRows.map(({ label, oldStr, newStr, _isFileChange, _entityId, _entityType, _oldIsLink, _oldLink, _oldS3Key, _newIsLink, _newLink, _newS3Key }) => (
             <div key={label} style={{ marginBottom: '6px', borderLeft: '3px solid #e0a800', paddingLeft: '8px' }}>
               <div style={{ fontWeight: 600, color: '#555', marginBottom: '2px' }}>{label}</div>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 <div style={{ flex: 1, background: '#fff3f3', padding: '4px 6px', borderRadius: '3px', minWidth: '120px' }}>
-                  <span style={{ color: '#999' }}>Before: </span>
-                  <span style={{ color: '#c0392b', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{oldStr}</span>
+                  <span style={{ color: '#999' }}>{_isFileChange ? 'Original File: ' : 'Before: '}</span>
+                  {_isFileChange ? (
+                    _oldIsLink ? (
+                      <a href={_oldLink} target="_blank" rel="noopener noreferrer" style={{ color: '#c0392b' }}>{oldStr}</a>
+                    ) : _oldS3Key ? (
+                      <span
+                        style={{ color: '#c0392b', cursor: 'pointer', textDecoration: 'underline' }}
+                        onClick={() => viewFileByKey(_oldS3Key)}
+                        title="Click to view original file"
+                      >{oldStr}</span>
+                    ) : (
+                      <span style={{ color: '#c0392b' }}>{oldStr}</span>
+                    )
+                  ) : (
+                    <span style={{ color: '#c0392b', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{oldStr}</span>
+                  )}
                 </div>
                 <div style={{ flex: 1, background: '#f3fff3', padding: '4px 6px', borderRadius: '3px', minWidth: '120px' }}>
-                  <span style={{ color: '#999' }}>After: </span>
-                  <span style={{ color: '#27ae60', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{newStr}</span>
+                  <span style={{ color: '#999' }}>{_isFileChange ? 'Updated File: ' : 'After: '}</span>
+                  {_isFileChange ? (
+                    _newIsLink ? (
+                      <a href={_newLink} target="_blank" rel="noopener noreferrer" style={{ color: '#27ae60' }}>{newStr}</a>
+                    ) : _newS3Key ? (
+                      <span
+                        style={{ color: '#27ae60', cursor: 'pointer', textDecoration: 'underline' }}
+                        onClick={() => viewFileByKey(_newS3Key)}
+                        title="Click to view updated file"
+                      >{newStr}</span>
+                    ) : _entityId ? (
+                      <span
+                        style={{ color: '#27ae60', cursor: 'pointer', textDecoration: 'underline' }}
+                        onClick={() => viewFile(_entityType, _entityId)}
+                        title="Click to view updated file"
+                      >{newStr}</span>
+                    ) : (
+                      <span style={{ color: '#27ae60' }}>{newStr}</span>
+                    )
+                  ) : (
+                    <span style={{ color: '#27ae60', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{newStr}</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -556,6 +626,24 @@ export const LeadVersionHistory = () => {
     }
   };
 
+  // Open a file using its raw S3/Azure key — used to view the ORIGINAL (pre-update) file
+  const viewFileByKey = async (s3Key) => {
+    if (!s3Key) return;
+    const token = localStorage.getItem("token");
+    try {
+      const { data } = await api.get(`/api/leadreturn-versions/file-url-by-key`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { s3Key }
+      });
+      if (data.success && data.signedUrl) {
+        window.open(data.signedUrl, "_blank");
+      }
+    } catch (err) {
+      console.error("Error getting file URL by key:", err);
+      alert("Failed to open original file");
+    }
+  };
+
   const getActivityEntityName = (activity) => {
     if (!activity.details) return '';
     switch (activity.entityType) {
@@ -701,30 +789,48 @@ export const LeadVersionHistory = () => {
     return (
       <div className="consolidated-changes">
         {/* Regular field changes */}
-        {activity._fieldChanges?.map((fc, idx) => (
-          <div key={idx} className="activity-field-change">
-            <span className="field-name">Field: {fc.field}</span>
-            <div className="value-change">
-              <div className="old-value">
-                <span className="label">
-                  {activity.entityType === 'Narrative' && fc.field === 'leadReturnResult' ? 'Previous Narrative:' : 'Old:'}
-                </span>
-                <span className={`value${activity.entityType === 'Narrative' && fc.field === 'leadReturnResult' ? ' narrative-text' : ''}`}>
-                  {formatValue(fc.oldValue, fc.field)}
-                </span>
-              </div>
-              <span className="arrow">→</span>
-              <div className="new-value">
-                <span className="label">
-                  {activity.entityType === 'Narrative' && fc.field === 'leadReturnResult' ? 'Updated Narrative:' : 'New:'}
-                </span>
-                <span className={`value${activity.entityType === 'Narrative' && fc.field === 'leadReturnResult' ? ' narrative-text' : ''}`}>
-                  {formatValue(fc.newValue, fc.field)}
-                </span>
+        {activity._fieldChanges?.map((fc, idx) => {
+          const isNarrative = activity.entityType === 'Narrative' && fc.field === 'leadReturnResult';
+          const isFileField = FILE_ENTITY_TYPES.includes(activity.entityType) &&
+            ['originalName', 'filename'].includes(fc.field);
+          return (
+            <div key={idx} className="activity-field-change">
+              <span className="field-name">
+                {isFileField ? 'File' : isNarrative ? 'Narrative' : `Field: ${fc.field}`}
+              </span>
+              <div className="value-change">
+                <div className="old-value">
+                  <span className="label">
+                    {isNarrative ? 'Previous Narrative:' : isFileField ? 'Original File:' : 'Old:'}
+                  </span>
+                  <span className={`value${isNarrative ? ' narrative-text' : ''}`}>
+                    {formatValue(fc.oldValue, fc.field)}
+                  </span>
+                </div>
+                <span className="arrow">→</span>
+                <div className="new-value">
+                  <span className="label">
+                    {isNarrative ? 'Updated Narrative:' : isFileField ? 'Updated File:' : 'New:'}
+                  </span>
+                  {isFileField && entityId ? (
+                    <span
+                      className="value file-link"
+                      onClick={() => viewFile(activity.entityType, entityId)}
+                      title="Click to view updated file"
+                      style={{ cursor: 'pointer', textDecoration: 'underline', color: '#0077cc' }}
+                    >
+                      {formatValue(fc.newValue, fc.field)}
+                    </span>
+                  ) : (
+                    <span className={`value${isNarrative ? ' narrative-text' : ''}`}>
+                      {formatValue(fc.newValue, fc.field)}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
 
         {/* File type change */}
         {activity._fileChange && (() => {
@@ -1796,18 +1902,63 @@ export const LeadVersionHistory = () => {
                           {!activity._consolidated && !['Narrative', 'Person', 'Vehicle'].includes(activity.entityType) && (
                             <div className="activity-content">
                               <div>{activity.description}</div>
-                              {FILE_ENTITY_TYPES.includes(activity.entityType) && getEntityId(activity.details, activity.entityType) && (
+
+                              {/* File entity: created or deleted — show clickable file link */}
+                              {FILE_ENTITY_TYPES.includes(activity.entityType) &&
+                                activity.action !== 'updated' &&
+                                getEntityId(activity.details, activity.entityType) && (
                                 <div style={{ marginTop: '4px' }}>
                                   <span
                                     className="file-link"
                                     onClick={() => viewFile(activity.entityType, getEntityId(activity.details, activity.entityType))}
                                     title="Click to view file"
                                   >
-                                    {activity.details.originalName || 'View File'}
+                                    {activity.details?.originalName || 'View File'}
                                   </span>
                                 </div>
                               )}
-                              {activity.field && (
+
+                              {/* File entity: updated — show original file and updated file, both clickable */}
+                              {FILE_ENTITY_TYPES.includes(activity.entityType) &&
+                                activity.action === 'updated' &&
+                                ['originalName', 'filename'].includes(activity.field) && (
+                                <div className="value-change" style={{ marginTop: '6px' }}>
+                                  <div className="old-value">
+                                    <span className="label">Original File:</span>
+                                    {activity.oldS3Key ? (
+                                      <span
+                                        className="value file-link"
+                                        onClick={() => viewFileByKey(activity.oldS3Key)}
+                                        title="Click to view original file"
+                                        style={{ cursor: 'pointer' }}
+                                      >
+                                        {String(activity.oldValue || '(none)')}
+                                      </span>
+                                    ) : (
+                                      <span className="value">{String(activity.oldValue || '(none)')}</span>
+                                    )}
+                                  </div>
+                                  <span className="arrow">→</span>
+                                  <div className="new-value">
+                                    <span className="label">Updated File:</span>
+                                    {getEntityId(activity.details, activity.entityType) ? (
+                                      <span
+                                        className="value file-link"
+                                        onClick={() => viewFile(activity.entityType, getEntityId(activity.details, activity.entityType))}
+                                        title="Click to view updated file"
+                                        style={{ cursor: 'pointer' }}
+                                      >
+                                        {String(activity.newValue || '(none)')}
+                                      </span>
+                                    ) : (
+                                      <span className="value">{String(activity.newValue || '(none)')}</span>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Non-file field update */}
+                              {activity.field && !['originalName', 'filename'].includes(activity.field) && (
                                 <div className="field-change">
                                   <strong>Field:</strong> {activity.field}
                                   <div>

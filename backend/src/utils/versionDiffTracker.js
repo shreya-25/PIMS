@@ -501,7 +501,9 @@ function generateActivityLog(fromVersion, toVersion) {
           description: `Updated evidence ${item.label || 'Unknown'} - ${change.field}`,
           oldValue: change.oldValue,
           newValue: change.newValue,
-          details: item.newData
+          details: item.newData,
+          ...(['originalName', 'filename'].includes(change.field) && item.oldData?.s3Key
+            ? { oldS3Key: item.oldData.s3Key } : {}),
         });
       });
     });
@@ -547,7 +549,9 @@ function generateActivityLog(fromVersion, toVersion) {
           description: `Updated picture ${item.label || 'Unknown'} - ${change.field}`,
           oldValue: change.oldValue,
           newValue: change.newValue,
-          details: item.newData
+          details: item.newData,
+          ...(['originalName', 'filename'].includes(change.field) && item.oldData?.s3Key
+            ? { oldS3Key: item.oldData.s3Key } : {}),
         });
       });
     });
@@ -593,7 +597,9 @@ function generateActivityLog(fromVersion, toVersion) {
           description: `Updated audio ${item.label || 'Unknown'} - ${change.field}`,
           oldValue: change.oldValue,
           newValue: change.newValue,
-          details: item.newData
+          details: item.newData,
+          ...(['originalName', 'filename'].includes(change.field) && item.oldData?.s3Key
+            ? { oldS3Key: item.oldData.s3Key } : {}),
         });
       });
     });
@@ -639,7 +645,9 @@ function generateActivityLog(fromVersion, toVersion) {
           description: `Updated video ${item.label || 'Unknown'} - ${change.field}`,
           oldValue: change.oldValue,
           newValue: change.newValue,
-          details: item.newData
+          details: item.newData,
+          ...(['originalName', 'filename'].includes(change.field) && item.oldData?.s3Key
+            ? { oldS3Key: item.oldData.s3Key } : {}),
         });
       });
     });
@@ -685,7 +693,9 @@ function generateActivityLog(fromVersion, toVersion) {
           description: `Updated enclosure ${item.label || 'Unknown'} - ${change.field}`,
           oldValue: change.oldValue,
           newValue: change.newValue,
-          details: item.newData
+          details: item.newData,
+          ...(['originalName', 'filename'].includes(change.field) && item.oldData?.s3Key
+            ? { oldS3Key: item.oldData.s3Key } : {}),
         });
       });
     });

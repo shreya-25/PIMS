@@ -118,7 +118,7 @@ const updateLRPicture = async (req, res) => {
     const oldPicture = pic.toObject();
 
     if (req.file) {
-      if (pic.s3Key) await deleteFromS3(pic.s3Key);
+      // Do NOT delete the old blob — it must remain accessible for version history
       const { key } = await uploadToS3({ filePath: req.file.path, userId: pic.caseNo, mimetype: req.file.mimetype });
       if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
       pic.s3Key = key;

@@ -319,11 +319,7 @@ const uploadPersonPhoto = async (req, res) => {
             return res.status(404).json({ message: "Person not found." });
         }
 
-        if (person.photoS3Key) {
-            try { await deleteFromS3(person.photoS3Key); }
-            catch (e) { console.warn("Failed to delete old photo from S3:", e?.message); }
-        }
-
+        // Do NOT delete the old photo blob — it must remain accessible for version history
         const { key } = await uploadToS3({ filePath: req.file.path, userId: req.user?.id || "anonymous", mimetype: req.file.mimetype });
         if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
 

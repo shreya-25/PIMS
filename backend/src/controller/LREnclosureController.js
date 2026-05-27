@@ -122,7 +122,7 @@ const updateLREnclosure = async (req, res) => {
     const oldEnclosure = enc.toObject();
 
     if (req.file) {
-      if (enc.s3Key) { try { await deleteFromS3(enc.s3Key); } catch {} }
+      // Do NOT delete the old blob — it must remain accessible for version history
       const { key } = await uploadToS3({ filePath: req.file.path, userId: enc.caseNo, mimetype: req.file.mimetype });
       if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
       enc.s3Key = key;

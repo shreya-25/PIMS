@@ -119,7 +119,7 @@ const updateLRVideo = async (req, res) => {
 
     if (wantsLink) {
       if (!req.body.link) return res.status(400).json({ message: "Link is required when isLink is true." });
-      if (video.s3Key) { try { await deleteFromS3(video.s3Key); } catch (e) { console.warn("Failed to delete old S3 object:", e?.message); } }
+      // Do NOT delete the old blob — clear the DB reference only so version history can still access it
       video.isLink = true;
       video.link = req.body.link;
       video.s3Key = null; video.filePath = null; video.filename = null; video.originalName = null;
@@ -127,7 +127,7 @@ const updateLRVideo = async (req, res) => {
       video.isLink = false;
       video.link = null;
       if (req.file) {
-        if (video.s3Key) { try { await deleteFromS3(video.s3Key); } catch (e) { console.warn("Failed to delete old S3 object:", e?.message); } }
+        // Do NOT delete the old blob — it must remain accessible for version history
         const { error, key } = await uploadToS3({ filePath: req.file.path, userId: video.caseNo, mimetype: req.file.mimetype });
         if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
         if (error) return res.status(500).json({ message: "S3 upload failed", error: error.message });

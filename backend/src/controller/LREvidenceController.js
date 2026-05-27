@@ -154,12 +154,7 @@ const updateLREvidence = async (req, res) => {
     const newLink = req.body.link?.trim();
 
     if (req.file) {
-      if (ev.s3Key) {
-        try {
-          await deleteFromS3(ev.s3Key);
-        } catch {}
-      }
-
+      // Do NOT delete the old blob — it must remain accessible for version history
       const { key } = await uploadToS3({
         filePath: req.file.path,
         userId: ev.caseNo,
@@ -174,12 +169,7 @@ const updateLREvidence = async (req, res) => {
       ev.isLink = false;
       ev.link = null;
     } else if (isLink) {
-      if (ev.s3Key) {
-        try {
-          await deleteFromS3(ev.s3Key);
-        } catch {}
-      }
-
+      // Do NOT delete the old blob — clear the DB reference only so version history can still access it
       ev.s3Key = undefined;
       ev.originalName = undefined;
       ev.filename = undefined;

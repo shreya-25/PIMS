@@ -127,10 +127,14 @@ const updateLRAudio = async (req, res) => {
 
     if (audio.isLink) {
       audio.link = (req.body.link || "").trim() || null;
+      // Do NOT delete the old blob — clear the DB reference only so version history can still access it
+      audio.s3Key = null;
+      audio.originalName = null;
+      audio.filename = null;
     } else {
       audio.link = null;
       if (req.file) {
-        if (audio.s3Key) await deleteFromS3(audio.s3Key);
+        // Do NOT delete the old blob — it must remain accessible for version history
         const { key } = await uploadToS3({ filePath: req.file.path, userId: audio.caseNo, mimetype: req.file.mimetype });
         if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
         audio.s3Key = key;
