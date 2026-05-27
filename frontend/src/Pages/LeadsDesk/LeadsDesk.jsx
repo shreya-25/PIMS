@@ -1098,7 +1098,9 @@ useEffect(() => {
               )}
 
               {lead.leadReturns && lead.leadReturns.length > 0 ? (
-                lead.leadReturns.map((returnItem) => (
+                [...lead.leadReturns]
+                  .sort((a, b) => String(a.leadReturnId).localeCompare(String(b.leadReturnId), undefined, { numeric: true, sensitivity: 'base' }))
+                  .map((returnItem) => (
                   <React.Fragment key={returnItem._id || returnItem.leadReturnId}>
                     <tr>
                       <td style={{ textAlign: "center", fontSize: "18px" }}>

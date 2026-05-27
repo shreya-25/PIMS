@@ -14,6 +14,7 @@ const LRVideo = require("../models/LRVideo");
 const LREnclosure = require("../models/LREnclosure");
 const LRScratchpad = require("../models/LRScratchpad");
 const CompleteleadReturn = require("../models/CompleteleadReturn");
+const Notification = require("../models/notification");
 
 // Helper: look up a single user by username, return the doc or null
 async function findUserByUsername(username) {
@@ -541,6 +542,10 @@ exports.closeCase = async (req, res) => {
     if (!updated) {
       return res.status(404).json({ message: "Case not found" });
     }
+
+    // Permanently delete all notifications tied to this case
+    const { deletedCount } = await Notification.deleteMany({ caseNo: String(caseNo) });
+    console.log(`[closeCase] Deleted ${deletedCount} notification(s) for case ${caseNo}`);
 
     return res.status(200).json({ message: "Case closed successfully", data: updated });
   } catch (err) {
