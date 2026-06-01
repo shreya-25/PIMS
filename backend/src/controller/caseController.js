@@ -150,20 +150,6 @@ exports.createCase = async (req, res) => {
 
     await newCase.save();
 
-    // Promote case managers, investigators, and officers to "Case Specific" system role.
-    // Detective Supervisors keep their existing system role.
-    const caseSpecificIds = [
-      ...managerUsers.map(u => u._id),
-      ...investigatorUsers.map(u => u._id),
-      ...officerUsers.map(u => u._id),
-    ];
-    if (caseSpecificIds.length > 0) {
-      await User.updateMany(
-        { _id: { $in: caseSpecificIds }, role: { $nin: ["Admin", "Detective Supervisor"] } },
-        { $set: { role: "Case Specific" } }
-      );
-    }
-
     res.status(201).json({ message: "Case created successfully", data: newCase });
   } catch (err) {
     console.error("Error creating case:", err);
@@ -721,20 +707,6 @@ exports.updateCaseOfficers = async (req, res) => {
     caseDoc.readOnlyUserIds     = [...new Map(readOnlyIds.map(id => [id.toString(), id])).values()];
 
     // Promote case managers, investigators, officers, and read-only to "Case Specific"
-    // system role. Detective Supervisors on a case keep their existing system role.
-    const caseSpecificIds = [...new Set([
-      ...caseManagerIds.map(id => id.toString()),
-      ...investigatorIds.map(id => id.toString()),
-      ...officerIds.map(id => id.toString()),
-      ...readOnlyIds.map(id => id.toString()),
-    ])];
-    if (caseSpecificIds.length > 0) {
-      await User.updateMany(
-        { _id: { $in: caseSpecificIds }, role: { $nin: ["Admin", "Detective Supervisor"] } },
-        { $set: { role: "Case Specific" } }
-      );
-    }
-
     // Only overwrite blockedUserIds when the admin explicitly sends the list.
     // Callers that don't send blockedUsernames (e.g. CasePageManager) leave the
     // existing block list untouched so revoked access is never accidentally restored.

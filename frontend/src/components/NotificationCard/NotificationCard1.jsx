@@ -100,6 +100,24 @@ const NotificationCard1 = ({ signedInOfficer }) => {
   const myAss = n.assignedTo.find(r => isMyEntry(r));
   if (!myAss) return;
 
+  // Optimistically clear the notification from local state immediately so it
+  // disappears even if the user navigates away before the API call resolves.
+  if (myAss.unread !== false) {
+    setNewNotifs(prev => prev.filter(x => x._id !== _id));
+    setOpenNotifs(prev =>
+      prev.map(x =>
+        x._id === _id
+          ? {
+              ...x,
+              assignedTo: x.assignedTo.map(r =>
+                isMyEntry(r) ? { ...r, unread: false } : r
+              ),
+            }
+          : x
+      )
+    );
+  }
+
   setNavigating(_id);
 
   try {
@@ -107,25 +125,7 @@ const NotificationCard1 = ({ signedInOfficer }) => {
       api.put(`/api/notifications/mark-read/${n.notificationId}`, {
         userId: signedInUserId || undefined,
         username: signedInOfficer,
-      })
-        .then(() => {
-          setNewNotifs(prev => prev.filter(x => x._id !== _id));
-          setOpenNotifs(prev =>
-            prev.map(x =>
-              x._id === _id
-                ? {
-                    ...x,
-                    assignedTo: x.assignedTo.map(r =>
-                      isMyEntry(r)
-                        ? { ...r, unread: false }
-                        : r
-                    ),
-                  }
-                : x
-            )
-          );
-        })
-        .catch(e => console.error("Mark-read failed:", e.message));
+      }).catch(e => console.error("Mark-read failed:", e.message));
     }
 
     const token = localStorage.getItem("token");

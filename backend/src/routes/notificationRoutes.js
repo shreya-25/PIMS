@@ -9,22 +9,23 @@ const User         = require("../models/userModel");
 async function resolveAssignees(assignedTo) {
   if (!Array.isArray(assignedTo) || assignedTo.length === 0) return [];
 
-  // Collect usernames that need resolution
+  // Collect usernames that need resolution (preserve original case for DB lookup)
   const needLookup = assignedTo
     .filter(a => !a.userId && a.username)
-    .map(a => a.username.toLowerCase().trim());
+    .map(a => a.username.trim());
 
   let usernameToId = {};
   if (needLookup.length) {
+    // Case-insensitive lookup so mixed-case usernames resolve correctly
     const users = await User.find(
-      { username: { $in: needLookup } },
+      { username: { $in: needLookup.map(u => new RegExp(`^${u.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i")) } },
       { _id: 1, username: 1 }
     ).lean();
-    users.forEach(u => { usernameToId[u.username.toLowerCase().trim()] = u._id; });
+    users.forEach(u => { usernameToId[u.username.trim().toLowerCase()] = u._id; });
   }
 
   return assignedTo.map(a => ({
-    userId:   a.userId || usernameToId[a.username?.toLowerCase?.()?.trim()] || null,
+    userId:   a.userId || usernameToId[a.username?.trim?.()?.toLowerCase?.()] || null,
     username: a.username,
     role:     a.role,
     status:   a.status   || "pending",
@@ -257,28 +258,38 @@ router.put("/mark-read/:notificationId", async (req, res) => {
   }
 
   try {
-    let notification;
+    // Update ALL matching entries for this user in one pass.
+    // We run both userId and username updates independently so that:
+    //   - Old notifications (userId was null when stored) are handled by the username path.
+    //   - Entries duplicated under different identifiers are all cleared.
+    let totalModified = 0;
 
     if (userId && mongoose.isValidObjectId(userId)) {
-      // Prefer userId match
-      notification = await Notification.findOneAndUpdate(
-        { notificationId, "assignedTo.userId": new mongoose.Types.ObjectId(userId) },
-        { $set: { "assignedTo.$.unread": false } },
-        { new: true }
+      const oid = new mongoose.Types.ObjectId(userId);
+      const r = await Notification.updateOne(
+        { notificationId },
+        { $set: { "assignedTo.$[elem].unread": false } },
+        { arrayFilters: [{ "elem.userId": oid }] }
       );
+      totalModified += r.modifiedCount;
     }
 
-    // Fallback to username if userId didn't match
-    if (!notification && username) {
-      notification = await Notification.findOneAndUpdate(
-        { notificationId, "assignedTo.username": username },
-        { $set: { "assignedTo.$.unread": false } },
-        { new: true }
+    if (username) {
+      const r = await Notification.updateOne(
+        { notificationId },
+        { $set: { "assignedTo.$[elem].unread": false } },
+        { arrayFilters: [{ "elem.username": username }] }
       );
+      totalModified += r.modifiedCount;
     }
 
+    const notification = await Notification.findOne({ notificationId });
     if (!notification) {
-      return res.status(404).json({ error: "Notification or user slice not found" });
+      return res.status(404).json({ error: "Notification not found" });
+    }
+
+    if (totalModified === 0) {
+      return res.status(404).json({ error: "User slice not found in notification" });
     }
 
     res.json(notification);
