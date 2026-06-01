@@ -1243,10 +1243,15 @@ async function buildLeadBuffer(lead, { includeAll, characterOfCase, userMap, sho
             };
 
             const addressSubFields = new Set(["Street 1", "Street 2", "Building", "Apartment", "City", "State", "Zip Code"]);
+            const PERSON_CORE_FIELDS = new Set([
+              "Last Name", "First Name", "Middle Initial", "Suffix", "Alias",
+              "Sex", "Date of Birth", "Age", "Address", "Phone No", "Email",
+              "Race", "Ethnicity", "Person Type",
+            ]);
             const filledFields = Object.keys(personFieldMap).filter((h) => {
               if (fullAddress && addressSubFields.has(h)) return false;
               const val = personFieldMap[h];
-              return val !== "" && val !== null && val !== undefined;
+              return PERSON_CORE_FIELDS.has(h) || (val !== "" && val !== null && val !== undefined);
             });
 
             currentY = ensureSpace(doc, currentY, 60);
@@ -1254,7 +1259,10 @@ async function buildLeadBuffer(lead, { includeAll, characterOfCase, userMap, sho
             doc.font("Helvetica-Bold").fontSize(11).text(personLabel, 50, currentY);
             currentY += 20;
 
-            const allEntries = filledFields.map((h) => ({ header: h, value: personFieldMap[h] }));
+            const allEntries = filledFields.map((h) => {
+              const val = personFieldMap[h];
+              return { header: h, value: (val === "" || val === null || val === undefined) ? "—" : val };
+            });
             if (Array.isArray(person.additionalData)) {
               person.additionalData.forEach((d) => {
                 const cat = d.category || d.description || "";
@@ -1921,10 +1929,15 @@ if (leadState) {
 
                   // If combined address is filled, skip individual address sub-fields
                   const addressSubFields = new Set(["Street 1", "Street 2", "Building", "Apartment", "City", "State", "Zip Code"]);
+                  const PERSON_CORE_FIELDS = new Set([
+                    "Last Name", "First Name", "Middle Initial", "Suffix", "Alias",
+                    "Sex", "Date of Birth", "Age", "Address", "Phone No", "Email",
+                    "Race", "Ethnicity", "Person Type",
+                  ]);
                   const filledFields = Object.keys(personFieldMap).filter(h => {
                     if (fullAddress && addressSubFields.has(h)) return false;
                     const val = personFieldMap[h];
-                    return val !== "" && val !== null && val !== undefined;
+                    return PERSON_CORE_FIELDS.has(h) || (val !== "" && val !== null && val !== undefined);
                   });
                   // const personTables = [
                   //   ["Date Entered", "Name", "Phone #", "Address"],
@@ -1996,7 +2009,10 @@ if (leadState) {
                   currentY += 20;
 
                   // Build combined entry list: standard filled fields + valid additionalData entries
-                  const allEntries = filledFields.map(h => ({ header: h, value: personFieldMap[h] }));
+                  const allEntries = filledFields.map(h => {
+                    const val = personFieldMap[h];
+                    return { header: h, value: (val === "" || val === null || val === undefined) ? "—" : val };
+                  });
                   if (Array.isArray(person.additionalData)) {
                     person.additionalData.forEach(d => {
                       const cat = d.category || d.description || "";

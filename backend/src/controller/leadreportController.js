@@ -1375,14 +1375,22 @@ let currentY = headerHeight + 20;
           const allPersonFields = personTables.flat();
           const addressIsFilled = getPersonValue(person, "Address") !== "";
           const addressSubFields = new Set(["Street 1", "Street 2", "Building", "Apartment", "City", "State", "Zip Code"]);
+          const PERSON_CORE_FIELDS = new Set([
+            "Last Name", "First Name", "Middle Initial", "Suffix", "Alias",
+            "Sex", "Date of Birth", "Age", "Address", "Phone No", "Email",
+            "Race", "Ethnicity", "Person Type",
+          ]);
           const filledFields = allPersonFields.filter(h => {
             if (addressIsFilled && addressSubFields.has(h)) return false;
             const val = getPersonValue(person, h);
-            return val !== "" && val !== null && val !== undefined;
+            return PERSON_CORE_FIELDS.has(h) || (val !== "" && val !== null && val !== undefined);
           });
 
           // Build combined entry list: standard filled fields + valid additionalData entries
-          const allEntries = filledFields.map(h => ({ header: h, value: getPersonValue(person, h) }));
+          const allEntries = filledFields.map(h => {
+            const val = getPersonValue(person, h);
+            return { header: h, value: (val === "" || val === null || val === undefined) ? "—" : val };
+          });
           if (Array.isArray(person.additionalData)) {
             person.additionalData.forEach(d => {
               const cat = d.category || d.description || "";

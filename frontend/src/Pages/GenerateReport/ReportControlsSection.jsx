@@ -120,6 +120,9 @@ export default function ReportControlsSection({
               Regenerate
             </button>
           </div>
+          <p style={{ margin: "6px 0 0", fontSize: 16, color: "#2563eb" }}>
+            If the report does not reflect recent changes, click <strong>Regenerate</strong> to rebuild it with the latest data.
+          </p>
         </>
       )}
 
