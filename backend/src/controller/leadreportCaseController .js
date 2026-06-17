@@ -1065,7 +1065,7 @@ async function buildHeaderBuffer({
 // { s3Key, filename } records for PDF files that should be appended after
 // this lead's pages.
 // ─────────────────────────────────────────────────────────────────────────────
-async function buildLeadBuffer(lead, { includeAll, characterOfCase, userMap, shouldWatermark, pageHeader = null }) {
+async function buildLeadBuffer(lead, { includeAll, characterOfCase, userMap, shouldWatermark, pageHeader = null, timezone }) {
   const WM = { text: "DRAFT", opacity: 0.08, angle: -35, fontSize: 100 };
   const doc = new PDFDocument({ size: "LETTER", margin: 50 });
 
@@ -1476,9 +1476,8 @@ async function buildLeadBuffer(lead, { includeAll, characterOfCase, userMap, sho
           const tlRows = timeline.map((t) => ({
             "Start Date":  formatDate(t.eventStartDate || t.eventDate),
             "End Date":    formatDate(t.eventEndDate),
-            "Time Range":
-              `${formatTime(t.eventStartTime) || ""}` +
-              (t.eventEndTime ? ` – ${formatTime(t.eventEndTime)}` : ""),
+            "Time Range": `${formatTime(t.eventStartTime, timezone || "America/New_York") || ""}` +
+            (t.eventEndTime ? ` – ${formatTime(t.eventEndTime, timezone || "America/New_York")}` : ""),
             "Location":    t.eventLocation || "N/A",
             "Flags":       Array.isArray(t.timelineFlag) ? t.timelineFlag.join(", ") : (t.flags || "N/A"),
             "Description": t.eventDescription || "N/A",
@@ -1517,6 +1516,7 @@ async function buildCaseReportBufferPerLead({
   characterOfCase,
   userMap,
   includeAll,
+  timezone,
 }) {
   const showExecSummary =
     summaryMode !== "none" &&
@@ -1573,6 +1573,7 @@ async function buildCaseReportBufferPerLead({
       userMap,
       shouldWatermark,
       pageHeader,
+      timezone,
     });
 
     finalBuffer = finalBuffer ? await mergeWithAnotherPDF(finalBuffer, leadBuf) : leadBuf;
@@ -2273,9 +2274,8 @@ if (timeline && timeline.length > 0) {
   const rows = timeline.map((t) => ({
     "Start Date":  formatDate(t.eventStartDate || t.eventDate),
     "End Date":    formatDate(t.eventEndDate),
-    "Time Range":
-      `${formatTime(t.eventStartTime) || ""}` +
-      (t.eventEndTime ? ` – ${formatTime(t.eventEndTime)}` : ""),
+    "Time Range":  `${formatTime(t.eventStartTime, timezone || "America/New_York") || ""}` +
+    (t.eventEndTime ? ` – ${formatTime(t.eventEndTime, timezone || "America/New_York")}` : ""),
     "Location":    t.eventLocation || "N/A",
     "Flags":       Array.isArray(t.timelineFlag) ? t.timelineFlag.join(", ") : (t.flags || "N/A"),
     "Description": t.eventDescription || "N/A",

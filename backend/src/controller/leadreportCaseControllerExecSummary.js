@@ -2072,21 +2072,24 @@ function ensureSpace(doc, currentY, estimatedHeight = 100) {
   return currentY;
 }
 
-function formatDate(dateString) {
+function formatDate(dateString, tz = "America/New_York") {
   if (!dateString) return "";
   const date = new Date(dateString);
   if (isNaN(date)) return "";
-  const month = (date.getMonth() + 1).toString().padStart(2, "0");
-  const day = date.getDate().toString().padStart(2, "0");
-  const year = date.getFullYear().toString().slice(-2);
-  return `${month}/${day}/${year}`;
+
+  return date.toLocaleDateString("en-US", {
+    timeZone: tz,
+    month: "2-digit",
+    day: "2-digit",
+    year: "2-digit",
+  });
 }
 
-function formatTime(dateString) {
+function formatTime(dateString, tz = "America/New_York") {
   if (!dateString) return "";
   const d = new Date(dateString);
   if (isNaN(d)) return "";
-  return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", timeZone: tz });
 }
 
 function drawMetaBar(doc, x, y, width, entry) {
@@ -2097,7 +2100,7 @@ function drawMetaBar(doc, x, y, width, entry) {
 
   const idVal  = `${entry.leadReturnId ?? "N/A"}`;
   const byVal  = `${entry.enteredBy ?? "N/A"}`;
-  const dtVal  = `${formatDate(entry.enteredDate) || "N/A"}`;
+  const dtVal = `${formatDate(entry.enteredDate, timezone || "America/New_York") || "N/A"}`;
 
   const colW1 = Math.round(width * 0.33);
   const colW2 = Math.round(width * 0.34);
@@ -2144,8 +2147,8 @@ function drawStructuredLeadDetails(doc, x, y, lead, characterOfCase) {
   const values = [
     lead.leadNo || "N/A",
     lead.parentLeadNo ? lead.parentLeadNo.join(", ") : "N/A",
-    lead.assignedDate ? formatDate(lead.assignedDate) : "N/A",
-    lead.submittedDate ? formatDate(lead.submittedDate) : "N/A",
+    lead.assignedDate ? formatDate(lead.assignedDate, timezone || "America/New_York") : "N/A",
+    lead.submittedDate ? formatDate(lead.submittedDate, timezone || "America/New_York") : "N/A",
   ];
 
   let currX = x;
@@ -2332,6 +2335,7 @@ async function generateCaseReportwithExecSummary(req, res) {
       leadsData: leadsDataRaw,
       caseSummary,
       selectedReports: selectedReportsRaw,
+      timezone,
       // New: server-side data fetching params
       caseNo: caseNoParam,
       caseName: caseNameParam,
@@ -2524,7 +2528,7 @@ async function generateCaseReportwithExecSummary(req, res) {
                       headers: ["Date Entered", "Name", "Phone #", "Address"],
                       widths: [128, 128, 128, 128],
                       row: {
-                        "Date Entered": formatDate(person.enteredDate),
+                        "Date Entered": formatDate(person.enteredDate, timezone || "America/New_York"),
                         "Name": person.firstName ? `${person.firstName}, ${person.lastName}` : "N/A",
                         "Phone #": person.cellNumber || "N/A",
                         "Address": person.address ? `${person.address.street1 || ""}, ${person.address.city || ""}, ${person.address.state || ""}, ${person.address.zipCode || ""}` : "N/A",
@@ -2561,7 +2565,7 @@ async function generateCaseReportwithExecSummary(req, res) {
                 currentY += 20;
                 const vehicleHeaders = ["Date Entered", "Make", "Model", "Plate", "State"];
                 const vehicleRows = lr.vehicles.map((vehicle) => ({
-                  "Date Entered": formatDate(vehicle.enteredDate),
+                  "Date Entered": formatDate(vehicle.enteredDate, timezone || "America/New_York"),
                   "Make": vehicle.make || "N/A",
                   "Model": vehicle.model || "N/A",
                   "Plate": vehicle.plate || "N/A",

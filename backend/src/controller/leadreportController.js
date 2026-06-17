@@ -620,14 +620,17 @@ function drawHardcodedContent(doc, currentY) {
 }
 
 
-const formatDate = (dateString) => {
+const formatDate = (dateString, tz = "America/New_York") => {
   if (!dateString) return "";
   const date = new Date(dateString);
   if (isNaN(date)) return "";
-  const month = (date.getUTCMonth() + 1).toString().padStart(2, "0");
-  const day = date.getUTCDate().toString().padStart(2, "0");
-  const year = date.getUTCFullYear().toString().slice(-2);
-  return `${month}/${day}/${year}`;
+
+  return date.toLocaleDateString("en-US", {
+    timeZone: tz,
+    month: "2-digit",
+    day: "2-digit",
+    year: "2-digit",
+  });
 };
 
 const formatDateLong = (dateString) => {
@@ -1857,13 +1860,15 @@ let currentY = headerHeight + 20;
         currentY = startSection(doc, "Timeline Details", currentY);
         const headers = ["Start Date","End Date","Time Range","Location","Flags","Description"];
         const widths  = [65, 65, 90, 90, 65, 137];
-        const rows    = leadTimeline.map(t => ({
-          "Start Date":   formatDate(t.eventStartDate || t.eventDate),
-          "End Date":     formatDate(t.eventEndDate),
-          "Time Range":   `${formatTime(t.eventStartTime, timezone)} – ${formatTime(t.eventEndTime, timezone)}`,
-          "Location":     t.eventLocation || "",
-          "Flags":        Array.isArray(t.timelineFlag) ? t.timelineFlag.join(", ") : "",
-          "Description":  t.eventDescription || ""
+        const rows = leadTimeline.map(t => ({
+          "Start Date": formatDate(t.eventStartDate || t.eventDate, timezone || "America/New_York"),
+          "End Date": formatDate(t.eventEndDate, timezone || "America/New_York"),
+          "Time Range":
+            `${formatTime(t.eventStartTime, timezone || "America/New_York") || ""}` +
+            (t.eventEndTime ? ` – ${formatTime(t.eventEndTime, timezone || "America/New_York")}` : ""),
+          "Location": t.eventLocation || "",
+          "Flags": Array.isArray(t.timelineFlag) ? t.timelineFlag.join(", ") : "",
+          "Description": t.eventDescription || ""
         }));
         // 2) estimate table height
         const minRowHeight = 20, padding = 5, headerH = 20;
