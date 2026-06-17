@@ -257,7 +257,7 @@ const submitDisabledReason = isClosedOrCompleted
   const sectionsByReturn = useMemo(() => {
     const map = new Map();
     const touch = (k) => {
-      if (!map.has(k)) map.set(k, { persons: [], vehicles: [], enclosures: [], evidence: [], pictures: [], audio: [], videos: [], notes: [] });
+      if (!map.has(k)) map.set(k, { persons: [], vehicles: [], enclosures: [], evidence: [], pictures: [], audio: [], videos: [], notes: [], timeline: [] });
       return map.get(k);
     };
 
@@ -269,8 +269,9 @@ const submitDisabledReason = isClosedOrCompleted
     audio.forEach((x) => touch(keyFor(x)).audio.push(x));
     videos.forEach((x) => touch(keyFor(x)).videos.push(x));
     scratchpad.forEach((x) => touch(keyFor(x)).notes.push(x));
+    timeline.forEach((x) => touch(keyFor(x)).timeline.push(x));
     return map;
-  }, [persons, vehicles, enclosures, evidence, pictures, audio, videos, scratchpad]);
+  }, [persons, vehicles, enclosures, evidence, pictures, audio, videos, scratchpad, timeline]);
 
   const go = (path) => navigate(path);
 
@@ -428,6 +429,30 @@ const actuallyDoSubmitReport = async () => {
   });
 };
 
+const getTimelineSortValue = (value) => {
+  if (!value) return Number.MAX_SAFE_INTEGER;
+
+  const d = new Date(value);
+  if (!isNaN(d)) return d.getTime();
+
+  return Number.MAX_SAFE_INTEGER;
+};
+
+const sortTimelineEntries = (entries = []) => {
+  return [...entries].sort((a, b) => {
+    const aStartDate = getTimelineSortValue(a.eventStartDate || a.eventDate);
+    const bStartDate = getTimelineSortValue(b.eventStartDate || b.eventDate);
+    if (aStartDate !== bStartDate) return aStartDate - bStartDate;
+
+    const aStartTime = getTimelineSortValue(a.eventStartTime);
+    const bStartTime = getTimelineSortValue(b.eventStartTime);
+    if (aStartTime !== bStartTime) return aStartTime - bStartTime;
+
+    const aEndTime = getTimelineSortValue(a.eventEndTime);
+    const bEndTime = getTimelineSortValue(b.eventEndTime);
+    return aEndTime - bEndTime;
+  });
+};
 
 
   return (
@@ -616,7 +641,7 @@ const actuallyDoSubmitReport = async () => {
                     {returns.map((ret) => {
                       const k = keyFor(ret);
                       const grouped = sectionsByReturn.get(k) || {
-                        persons: [], vehicles: [], enclosures: [], evidence: [], pictures: [], audio: [], videos: [], notes: []
+                        persons: [], vehicles: [], enclosures: [], evidence: [], pictures: [], audio: [], videos: [], notes: [], timeline: []
                       };
                       return (
                         <div key={ret._id || k} className={styles.lrCard}>
@@ -995,38 +1020,103 @@ const actuallyDoSubmitReport = async () => {
                         }
 
                         // Timeline
-                        if (timeline.length) {
-                        detailSections.push(
-                            <div key="timeline" className={styles.tableBlock}>
-                            <Link className={styles.tableHeader} to="/LRTimeline" state={{ caseDetails: selectedCase, leadDetails: selectedLead }}>Timeline Details</Link>
-                            <table className={styles.simpleTable}>
-                                <thead>
-                                <tr>
-                                    <th style={{ width: '12%' }}>Start Date</th>
-                                    <th style={{ width: '12%' }}>End Date</th>
-                                    <th style={{ width: '20%' }}>Start Time</th>
-                                    <th style={{ width: '18%' }}>Location</th>
-                                    <th style={{ width: '30%' }}>Description</th>
-                                    <th style={{ width: '8%' }}>More</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                {timeline.map((t) => (
-                                    <tr key={t._id}>
-                                    <td className={styles.truncCell}>{formatDate(t.eventStartDate || t.eventDate)}</td>
-                                    <td className={styles.truncCell}>{formatDate(t.eventEndDate)}</td>
-                                    <td className={styles.truncCell}>{t.eventStartTime ? new Date(t.eventStartTime).toLocaleTimeString() : "—"}</td>
-                                    <td className={styles.truncCell}>{toText(t.eventLocation)}</td>
-                                    <td className={styles.truncCell}>{toText(t.eventDescription)}</td>
-                                    <td><button className={styles.moreBtn} onClick={() => setSelectedTimeline(t)}>More</button></td>
-                                    </tr>
-                                ))}
-                                </tbody>
-                            </table>
-                            </div>
-                        );
-                        }
+                        // if (timeline.length) {
+                        // detailSections.push(
+                        //     <div key="timeline" className={styles.tableBlock}>
+                        //     <Link className={styles.tableHeader} to="/LRTimeline" state={{ caseDetails: selectedCase, leadDetails: selectedLead }}>Timeline Details</Link>
+                        //     <table className={styles.simpleTable}>
+                        //         <thead>
+                        //         <tr>
+                        //             <th style={{ width: '12%' }}>Start Date</th>
+                        //             <th style={{ width: '12%' }}>End Date</th>
+                        //             <th style={{ width: '20%' }}>Start Time</th>
+                        //             <th style={{ width: '18%' }}>Location</th>
+                        //             <th style={{ width: '30%' }}>Description</th>
+                        //             <th style={{ width: '8%' }}>More</th>
+                        //         </tr>
+                        //         </thead>
+                        //         <tbody>
+                        //         {timeline.map((t) => (
+                        //             <tr key={t._id}>
+                        //             <td className={styles.truncCell}>{formatDate(t.eventStartDate || t.eventDate)}</td>
+                        //             <td className={styles.truncCell}>{formatDate(t.eventEndDate)}</td>
+                        //             <td className={styles.truncCell}>{t.eventStartTime ? new Date(t.eventStartTime).toLocaleTimeString() : "—"}</td>
+                        //             <td className={styles.truncCell}>{toText(t.eventLocation)}</td>
+                        //             <td className={styles.truncCell}>{toText(t.eventDescription)}</td>
+                        //             <td><button className={styles.moreBtn} onClick={() => setSelectedTimeline(t)}>More</button></td>
+                        //             </tr>
+                        //         ))}
+                        //         </tbody>
+                        //     </table>
+                        //     </div>
+                        // );
+                        // }
 
+                        // Timeline
+                        const sortedTimeline = sortTimelineEntries(grouped.timeline);
+
+                        if (sortedTimeline.length) {
+                          detailSections.push(
+                            <div key="timeline" className={styles.tableBlock}>
+                              <Link
+                                className={styles.tableHeader}
+                                to="/LRTimeline"
+                                state={{ caseDetails: selectedCase, leadDetails: selectedLead }}
+                              >
+                                Timeline Details
+                              </Link>
+
+                              <table className={styles.simpleTable}>
+                                <thead>
+                                  <tr>
+                                    <th style={{ width: "12%" }}>Start Date</th>
+                                    <th style={{ width: "12%" }}>End Date</th>
+                                    <th style={{ width: "20%" }}>Time Range</th>
+                                    <th style={{ width: "18%" }}>Location</th>
+                                    <th style={{ width: "30%" }}>Description</th>
+                                    <th style={{ width: "8%" }}>More</th>
+                                  </tr>
+                                </thead>
+
+                                <tbody>
+                                  {sortedTimeline.map((t) => (
+                                    <tr key={t._id}>
+                                      <td className={styles.truncCell}>
+                                        {formatDate(t.eventStartDate || t.eventDate)}
+                                      </td>
+                                      <td className={styles.truncCell}>
+                                        {formatDate(t.eventEndDate)}
+                                      </td>
+                                      <td className={styles.truncCell}>
+                                        {t.eventStartTime
+                                          ? `${new Date(t.eventStartTime).toLocaleTimeString([], {
+                                              hour: "2-digit",
+                                              minute: "2-digit",
+                                            })}${t.eventEndTime
+                                              ? ` – ${new Date(t.eventEndTime).toLocaleTimeString([], {
+                                                  hour: "2-digit",
+                                                  minute: "2-digit",
+                                                })}`
+                                              : ""}`
+                                          : "—"}
+                                      </td>
+                                      <td className={styles.truncCell}>{toText(t.eventLocation)}</td>
+                                      <td className={styles.truncCell}>{toText(t.eventDescription)}</td>
+                                      <td>
+                                        <button
+                                          className={styles.moreBtn}
+                                          onClick={() => setSelectedTimeline(t)}
+                                        >
+                                          More
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          );
+                        }
 
                         // If nothing to show, skip the grid entirely
                         if (detailSections.length === 0) return null;
