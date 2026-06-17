@@ -1860,7 +1860,53 @@ let currentY = headerHeight + 20;
         currentY = startSection(doc, "Timeline Details", currentY);
         const headers = ["Start Date","End Date","Time Range","Location","Flags","Description"];
         const widths  = [65, 65, 90, 90, 65, 137];
-        const rows = leadTimeline.map(t => ({
+        // const rows = leadTimeline.map(t => ({
+        //   "Start Date": formatDate(t.eventStartDate || t.eventDate, timezone || "America/New_York"),
+        //   "End Date": formatDate(t.eventEndDate, timezone || "America/New_York"),
+        //   "Time Range":
+        //     `${formatTime(t.eventStartTime, timezone || "America/New_York") || ""}` +
+        //     (t.eventEndTime ? ` – ${formatTime(t.eventEndTime, timezone || "America/New_York")}` : ""),
+        //   "Location": t.eventLocation || "",
+        //   "Flags": Array.isArray(t.timelineFlag) ? t.timelineFlag.join(", ") : "",
+        //   "Description": t.eventDescription || ""
+        // }));
+        const getTimeValue = (value) => {
+          if (!value) return Number.MAX_SAFE_INTEGER;
+
+          const d = new Date(value);
+          if (!isNaN(d)) return d.getTime();
+
+          return Number.MAX_SAFE_INTEGER;
+        };
+
+        const sortedTimeline = [...leadTimeline].sort((a, b) => {
+          const aId = a.leadReturnId || a.returnId || "";
+          const bId = b.leadReturnId || b.returnId || "";
+
+          // 1. Keep/group same Lead Return ID together
+          const idCompare = String(aId).localeCompare(String(bId), undefined, {
+            numeric: true,
+            sensitivity: "base",
+          });
+          if (idCompare !== 0) return idCompare;
+
+          // 2. Within same ID, sort by start date
+          const aStartDate = getTimeValue(a.eventStartDate || a.eventDate);
+          const bStartDate = getTimeValue(b.eventStartDate || b.eventDate);
+          if (aStartDate !== bStartDate) return aStartDate - bStartDate;
+
+          // 3. If same start date, sort by start time
+          const aStartTime = getTimeValue(a.eventStartTime);
+          const bStartTime = getTimeValue(b.eventStartTime);
+          if (aStartTime !== bStartTime) return aStartTime - bStartTime;
+
+          // 4. If same start time, sort by end time
+          const aEndTime = getTimeValue(a.eventEndTime);
+          const bEndTime = getTimeValue(b.eventEndTime);
+          return aEndTime - bEndTime;
+        });
+
+        const rows = sortedTimeline.map(t => ({
           "Start Date": formatDate(t.eventStartDate || t.eventDate, timezone || "America/New_York"),
           "End Date": formatDate(t.eventEndDate, timezone || "America/New_York"),
           "Time Range":
