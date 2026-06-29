@@ -52,7 +52,7 @@ const numberToAlphabet = (num) => {
 const buildDefaultForm = (officerName = '') => ({
   results: '',
   leadReturnId: '',
-  enteredDate: new Date().toLocaleDateString(),
+  enteredDate: new Date().toLocaleDateString("en-US", { timeZone: "America/New_York" }),
   enteredBy: officerName.trim(),
   accessLevel: 'Everyone',
 });

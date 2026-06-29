@@ -265,7 +265,7 @@ const NotificationCard1 = ({ signedInOfficer }) => {
               )}
             </p>
             <span className="time">Role: {thisAss.role}</span>
-            <span className="time">{new Date(n.time).toLocaleString()}</span>
+            <span className="time">{new Date(n.time).toLocaleString("en-US", { timeZone: "America/New_York" })}</span>
           </div>
 
           <div className="buttons-container">

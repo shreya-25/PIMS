@@ -13,7 +13,7 @@ const upIcon = '/Materials/drop_up.png';
 const downIcon = '/Materials/drop_down.png';
 
 
-const fmt = (v) => (v ? new Date(v).toLocaleDateString() : '—');
+const fmt = (v) => (v ? new Date(v).toLocaleDateString("en-US", { timeZone: "America/New_York" }) : '—');
 
 export const CaseInformation = () => {
   const { selectedCase, setSelectedCase } = useContext(CaseContext);
@@ -198,7 +198,7 @@ export const CaseInformation = () => {
 
   // helpers to compute derived person fields
   const personFullName = (p) => [p.firstName, p.middleInitial, p.lastName, p.suffix].filter(Boolean).join(' ') || p.businessName || '';
-  const personDob = (p) => p.dateOfBirth ? (() => { const d = new Date(p.dateOfBirth); return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()).toLocaleDateString(); })() : '';
+  const personDob = (p) => p.dateOfBirth ? (() => { const d = new Date(p.dateOfBirth); return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()).toLocaleDateString("en-US"); })() : '';
   const personAddr = (p) => p.address ? [p.address.street1, p.address.street2, p.address.building, p.address.apartment, p.address.city, p.address.state, p.address.zipCode].filter(Boolean).join(', ') : '';
   const personPhone = (p) => p.cellNumber || p.workNumber || p.homeNumber || '';
 

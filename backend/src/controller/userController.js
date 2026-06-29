@@ -22,6 +22,12 @@ const updateUser = async (req, res) => {
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({ message: "No valid fields to update." });
     }
+    // Audit log: track who is changing what role to what value
+    if ("role" in updates) {
+      const callerUsername = req.user?.username || "unknown";
+      const targetBefore = await User.findById(id).select("username role").lean();
+      console.log(`[USER ROLE CHANGE] caller=${callerUsername} target=${targetBefore?.username}(${id}) oldRole=${targetBefore?.role} newRole=${updates.role} stack=${new Error().stack.split("\n")[2]?.trim()}`);
+    }
     const user = await User.findByIdAndUpdate(id, { $set: updates }, { new: true, runValidators: true })
                            .select("-password -__v");
     if (!user) return res.status(404).json({ message: "User not found." });

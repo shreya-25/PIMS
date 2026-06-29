@@ -295,7 +295,8 @@ export const LRTimeline = () => {
     const start = new Date(startTime);
     const end   = new Date(endTime);
     if (isNaN(start) || isNaN(end)) return '';
-    return `${start.toLocaleTimeString()} - ${end.toLocaleTimeString()}`;
+    const opts = { hour: "2-digit", minute: "2-digit", timeZone: "America/New_York" };
+    return `${start.toLocaleTimeString("en-US", opts)} - ${end.toLocaleTimeString("en-US", opts)}`;
   };
 
   // ── Fetch timeline entries from the API, applying access-level filtering ───
@@ -863,7 +864,7 @@ export const LRTimeline = () => {
                 <table className={styles.leadsTable}>
                   <thead>
                     <tr>
-                      {[['Id','leadReturnId','5%'],['Date','dateEntered','9%'],['Entered By','enteredBy','13%'],['Event Start','eventStartDate','11%'],['Event End','eventEndDate','11%'],['Location','location', isCaseManager ? '18%' : '24%']].map(([label, key, w]) => (
+                      {[['Id','leadReturnId','5%'],['Date','dateEntered','9%'],['Entered By','enteredBy','12%'],['Event Date','eventStartDate','14%'],['Time Range','timeRange','13%'],['Location','location', isCaseManager ? '14%' : '20%']].map(([label, key, w]) => (
                         <th key={key} style={{ width: w, position: 'relative' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
                             {label}
@@ -890,8 +891,13 @@ export const LRTimeline = () => {
                         <td>{entry.leadReturnId}</td>
                         <td>{entry.dateEntered}</td>
                         <td>{entry.enteredBy}</td>
-                        <td>{entry.eventStartDate}</td>
-                        <td>{entry.eventEndDate}</td>
+                        <td className={styles.stackCell}>
+                          <div>{entry.eventStartDate || '—'}</div>
+                          {entry.eventEndDate && entry.eventEndDate !== entry.eventStartDate && (
+                            <div>{entry.eventEndDate}</div>
+                          )}
+                        </td>
+                        <td>{entry.timeRange}</td>
                         <td>{entry.location}</td>
                         <td>
                           <button className={styles.viewEntryBtn} onClick={() => openEntryModal(entry)}>
@@ -935,7 +941,7 @@ export const LRTimeline = () => {
                       );
                     }) : (
                       <tr>
-                        <td colSpan={isCaseManager ? 9 : 8} style={{ textAlign: 'center' }}>
+                        <td colSpan={isCaseManager ? 10 : 9} style={{ textAlign: 'center' }}>
                           No Timeline Entry Available
                         </td>
                       </tr>
@@ -1003,8 +1009,8 @@ export const LRTimeline = () => {
               </thead>
               <tbody>
                 <tr>
-                  <td>{selectedEntry.rawStartTime ? new Date(selectedEntry.rawStartTime).toLocaleTimeString() : ''}</td>
-                  <td>{selectedEntry.rawEndTime   ? new Date(selectedEntry.rawEndTime).toLocaleTimeString()   : ''}</td>
+                  <td>{selectedEntry.rawStartTime ? new Date(selectedEntry.rawStartTime).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit" }) : ''}</td>
+                  <td>{selectedEntry.rawEndTime   ? new Date(selectedEntry.rawEndTime).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit" })   : ''}</td>
                 </tr>
               </tbody>
             </table>

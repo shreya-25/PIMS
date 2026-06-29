@@ -57,10 +57,10 @@ const attachFiles = async (items, idFieldName, filesEndpoint) => {
 const mapPersonToRow = (person) => ({
   _id:          person._id,
   returnId:     person.leadReturnId,
-  dateEntered:  (() => { const d = new Date(person.enteredDate); return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()).toLocaleDateString(); })(),
+  dateEntered:  (() => { const d = new Date(person.enteredDate); return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()).toLocaleDateString("en-US"); })(),
   name:         [person.firstName, person.middleInitial, person.lastName].filter(Boolean).join(' '),
   dateOfBirth:  person.dateOfBirth
-    ? (() => { const d = new Date(person.dateOfBirth); return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()).toLocaleDateString(); })()
+    ? (() => { const d = new Date(person.dateOfBirth); return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()).toLocaleDateString("en-US"); })()
     : 'N/A',
   phoneNo:      person.cellNumber || 'N/A',
   address:      person.address?.street1

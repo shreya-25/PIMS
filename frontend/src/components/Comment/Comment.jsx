@@ -348,7 +348,7 @@ export default function Comment({ tag }) {
               <div className="comment-header">
                 <p>
                   <strong>{c.enteredBy}</strong> –{" "}
-                  {new Date(c.enteredDate).toLocaleString()}
+                  {new Date(c.enteredDate).toLocaleString("en-US", { timeZone: "America/New_York" })}
                 </p>
                 {/* show edit icon only on your own comments */}
                 {(c.enteredByUserId && currentUserId

@@ -657,20 +657,24 @@ function formatDate(dateString) {
   if (!dateString) return "";
   const date = new Date(dateString);
   if (isNaN(date)) return "";
-  const month = (date.getUTCMonth() + 1).toString().padStart(2, "0");
-  const day = date.getUTCDate().toString().padStart(2, "0");
-  const year = date.getUTCFullYear().toString().slice(-2);
-  return `${month}/${day}/${year}`;
+  return date.toLocaleDateString("en-US", {
+    timeZone: "America/New_York",
+    month: "2-digit",
+    day: "2-digit",
+    year: "2-digit",
+  });
 }
 
 function formatDateLong(dateString) {
   if (!dateString) return "";
   const date = new Date(dateString);
   if (isNaN(date)) return "";
-  const month = (date.getUTCMonth() + 1).toString().padStart(2, "0");
-  const day = date.getUTCDate().toString().padStart(2, "0");
-  const year = date.getUTCFullYear().toString();
-  return `${month}/${day}/${year}`;
+  return date.toLocaleDateString("en-US", {
+    timeZone: "America/New_York",
+    month: "2-digit",
+    day: "2-digit",
+    year: "numeric",
+  });
 }
 
 function drawMetaBar(doc, x, y, width, entry, userMap = {}) {
@@ -1472,18 +1476,21 @@ async function buildLeadBuffer(lead, { includeAll, characterOfCase, userMap, sho
           doc.font("Helvetica-Bold").fontSize(12).text("Timeline Details:", 50, currentY);
           currentY += 20;
 
-          const tlHeaders = ["Start Date", "End Date", "Time Range", "Location", "Flags", "Description"];
-          const tlRows = timeline.map((t) => ({
-            "Start Date":  formatDate(t.eventStartDate || t.eventDate),
-            "End Date":    formatDate(t.eventEndDate),
-            "Time Range": `${formatTime(t.eventStartTime, timezone || "America/New_York") || ""}` +
-            (t.eventEndTime ? ` – ${formatTime(t.eventEndTime, timezone || "America/New_York")}` : ""),
-            "Location":    t.eventLocation || "N/A",
-            "Flags":       Array.isArray(t.timelineFlag) ? t.timelineFlag.join(", ") : (t.flags || "N/A"),
-            "Description": t.eventDescription || "N/A",
-          }));
+          const tlHeaders = ["Event Date", "Time Range", "Location", "Description"];
+          const tlRows = timeline.map((t) => {
+            const startDate = formatDate(t.eventStartDate || t.eventDate);
+            const endDate   = formatDate(t.eventEndDate);
+            const eventDate = endDate && endDate !== startDate ? `${startDate} – ${endDate}` : startDate;
+            return {
+              "Event Date":  eventDate || "N/A",
+              "Time Range":  `${formatTime(t.eventStartTime, timezone || "America/New_York") || ""}` +
+                             (t.eventEndTime ? ` – ${formatTime(t.eventEndTime, timezone || "America/New_York")}` : ""),
+              "Location":    t.eventLocation || "N/A",
+              "Description": t.eventDescription || "N/A",
+            };
+          });
           currentY = ensureSpace(doc, currentY, 60);
-          currentY = drawTable(doc, 50, currentY, tlHeaders, tlRows, [65, 65, 90, 90, 65, 137]) + 20;
+          currentY = drawTable(doc, 50, currentY, tlHeaders, tlRows, [110, 90, 90, 222]) + 20;
         }
       }
     } else {
@@ -2270,18 +2277,21 @@ if (timeline && timeline.length > 0) {
   doc.font("Helvetica-Bold").fontSize(12).text("Timeline Details:", 50, currentY);
   currentY += 20;
 
-  const headers = ["Start Date", "End Date", "Time Range", "Location", "Flags", "Description"];
-  const rows = timeline.map((t) => ({
-    "Start Date":  formatDate(t.eventStartDate || t.eventDate),
-    "End Date":    formatDate(t.eventEndDate),
-    "Time Range":  `${formatTime(t.eventStartTime, timezone || "America/New_York") || ""}` +
-    (t.eventEndTime ? ` – ${formatTime(t.eventEndTime, timezone || "America/New_York")}` : ""),
-    "Location":    t.eventLocation || "N/A",
-    "Flags":       Array.isArray(t.timelineFlag) ? t.timelineFlag.join(", ") : (t.flags || "N/A"),
-    "Description": t.eventDescription || "N/A",
-  }));
+  const headers = ["Event Date", "Time Range", "Location", "Description"];
+  const rows = timeline.map((t) => {
+    const startDate = formatDate(t.eventStartDate || t.eventDate);
+    const endDate   = formatDate(t.eventEndDate);
+    const eventDate = endDate && endDate !== startDate ? `${startDate} – ${endDate}` : startDate;
+    return {
+      "Event Date":  eventDate || "N/A",
+      "Time Range":  `${formatTime(t.eventStartTime, timezone || "America/New_York") || ""}` +
+                     (t.eventEndTime ? ` – ${formatTime(t.eventEndTime, timezone || "America/New_York")}` : ""),
+      "Location":    t.eventLocation || "N/A",
+      "Description": t.eventDescription || "N/A",
+    };
+  });
   currentY = ensureSpace(doc, currentY, 60);
-  currentY = drawTable(doc, 50, currentY, headers, rows, [65, 65, 90, 90, 65, 137]) + 20;
+  currentY = drawTable(doc, 50, currentY, headers, rows, [110, 90, 90, 222]) + 20;
 }
 
             }
@@ -2348,7 +2358,7 @@ async function generateTimelineOnlyReport(req, res) {
     }
 
     const user      = reqUser || req.user?.username || "Unknown";
-    const timestamp = new Date().toLocaleString("en-US");
+    const timestamp = new Date().toLocaleString("en-US", { timeZone: "America/New_York" });
 
     const caseDoc  = await Case.findById(caseId).select("caseName caseNo").lean();
     const caseName = caseDoc?.caseName || "";
@@ -2375,19 +2385,23 @@ async function generateTimelineOnlyReport(req, res) {
       if (!d) return "";
       const dt = new Date(d);
       if (isNaN(dt)) return "";
-      const mm = String(dt.getUTCMonth() + 1).padStart(2, "0");
-      const dd = String(dt.getUTCDate()).padStart(2, "0");
-      const yy = String(dt.getUTCFullYear()).slice(-2);
-      return `${mm}/${dd}/${yy}`;
+      return dt.toLocaleDateString("en-US", {
+        timeZone: "America/New_York",
+        month: "2-digit",
+        day: "2-digit",
+        year: "2-digit",
+      });
     };
 
     const fmtTime = (d) => {
       if (!d) return "";
       const dt = new Date(d);
       if (isNaN(dt)) return "";
-      const opts = { hour: "numeric", minute: "2-digit" };
-      if (timezone) opts.timeZone = timezone;
-      return dt.toLocaleTimeString("en-US", opts);
+      return dt.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        timeZone: timezone || "America/New_York",
+      });
     };
 
     const fmtDateTimeCell = (e) => {

@@ -102,7 +102,7 @@ export const ManageLeadReturn = () => {
       // so no secondary /files/:id fetch is needed.
       const reportBody = {
         user:            localStorage.getItem("loggedInUser") || "",
-        reportTimestamp: new Date().toISOString(),
+        reportTimestamp: new Date().toLocaleString("en-US", { timeZone: "America/New_York" }),
         selectedReports: {
           FullReport: true, leadInstruction: true, leadReturn: true,
           leadPersons: true, leadVehicles: true, leadEnclosures: true,
@@ -122,7 +122,7 @@ export const ManageLeadReturn = () => {
         leadVideos:       videos,
         leadScratchpad:   notes,
         leadTimeline:     timeline,
-        timezone:         Intl.DateTimeFormat().resolvedOptions().timeZone,
+        timezone:         "America/New_York",
       };
 
       const resp = await api.post("/api/report/generate", reportBody, {
@@ -1002,11 +1002,10 @@ const sortTimelineEntries = (entries = []) => {
                                   <table className={styles.simpleTable}>
                                     <thead>
                                       <tr>
-                                        <th style={{ width: "12%" }}>Start Date</th>
-                                        <th style={{ width: "12%" }}>End Date</th>
-                                        <th style={{ width: "20%" }}>Time Range</th>
+                                        <th style={{ width: "22%" }}>Event Date</th>
+                                        <th style={{ width: "18%" }}>Time Range</th>
                                         <th style={{ width: "18%" }}>Location</th>
-                                        <th style={{ width: "30%" }}>Description</th>
+                                        <th style={{ width: "34%" }}>Description</th>
                                         <th style={{ width: "8%" }}>More</th>
                                       </tr>
                                     </thead>
@@ -1015,21 +1014,16 @@ const sortTimelineEntries = (entries = []) => {
                                       {sortedTimeline.map((t) => (
                                         <tr key={t._id}>
                                           <td className={styles.truncCell}>
-                                            {formatDate(t.eventStartDate || t.eventDate)}
-                                          </td>
-                                          <td className={styles.truncCell}>
-                                            {formatDate(t.eventEndDate)}
+                                            {(() => {
+                                              const start = formatDate(t.eventStartDate || t.eventDate);
+                                              const end   = formatDate(t.eventEndDate);
+                                              return end !== '—' && end !== start ? `${start} – ${end}` : start;
+                                            })()}
                                           </td>
                                           <td className={styles.truncCell}>
                                             {t.eventStartTime
-                                              ? `${new Date(t.eventStartTime).toLocaleTimeString([], {
-                                                  hour: "2-digit",
-                                                  minute: "2-digit",
-                                                })}${t.eventEndTime
-                                                  ? ` – ${new Date(t.eventEndTime).toLocaleTimeString([], {
-                                                      hour: "2-digit",
-                                                      minute: "2-digit",
-                                                    })}`
+                                              ? `${new Date(t.eventStartTime).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit" })}${t.eventEndTime
+                                                  ? ` – ${new Date(t.eventEndTime).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit" })}`
                                                   : ""}`
                                               : "—"}
                                           </td>
@@ -1148,9 +1142,10 @@ const sortTimelineEntries = (entries = []) => {
             </table>
 
             <table className={styles.tlGroupTable}>
-              <thead><tr><th>Start Time</th></tr></thead>
+              <thead><tr><th>Start Time</th><th>End Time</th></tr></thead>
               <tbody><tr>
-                <td>{selectedTimeline.eventStartTime ? new Date(selectedTimeline.eventStartTime).toLocaleTimeString() : '—'}</td>
+                <td>{selectedTimeline.eventStartTime ? new Date(selectedTimeline.eventStartTime).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit" }) : '—'}</td>
+                <td>{selectedTimeline.eventEndTime ? new Date(selectedTimeline.eventEndTime).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit" }) : '—'}</td>
               </tr></tbody>
             </table>
 
@@ -1160,13 +1155,6 @@ const sortTimelineEntries = (entries = []) => {
                 <td className={styles.tlWrapCell}>{toText(selectedTimeline.eventDescription)}</td>
               </tr></tbody>
             </table>
-
-            {Array.isArray(selectedTimeline.timelineFlag) && selectedTimeline.timelineFlag.length > 0 && (
-              <table className={styles.tlGroupTable}>
-                <thead><tr><th>Flags</th></tr></thead>
-                <tbody><tr><td>{selectedTimeline.timelineFlag.join(', ')}</td></tr></tbody>
-              </table>
-            )}
           </div>
         </div>
       )}

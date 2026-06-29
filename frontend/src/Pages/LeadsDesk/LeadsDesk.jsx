@@ -21,40 +21,40 @@ import { safeEncode } from "../../utils/encode";
 
 import styles from "./LeadsDesk.module.css";
 
+const NY_TZ = "America/New_York";
+
 // ---------- Helper to format dates as MM/DD/YY ----------
 const formatDate = (dateString) => {
   if (!dateString) return "";
   const date = new Date(dateString);
   if (isNaN(date)) return "";
-  const month = (date.getUTCMonth() + 1).toString().padStart(2, "0");
-  const day = date.getUTCDate().toString().padStart(2, "0");
-  const year = date.getUTCFullYear().toString().slice(-2);
-  return `${month}/${day}/${year}`;
+  return date.toLocaleDateString("en-US", { timeZone: NY_TZ, month: "2-digit", day: "2-digit", year: "2-digit" });
 };
 
 // ---------- Helper to format time range in America/New_York timezone ----------
 const formatTimeRangeNY = (startTime, endTime) => {
   if (!startTime || !endTime) return '';
-  const opts = { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'America/New_York' };
+  const opts = { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: NY_TZ };
   const start = new Date(startTime);
   const end = new Date(endTime);
   if (isNaN(start) || isNaN(end)) return '';
   return `${start.toLocaleTimeString('en-US', opts)} - ${end.toLocaleTimeString('en-US', opts)}`;
 };
 
-// ---------- Helper to format date+time as MM/DD/YY h:mm AM/PM (local time) ----------
+// ---------- Helper to format date+time as MM/DD/YY h:mm AM/PM (NY time) ----------
 const formatDateTime = (dateString) => {
   if (!dateString) return "";
   const date = new Date(dateString);
   if (isNaN(date)) return "";
-  const month = (date.getMonth() + 1).toString().padStart(2, "0");
-  const day = date.getDate().toString().padStart(2, "0");
-  const year = date.getFullYear().toString().slice(-2);
-  const hours = date.getHours();
-  const mins = date.getMinutes().toString().padStart(2, "0");
-  const ampm = hours >= 12 ? "PM" : "AM";
-  const h12 = (hours % 12 || 12).toString();
-  return `${month}/${day}/${year} ${h12}:${mins} ${ampm}`;
+  return date.toLocaleString("en-US", {
+    timeZone: NY_TZ,
+    month: "2-digit",
+    day: "2-digit",
+    year: "2-digit",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
 };
 
 // ---------- Helper to format dates as MM/DD/YYYY (4-digit year) ----------
@@ -62,9 +62,7 @@ const formatDateFull = (dateString) => {
   if (!dateString) return "";
   const date = new Date(dateString);
   if (isNaN(date)) return "";
-  const month = (date.getUTCMonth() + 1).toString().padStart(2, "0");
-  const day = date.getUTCDate().toString().padStart(2, "0");
-  return `${month}/${day}/${date.getUTCFullYear()}`;
+  return date.toLocaleDateString("en-US", { timeZone: NY_TZ, month: "2-digit", day: "2-digit", year: "numeric" });
 };
 
 function CollapsibleSection({ title, defaultOpen = true, rightSlot = null, children }) {
@@ -807,7 +805,7 @@ const handleShowLeadsInRange = () => {
     try {
       const payload = {
         user: "Officer 916",
-        reportTimestamp: new Date().toLocaleString(),
+        reportTimestamp: new Date().toLocaleString("en-US", { timeZone: "America/New_York" }),
         caseNo: selectedCase.caseNo,
         caseName: selectedCase.caseName,
         caseSummary: typedSummary,
@@ -888,7 +886,7 @@ useEffect(() => {
       try {
         const payload = {
           user: "Officer 916",
-          reportTimestamp: new Date().toLocaleString(),
+          reportTimestamp: new Date().toLocaleString("en-US", { timeZone: "America/New_York" }),
           caseNo: selectedCase.caseNo,
           caseName: selectedCase.caseName,
           caseSummary: typedSummary,
@@ -920,7 +918,7 @@ useEffect(() => {
     try {
       const formData = new FormData();
       formData.append("user", "Officer 916");
-      formData.append("reportTimestamp", new Date().toLocaleString());
+      formData.append("reportTimestamp", new Date().toLocaleString("en-US", { timeZone: "America/New_York" }));
       formData.append("caseNo", selectedCase.caseNo);
       formData.append("caseName", selectedCase.caseName);
       formData.append("selectedReports", JSON.stringify({ FullReport: true }));
@@ -1540,8 +1538,8 @@ useEffect(() => {
                               <table className={styles.tlGroupTable}>
                                 <thead><tr><th>Start Time</th><th>End Time</th></tr></thead>
                                 <tbody><tr>
-                                  <td>{selectedTimelineEntry.eventStartTime ? new Date(selectedTimelineEntry.eventStartTime).toLocaleTimeString() : '—'}</td>
-                                  <td>{selectedTimelineEntry.eventEndTime   ? new Date(selectedTimelineEntry.eventEndTime).toLocaleTimeString()   : '—'}</td>
+                                  <td>{selectedTimelineEntry.eventStartTime ? new Date(selectedTimelineEntry.eventStartTime).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit" }) : '—'}</td>
+                                  <td>{selectedTimelineEntry.eventEndTime   ? new Date(selectedTimelineEntry.eventEndTime).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit" })   : '—'}</td>
                                 </tr></tbody>
                               </table>
 

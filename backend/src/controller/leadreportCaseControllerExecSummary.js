@@ -2416,7 +2416,7 @@ async function generateCaseReportwithExecSummary(req, res) {
         inputPath,
         outputPath,
         user || "Unknown",
-        reportTimestamp || new Date().toLocaleString()
+        reportTimestamp || new Date().toLocaleString("en-US", { timeZone: "America/New_York" })
       );
       execPdfBuffer = fs.readFileSync(outputPath);
       // Clean up temp conversion file

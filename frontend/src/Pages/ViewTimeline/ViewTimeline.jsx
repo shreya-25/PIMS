@@ -42,9 +42,9 @@ export const ViewTimeline = () => {
     const parts = String(dateString).split("T")[0].split("-");
     if (parts.length === 3) {
       const [y, m, d] = parts.map(Number);
-      return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/New_York" });
     }
-    return new Date(dateString).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    return new Date(dateString).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/New_York" });
   };
 
   // Dummy timeline entries for testing (if needed)
@@ -196,10 +196,9 @@ export const ViewTimeline = () => {
   };
 
   const formatTimeRange = (startTime24, endTime24) => {
-    const options = { hour: "2-digit", minute: "2-digit", hour12: true };
-    // Construct a local-time Date so toLocaleTimeString respects the user's timezone
-    const start = new Date(`1970-01-01T${startTime24}:00`).toLocaleTimeString([], options);
-    const end   = new Date(`1970-01-01T${endTime24}:00`).toLocaleTimeString([], options);
+    const options = { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "America/New_York" };
+    const start = new Date(`1970-01-01T${startTime24}:00`).toLocaleTimeString("en-US", options);
+    const end   = new Date(`1970-01-01T${endTime24}:00`).toLocaleTimeString("en-US", options);
     return `${start} to ${end}`;
   };
 
@@ -372,7 +371,9 @@ export const ViewTimeline = () => {
                   <div className="timeline-content-horizontal">
                     <div className="timeline-datetime">
                       <p className="timeline-date">
-                        {formatDate(entry.eventStartDate)} - {formatDate(entry.eventEndDate)}
+                        {formatDate(entry.eventStartDate)}
+                        {entry.eventEndDate && formatDate(entry.eventEndDate) !== formatDate(entry.eventStartDate)
+                          ? ` – ${formatDate(entry.eventEndDate)}` : ''}
                       </p>
                       <p className="timeline-time">
                         {formatTimeRange(convert12To24(entry.eventStartTime), convert12To24(entry.eventEndTime))}

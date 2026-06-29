@@ -95,7 +95,7 @@ export const AuditLogViewer = ({ leadNo, caseNo }) => {
 
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return 'N/A';
-    return new Date(timestamp).toLocaleString();
+    return new Date(timestamp).toLocaleString("en-US", { timeZone: "America/New_York" });
   };
 
   const getActionIcon = (action) => {

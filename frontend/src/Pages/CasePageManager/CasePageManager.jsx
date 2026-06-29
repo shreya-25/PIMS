@@ -30,7 +30,8 @@ export const CasePageManager = () => {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isSupervisor = selectedCase?.role === "Detective Supervisor";
-  const isAdmin = (localStorage.getItem("systemRole") || localStorage.getItem("role") || "") === "Admin";
+  const systemRole = localStorage.getItem("systemRole") || localStorage.getItem("role") || "";
+  const isAdmin = systemRole === "Admin";
   const signedInOfficer = localStorage.getItem("loggedInUser");
   const signedInUserId  = localStorage.getItem("userId");
 
@@ -417,9 +418,9 @@ export const CasePageManager = () => {
 
         const leadsArray = Array.isArray(response.data) ? response.data : [];
 
-        // Apply access-level filter; supervisors see all leads
+        // Apply access-level filter; Admin and Detective Supervisor see all leads
         const filteredLeadsArray = leadsArray.filter((lead) => {
-          if (isSupervisor) return true;
+          if (isAdmin || isSupervisor) return true;
           if (lead.accessLevel === "Only Case Manager and Assignees") {
             const isAssignee = lead.assignedTo?.some(a =>
               signedInUserId && a.userId

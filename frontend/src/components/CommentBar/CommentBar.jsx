@@ -187,7 +187,7 @@ const CommentBar = forwardRef(function CommentBar(
                 <strong>{displayUser(c.enteredBy)}</strong>
                 <span className="cbar__dot">•</span>
                 <time dateTime={c.enteredDate}>
-                  {new Date(c.enteredDate).toLocaleString()}
+                  {new Date(c.enteredDate).toLocaleString("en-US", { timeZone: "America/New_York" })}
                 </time>
                 {(c.enteredByUserId && currentUserId
                   ? c.enteredByUserId === currentUserId

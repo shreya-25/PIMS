@@ -98,7 +98,7 @@ const isPrimaryInvestigator =
   // --- helpers
   function fmtDT(d) {
     const dt = new Date(d);
-    return Number.isNaN(dt.getTime()) ? "" : dt.toLocaleString();
+    return Number.isNaN(dt.getTime()) ? "" : dt.toLocaleString("en-US", { timeZone: "America/New_York" });
   }
 
   function nameOf(uname) {
@@ -442,7 +442,7 @@ const tone = (t) =>
             <tbody>
             {logEntries.map((entry, index) => (
           <tr key={index}>
-            <td>{new Date(entry.date).toLocaleString()}</td>
+            <td>{new Date(entry.date).toLocaleString("en-US", { timeZone: "America/New_York" })}</td>
             <td>{entry.officer}</td>
             <td>{entry.action}</td>
           </tr>

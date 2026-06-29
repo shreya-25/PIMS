@@ -16,7 +16,7 @@ import { TeamModal } from "../Admin/AdminTeam";
 
 export const HomePage = () => {
   const location = useLocation();
-  const systemRoleInit = localStorage.getItem("role");
+  const systemRoleInit = localStorage.getItem("systemRole") || localStorage.getItem("role");
   const isReadOnlyUser = systemRoleInit === ROLES.CASE_SPECIFIC;
   const [activeTab, setActiveTab] = useState(location.state?.activeTab || (isReadOnlyUser ? "cases" : "notifications"));
   const isCaseMgmt = activeTab !== "notifications";
@@ -43,7 +43,7 @@ export const HomePage = () => {
   const { setSelectedCase, setSelectedLead } = useContext(CaseContext);
   const signedInOfficer = localStorage.getItem("loggedInUser");
   const signedInUserId  = localStorage.getItem("userId");
-  const systemRole      = localStorage.getItem("role");
+  const systemRole      = localStorage.getItem("systemRole") || localStorage.getItem("role");
   const isAdmin         = systemRole === ROLES.ADMIN;
   const navigate = useNavigate();
 
@@ -464,7 +464,10 @@ export const HomePage = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (caseRes.data.caseManager === signedInOfficer) {
+      if (
+        (Array.isArray(caseRes.data.caseManagers) && caseRes.data.caseManagers.includes(signedInOfficer)) ||
+        caseRes.data.assignedCaseManager === signedInOfficer
+      ) {
         role = "Case Manager";
       } else if (
         Array.isArray(caseRes.data.investigators) &&
@@ -530,12 +533,19 @@ export const HomePage = () => {
           ? String(u._id || u.id || u.userId) === signedInUserId
           : (u.username === signedInOfficer || u === signedInOfficer));
 
-      const isSupervisor = matchByIdOrName(data.detectiveSupervisor) ||
-        data.detectiveSupervisor === signedInOfficer;
+      const isSupervisor =
+        (Array.isArray(data.detectiveSupervisors) && data.detectiveSupervisors.some(
+          (u) => (typeof u === "string" ? u : u?.username) === signedInOfficer
+        ));
       const isCM =
-        Array.isArray(data.caseManagers) && data.caseManagers.some(matchByIdOrName);
+        (Array.isArray(data.caseManagers) && data.caseManagers.some(
+          (u) => (typeof u === "string" ? u : u?.username) === signedInOfficer
+        )) ||
+        data.assignedCaseManager === signedInOfficer;
       const isInv =
-        Array.isArray(data.investigators) && data.investigators.some(matchByIdOrName);
+        Array.isArray(data.investigators) && data.investigators.some(
+          (u) => (typeof u === "string" ? u : u?.username) === signedInOfficer
+        );
 
       if (isSupervisor) role = "Detective Supervisor";
       else if (isCM) role = "Case Manager";

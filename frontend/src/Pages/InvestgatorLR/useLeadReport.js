@@ -107,7 +107,8 @@ export const useLeadReport = ({
 
       const reportBody = {
         user:            localStorage.getItem("loggedInUser") || "",
-        reportTimestamp: new Date().toISOString(),
+        reportTimestamp: new Date().toLocaleString("en-US", { timeZone: "America/New_York" }),
+        timezone:        "America/New_York",
         selectedReports,
         // Section payloads
         leadInstruction:  leadInstructions,

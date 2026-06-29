@@ -58,6 +58,7 @@ export const ActivityLog = ({ caseNo, leadNo, entityType = null, refreshTrigger 
   const formatTimestamp = (timestamp) => {
     const date = new Date(timestamp);
     return date.toLocaleString('en-US', {
+      timeZone: 'America/New_York',
       month: '2-digit',
       day: '2-digit',
       year: '2-digit',

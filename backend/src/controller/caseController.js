@@ -575,7 +575,7 @@ exports.rejectCase = async (req, res) => {
     }
 
     // Find the admin user
-    const adminUser = await User.findOne({ role: "admin" });
+    const adminUser = await User.findOne({ role: "Admin" });
     if (!adminUser) {
       return res.status(500).json({ message: "Admin user not found in system" });
     }
@@ -706,7 +706,6 @@ exports.updateCaseOfficers = async (req, res) => {
     caseDoc.officerUserIds      = [...new Map(officerIds.map(id => [id.toString(), id])).values()];
     caseDoc.readOnlyUserIds     = [...new Map(readOnlyIds.map(id => [id.toString(), id])).values()];
 
-    // Promote case managers, investigators, officers, and read-only to "Case Specific"
     // Only overwrite blockedUserIds when the admin explicitly sends the list.
     // Callers that don't send blockedUsernames (e.g. CasePageManager) leave the
     // existing block list untouched so revoked access is never accidentally restored.

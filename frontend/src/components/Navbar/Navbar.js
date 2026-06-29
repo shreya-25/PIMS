@@ -371,10 +371,10 @@ const Navbar = () => {
                             <div className="notif-date">
                               {n.type}&nbsp;&bull;&nbsp;
                               {new Date(n.time).toLocaleDateString("en-US", {
-                                month: "short", day: "numeric", year: "numeric"
+                                month: "short", day: "numeric", year: "numeric", timeZone: "America/New_York"
                               })}{" "}
                               {new Date(n.time).toLocaleTimeString("en-US", {
-                                hour: "2-digit", minute: "2-digit"
+                                hour: "2-digit", minute: "2-digit", timeZone: "America/New_York"
                               })}
                             </div>
                           </div>

@@ -47,7 +47,7 @@ const VehicleModal = ({
   const formatDate = (dateString) => {
     if (!dateString) return "";
     const d = new Date(dateString);
-    return isNaN(d) ? "" : new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()).toLocaleDateString();
+    return isNaN(d) ? "" : new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()).toLocaleDateString("en-US");
   };
 
   return (

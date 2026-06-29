@@ -1513,7 +1513,7 @@ const eventsSorted = React.useMemo(
 const fmtDT = (d) => {
   const dt = new Date(d);
   if (Number.isNaN(dt.getTime())) return "";
-  return dt.toLocaleString(); // or customize
+  return dt.toLocaleString("en-US", { timeZone: "America/New_York" });
 };
 
 const describeEvent = (ev) => {

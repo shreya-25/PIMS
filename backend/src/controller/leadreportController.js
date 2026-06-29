@@ -637,10 +637,12 @@ const formatDateLong = (dateString) => {
   if (!dateString) return "";
   const date = new Date(dateString);
   if (isNaN(date)) return "";
-  const month = (date.getUTCMonth() + 1).toString().padStart(2, "0");
-  const day = date.getUTCDate().toString().padStart(2, "0");
-  const year = date.getUTCFullYear().toString();
-  return `${month}/${day}/${year}`;
+  return date.toLocaleDateString("en-US", {
+    timeZone: "America/New_York",
+    month: "2-digit",
+    day: "2-digit",
+    year: "numeric",
+  });
 };
 
 function drawStructuredLeadDetails(doc, x, y, lead, userMap = {}) {
@@ -1858,8 +1860,8 @@ let currentY = headerHeight + 20;
         // currentY += 20;
       } else {
         currentY = startSection(doc, "Timeline Details", currentY);
-        const headers = ["Start Date","End Date","Time Range","Location","Flags","Description"];
-        const widths  = [65, 65, 90, 90, 65, 137];
+        const headers = ["Event Date","Time Range","Location","Description"];
+        const widths  = [110, 90, 90, 222];
         // const rows = leadTimeline.map(t => ({
         //   "Start Date": formatDate(t.eventStartDate || t.eventDate, timezone || "America/New_York"),
         //   "End Date": formatDate(t.eventEndDate, timezone || "America/New_York"),
@@ -1906,16 +1908,19 @@ let currentY = headerHeight + 20;
           return aEndTime - bEndTime;
         });
 
-        const rows = sortedTimeline.map(t => ({
-          "Start Date": formatDate(t.eventStartDate || t.eventDate, timezone || "America/New_York"),
-          "End Date": formatDate(t.eventEndDate, timezone || "America/New_York"),
-          "Time Range":
-            `${formatTime(t.eventStartTime, timezone || "America/New_York") || ""}` +
-            (t.eventEndTime ? ` – ${formatTime(t.eventEndTime, timezone || "America/New_York")}` : ""),
-          "Location": t.eventLocation || "",
-          "Flags": Array.isArray(t.timelineFlag) ? t.timelineFlag.join(", ") : "",
-          "Description": t.eventDescription || ""
-        }));
+        const rows = sortedTimeline.map(t => {
+          const startDate = formatDate(t.eventStartDate || t.eventDate, timezone || "America/New_York");
+          const endDate   = formatDate(t.eventEndDate, timezone || "America/New_York");
+          const eventDate = endDate && endDate !== startDate ? `${startDate} – ${endDate}` : startDate;
+          return {
+            "Event Date": eventDate || "",
+            "Time Range":
+              `${formatTime(t.eventStartTime, timezone || "America/New_York") || ""}` +
+              (t.eventEndTime ? ` – ${formatTime(t.eventEndTime, timezone || "America/New_York")}` : ""),
+            "Location": t.eventLocation || "",
+            "Description": t.eventDescription || ""
+          };
+        });
         // 2) estimate table height
         const minRowHeight = 20, padding = 5, headerH = 20;
         const estimatedH = headerH + rows.length * (minRowHeight + 2*padding);

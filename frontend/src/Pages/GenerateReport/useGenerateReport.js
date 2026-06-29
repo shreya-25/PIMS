@@ -464,7 +464,7 @@ export function useGenerateReport(selectedCase) {
       try {
         const formData = new FormData();
         formData.append("user",            localStorage.getItem("loggedInUser") || "Unknown");
-        formData.append("reportTimestamp", new Date().toLocaleString());
+        formData.append("reportTimestamp", new Date().toLocaleString("en-US", { timeZone: "America/New_York" }));
         formData.append("caseNo",          selectedCase?.caseNo   || "");
         formData.append("caseName",        selectedCase?.caseName || "");
         formData.append("leadsData",       JSON.stringify(leadsForReport));
@@ -516,7 +516,8 @@ export function useGenerateReport(selectedCase) {
             summaryMode:     resolvedSummaryMode,
             caseSummary:     resolvedSummary,
             user:            localStorage.getItem("loggedInUser") || "Unknown",
-            reportTimestamp: new Date().toLocaleString(),
+            reportTimestamp: new Date().toLocaleString("en-US", { timeZone: "America/New_York" }),
+            timezone:        "America/New_York",
           },
           { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
         );
@@ -548,11 +549,12 @@ export function useGenerateReport(selectedCase) {
       // Standard streaming path
       const payload = {
         user:            localStorage.getItem("loggedInUser") || "Unknown",
-        reportTimestamp: new Date().toLocaleString(),
+        reportTimestamp: new Date().toLocaleString("en-US", { timeZone: "America/New_York" }),
         leadsData:       leadsForReport,
         caseSummary:     "",
         selectedReports: { FullReport: true },
         summaryMode:     "none",
+        timezone:        "America/New_York",
       };
       const response = await api.post("/api/report/generateCase", payload, {
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },

@@ -214,3 +214,9 @@
 .wrapCell {
   white-space: normal !important;
 }
+
+.stackCell {
+  white-space: normal !important;
+  line-height: 1.5;
+  vertical-align: middle;
+}

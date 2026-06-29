@@ -92,7 +92,7 @@ const PersonModal = ({
           // kept for backward compat but now rendered as separate columns below
 
           const dob = person.dateOfBirth
-            ? (() => { const d = new Date(person.dateOfBirth); return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()).toLocaleDateString(); })()
+            ? (() => { const d = new Date(person.dateOfBirth); return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()).toLocaleDateString("en-US"); })()
             : "";
 
           const age = person.dateOfBirth

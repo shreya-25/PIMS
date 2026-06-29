@@ -280,7 +280,7 @@ export const LeadVersionHistory = () => {
     if (typeof val === 'boolean') return val ? 'Yes' : 'No';
     if (val instanceof Date || (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(val))) {
       const d = new Date(val);
-      return isNaN(d) ? val : d.toLocaleString();
+      return isNaN(d) ? val : d.toLocaleString("en-US", { timeZone: "America/New_York" });
     }
     if (typeof val === 'object') return JSON.stringify(val);
     return String(val);
@@ -594,7 +594,7 @@ export const LeadVersionHistory = () => {
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
-    return date.toLocaleString();
+    return date.toLocaleString("en-US", { timeZone: "America/New_York" });
   };
 
   const getEntityId = (details, entityType) => {
