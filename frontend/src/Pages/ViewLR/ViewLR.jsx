@@ -231,7 +231,9 @@ const submitDisabledReason = isClosedOrCompleted
             setDsSupervisors((teamRes.data?.detectiveSupervisors || []).map(ds => (typeof ds === 'string' ? ds : ds?.username || ds?.name || '')).filter(Boolean));
           }
         } catch (_) { /* non-blocking */ }
-        setReturns(returnsRes.data || []);
+        setReturns([...(returnsRes.data || [])].sort((a, b) =>
+          String(a.leadReturnId || '').localeCompare(String(b.leadReturnId || ''), undefined, { numeric: true, sensitivity: 'base' })
+        ));
         setPersons(personsRes.data || []);
         setVehicles(vehiclesRes.data || []);
         setEnclosures(enclosuresRes.data || []);

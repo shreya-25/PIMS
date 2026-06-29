@@ -1109,7 +1109,10 @@ let currentY = headerHeight + 20;
       currentY = startSection(doc, "Lead Results", currentY);
 
   if (leadReturn?.length > 0) {
-    leadReturn.forEach((entry, idx) => {
+    const sortedLeadReturn = [...leadReturn].sort((a, b) =>
+      String(a.leadReturnId || '').localeCompare(String(b.leadReturnId || ''), undefined, { numeric: true, sensitivity: 'base' })
+    );
+    sortedLeadReturn.forEach((entry, idx) => {
       // Ensure narrative header + table fit on same page
       if (currentY + 80 > doc.page.height - doc.page.margins.bottom) {
         doc.addPage();

@@ -1161,7 +1161,10 @@ async function buildLeadBuffer(lead, { includeAll, characterOfCase, userMap, sho
   // ── Lead returns ─────────────────────────────────────────────────────────
   if (includeAll) {
     if (lead.leadReturns && lead.leadReturns.length > 0) {
-      for (const lrRaw of lead.leadReturns) {
+      const sortedLrList = [...lead.leadReturns].sort((a, b) =>
+        String(a.leadReturnId || '').localeCompare(String(b.leadReturnId || ''), undefined, { numeric: true, sensitivity: 'base' })
+      );
+      for (const lrRaw of sortedLrList) {
         const lr = normalizeLeadReturn(lrRaw);
         currentY = ensureSpace(doc, currentY, 100);
 
@@ -1846,7 +1849,10 @@ if (leadState) {
         // LEAD RETURNS
         if (includeAll) {
           if (lead.leadReturns && lead.leadReturns.length > 0) {
-            for (const lrRaw of lead.leadReturns) {
+            const sortedLrList = [...lead.leadReturns].sort((a, b) =>
+              String(a.leadReturnId || '').localeCompare(String(b.leadReturnId || ''), undefined, { numeric: true, sensitivity: 'base' })
+            );
+            for (const lrRaw of sortedLrList) {
                const lr = normalizeLeadReturn(lrRaw);
               // small space check
               currentY = ensureSpace(doc, currentY, 100);

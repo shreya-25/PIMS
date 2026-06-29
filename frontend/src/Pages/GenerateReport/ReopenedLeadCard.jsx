@@ -34,12 +34,12 @@ export default function ReopenedLeadCard({ lead, displayUser, handleLeadCardClic
   const deletedReason = lead?.deletedReason || lead?.deletedReasonText || lead?.deleteReason || lead?.reason || "";
   const closedReason  = lead?.closedReason  || lead?.closeReason  || lead?.reason || "";
 
+  const lrSort = (a, b) => String(a.leadReturnId || '').localeCompare(String(b.leadReturnId || ''), undefined, { numeric: true, sensitivity: 'base' });
   const preReopenKeys     = new Set((lead.preReopenReturns || []).map((r) => String(lrKeyFor(r) || "")).filter(Boolean));
-  const preReopenReturns  = lead.preReopenReturns || [];
-  const postReopenReturns = (lead.leadReturns || []).filter((r) => {
-    const k = String(lrKeyFor(r) || "");
-    return k && !preReopenKeys.has(k);
-  });
+  const preReopenReturns  = [...(lead.preReopenReturns || [])].sort(lrSort);
+  const postReopenReturns = (lead.leadReturns || [])
+    .filter((r) => { const k = String(lrKeyFor(r) || ""); return k && !preReopenKeys.has(k); })
+    .sort(lrSort);
 
   // Post-reopen sub-items: filter every section by createdAt > reopenedDate
   const reopenedAt = lead.reopenedDate ? new Date(lead.reopenedDate).getTime() : null;

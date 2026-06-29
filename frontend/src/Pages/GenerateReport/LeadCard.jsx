@@ -125,9 +125,11 @@ export default function LeadCard({ lead, displayUser, handleLeadCardClick, leadT
               )}
 
               {Array.isArray(lead.leadReturns) && lead.leadReturns.length > 0 ? (
-                lead.leadReturns.map((returnItem, ri) => (
-                  <ReturnItem key={returnItem._id || returnItem.leadReturnId || ri} returnItem={returnItem} />
-                ))
+                [...lead.leadReturns]
+                  .sort((a, b) => String(a.leadReturnId || '').localeCompare(String(b.leadReturnId || ''), undefined, { numeric: true, sensitivity: 'base' }))
+                  .map((returnItem, ri) => (
+                    <ReturnItem key={returnItem._id || returnItem.leadReturnId || ri} returnItem={returnItem} />
+                  ))
               ) : (
                 <tr>
                   <td colSpan={2} style={{ textAlign: "center" }}>No Lead Returns Available</td>
