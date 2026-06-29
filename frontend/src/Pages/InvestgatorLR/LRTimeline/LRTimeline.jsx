@@ -291,12 +291,13 @@ export const LRTimeline = () => {
   // ── Format a start/end time pair for table display (local timezone) ──────
 
   const formatTimeRange = (startTime, endTime) => {
-    if (!startTime || !endTime) return '';
-    const start = new Date(startTime);
-    const end   = new Date(endTime);
-    if (isNaN(start) || isNaN(end)) return '';
     const opts = { hour: "2-digit", minute: "2-digit", timeZone: "America/New_York" };
-    return `${start.toLocaleTimeString("en-US", opts)} - ${end.toLocaleTimeString("en-US", opts)}`;
+    const fmt = (t) => {
+      if (!t) return '';
+      const d = new Date(t);
+      return isNaN(d) ? '' : d.toLocaleTimeString("en-US", opts);
+    };
+    return [fmt(startTime), fmt(endTime)].filter(Boolean).join(' – ');
   };
 
   // ── Fetch timeline entries from the API, applying access-level filtering ───
@@ -322,6 +323,8 @@ export const LRTimeline = () => {
     eventStartDate:   formatDate(e.eventStartDate),
     eventEndDate:     formatDate(e.eventEndDate),
     timeRange:        formatTimeRange(e.eventStartTime, e.eventEndTime),
+    startTimeStr:     e.eventStartTime ? new Date(e.eventStartTime).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", timeZone: "America/New_York" }) : '',
+    endTimeStr:       e.eventEndTime   ? new Date(e.eventEndTime).toLocaleTimeString("en-US",   { hour: "2-digit", minute: "2-digit", timeZone: "America/New_York" }) : '',
     location:         e.eventLocation,
     description:      e.eventDescription,
   }), [formatTimeRange]);
@@ -897,7 +900,9 @@ export const LRTimeline = () => {
                             <div>{entry.eventEndDate}</div>
                           )}
                         </td>
-                        <td>{entry.timeRange}</td>
+                        <td className={styles.stackCell}>
+                          {[entry.startTimeStr, entry.endTimeStr].filter(Boolean).join(' – ') || '—'}
+                        </td>
                         <td>{entry.location}</td>
                         <td>
                           <button className={styles.viewEntryBtn} onClick={() => openEntryModal(entry)}>

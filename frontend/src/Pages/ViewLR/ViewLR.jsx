@@ -1082,19 +1082,19 @@ const sortTimelineEntries = (entries = []) => {
                                 <tbody>
                                   {sortedTimeline.map((t) => (
                                     <tr key={t._id}>
-                                      <td className={styles.truncCell}>
+                                      <td className={styles.tlWrapCell}>
                                         {(() => {
                                           const start = formatDate(t.eventStartDate || t.eventDate);
                                           const end   = formatDate(t.eventEndDate);
-                                          return end !== '—' && end !== start ? `${start} – ${end}` : start;
+                                          return [start !== '—' ? start : '', end !== '—' && end !== start ? end : ''].filter(Boolean).join(' – ') || '—';
                                         })()}
                                       </td>
-                                      <td className={styles.truncCell}>
-                                        {t.eventStartTime
-                                          ? `${new Date(t.eventStartTime).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit" })}${t.eventEndTime
-                                              ? ` – ${new Date(t.eventEndTime).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit" })}`
-                                              : ""}`
-                                          : "—"}
+                                      <td className={styles.tlWrapCell}>
+                                        {(() => {
+                                          const opts = { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit" };
+                                          const fmt = (t) => t ? new Date(t).toLocaleTimeString("en-US", opts) : '';
+                                          return [fmt(t.eventStartTime), fmt(t.eventEndTime)].filter(Boolean).join(' – ') || '—';
+                                        })()}
                                       </td>
                                       <td className={styles.truncCell}>{toText(t.eventLocation)}</td>
                                       <td className={styles.truncCell}>{toText(t.eventDescription)}</td>

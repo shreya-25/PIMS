@@ -1447,18 +1447,25 @@ useEffect(() => {
                                 <table className={styles["lead-table2"]} style={{ width: "100%", tableLayout: "fixed" }}>
                                   <colgroup>
                                     <col style={{ width: "4%" }} /><col style={{ width: "8%" }} /><col style={{ width: "11%" }} />
-                                    <col style={{ width: "9%" }} /><col style={{ width: "9%" }} /><col style={{ width: "16%" }} />
-                                    <col style={{ width: "35%" }} /><col style={{ width: "8%" }} />
+                                    <col style={{ width: "14%" }} /><col style={{ width: "14%" }} /><col style={{ width: "13%" }} />
+                                    <col style={{ width: "28%" }} /><col style={{ width: "8%" }} />
                                   </colgroup>
-                                  <thead><tr><th>Id</th><th>Date</th><th>Entered By</th><th>Event Start</th><th>Event End</th><th>Location</th><th>Description</th><th>More</th></tr></thead>
+                                  <thead><tr><th>Id</th><th>Date</th><th>Entered By</th><th>Event Date</th><th>Event Time</th><th>Location</th><th>Description</th><th>More</th></tr></thead>
                                   <tbody>
                                     {(lead.timeline||[]).filter(t=>String(t.leadReturnId)===String(returnItem.leadReturnId)).map((tl, i) => {
                                       const descKey = `tl-${tl._id || i}`;
+                                      const sdStr = formatDate(tl.eventStartDate || tl.eventDate);
+                                      const edStr = formatDate(tl.eventEndDate);
+                                      const eventDate = [sdStr, edStr && edStr !== sdStr ? edStr : ''].filter(Boolean).join(' – ') || '—';
+                                      const fmtTime = (t) => t ? new Date(t).toLocaleTimeString("en-US", { timeZone: NY_TZ, hour: "2-digit", minute: "2-digit" }) : '';
+                                      const eventTime = [fmtTime(tl.eventStartTime), fmtTime(tl.eventEndTime)].filter(Boolean).join(' – ') || '—';
                                       return (
                                         <tr key={tl._id || i}>
                                           <td>{tl.leadReturnId}</td><td>{formatDate(tl.enteredDate)}</td>
-                                          <td>{tl.enteredBy}</td><td>{formatDate(tl.eventStartDate)}</td>
-                                          <td>{formatDate(tl.eventEndDate)}</td><td>{tl.eventLocation}</td>
+                                          <td>{tl.enteredBy}</td>
+                                          <td style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>{eventDate}</td>
+                                          <td style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>{eventTime}</td>
+                                          <td>{tl.eventLocation}</td>
                                           <td className={styles.wrapDescCell}>
                                             <div className={expandedDescriptions.has(descKey) ? styles.descTextExpanded : styles.descText}>{tl.eventDescription}</div>
                                             {tl.eventDescription && <button className={styles.viewToggleBtn} onClick={() => toggleDescriptionExpand(descKey)}>{expandedDescriptions.has(descKey) ? 'View Less ▲' : 'View ▶'}</button>}

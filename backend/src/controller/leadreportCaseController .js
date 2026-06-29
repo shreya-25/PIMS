@@ -1486,8 +1486,7 @@ async function buildLeadBuffer(lead, { includeAll, characterOfCase, userMap, sho
             const eventDate = endDate && endDate !== startDate ? `${startDate} – ${endDate}` : startDate;
             return {
               "Event Date":  eventDate || "N/A",
-              "Time Range":  `${formatTime(t.eventStartTime, timezone || "America/New_York") || ""}` +
-                             (t.eventEndTime ? ` – ${formatTime(t.eventEndTime, timezone || "America/New_York")}` : ""),
+              "Time Range":  [formatTime(t.eventStartTime, timezone || "America/New_York"), formatTime(t.eventEndTime, timezone || "America/New_York")].filter(Boolean).join(" – "),
               "Location":    t.eventLocation || "N/A",
               "Description": t.eventDescription || "N/A",
             };
@@ -2290,8 +2289,7 @@ if (timeline && timeline.length > 0) {
     const eventDate = endDate && endDate !== startDate ? `${startDate} – ${endDate}` : startDate;
     return {
       "Event Date":  eventDate || "N/A",
-      "Time Range":  `${formatTime(t.eventStartTime, timezone || "America/New_York") || ""}` +
-                     (t.eventEndTime ? ` – ${formatTime(t.eventEndTime, timezone || "America/New_York")}` : ""),
+      "Time Range":  [formatTime(t.eventStartTime, timezone || "America/New_York"), formatTime(t.eventEndTime, timezone || "America/New_York")].filter(Boolean).join(" – "),
       "Location":    t.eventLocation || "N/A",
       "Description": t.eventDescription || "N/A",
     };

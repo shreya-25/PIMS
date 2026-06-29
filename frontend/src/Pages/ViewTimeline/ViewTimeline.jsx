@@ -197,9 +197,12 @@ export const ViewTimeline = () => {
 
   const formatTimeRange = (startTime24, endTime24) => {
     const options = { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "America/New_York" };
-    const start = new Date(`1970-01-01T${startTime24}:00`).toLocaleTimeString("en-US", options);
-    const end   = new Date(`1970-01-01T${endTime24}:00`).toLocaleTimeString("en-US", options);
-    return `${start} to ${end}`;
+    const fmt = (t) => {
+      if (!t) return '';
+      const d = new Date(`1970-01-01T${t}:00`);
+      return isNaN(d) ? '' : d.toLocaleTimeString("en-US", options);
+    };
+    return [fmt(startTime24), fmt(endTime24)].filter(Boolean).join(' – ');
   };
 
   // Handle filtering of timeline entries
@@ -371,12 +374,14 @@ export const ViewTimeline = () => {
                   <div className="timeline-content-horizontal">
                     <div className="timeline-datetime">
                       <p className="timeline-date">
-                        {formatDate(entry.eventStartDate)}
-                        {entry.eventEndDate && formatDate(entry.eventEndDate) !== formatDate(entry.eventStartDate)
-                          ? ` – ${formatDate(entry.eventEndDate)}` : ''}
+                        {(() => {
+                          const start = formatDate(entry.eventStartDate);
+                          const end   = formatDate(entry.eventEndDate);
+                          return [start, end && end !== start ? end : ''].filter(Boolean).join(' – ') || '—';
+                        })()}
                       </p>
                       <p className="timeline-time">
-                        {formatTimeRange(convert12To24(entry.eventStartTime), convert12To24(entry.eventEndTime))}
+                        {formatTimeRange(convert12To24(entry.eventStartTime), convert12To24(entry.eventEndTime)) || '—'}
                       </p>
                     </div>
                     <h3 className="timeline-lead-horizontal" onClick={() => handleViewDetails(entry.leadNo)}>
