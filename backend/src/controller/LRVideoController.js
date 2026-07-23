@@ -88,7 +88,7 @@ const getLRVideoByDetails = async (req, res) => {
   try {
     const { leadNo, caseId } = req.params;
     const leadName = decodeParam(req.params.leadName);
-    const query = { leadNo: Number(leadNo), description: leadName, caseId, isDeleted: { $ne: true } };
+    const query = { leadNo: Number(leadNo), caseId, isDeleted: { $ne: true } };
     const lrVideos = await LRVideo.find(query);
 
     const withUrls = await Promise.all(

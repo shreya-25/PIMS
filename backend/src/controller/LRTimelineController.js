@@ -78,7 +78,7 @@ const getLRTimelineByDetails = async (req, res) => {
     try {
         const { leadNo, caseId } = req.params;
         const leadName = decodeParam(req.params.leadName);
-        const query = { leadNo: Number(leadNo), description: leadName, caseId, isDeleted: { $ne: true } };
+        const query = { leadNo: Number(leadNo), caseId, isDeleted: { $ne: true } };
         const timeline = await LRTimeline.find(query);
 
         if (timeline.length === 0) return res.status(200).json([]);

@@ -106,7 +106,6 @@ const getLREvidenceByDetails = async (req, res) => {
 
     const query = {
       leadNo: Number(leadNo),
-      description: leadName,
       caseId,
       isDeleted: { $ne: true },
     };
@@ -137,7 +136,6 @@ const updateLREvidence = async (req, res) => {
 
     const ev = await LREvidence.findOne({
       leadNo: Number(leadNo),
-      description: leadName,
       caseId,
       leadReturnId,
       evidenceDescription: oldDesc,
@@ -229,7 +227,6 @@ const deleteLREvidence = async (req, res) => {
 
     const ev = await LREvidence.findOne({
       leadNo: Number(leadNo),
-      description: leadName,
       caseId,
       leadReturnId,
       evidenceDescription,

@@ -50,7 +50,7 @@ const getLRScratchpadByDetails = async (req, res) => {
     try {
         const { leadNo, caseId } = req.params;
         const leadName = decodeParam(req.params.leadName);
-        const query = { leadNo: Number(leadNo), description: leadName, caseId, isDeleted: { $ne: true } };
+        const query = { leadNo: Number(leadNo), caseId, isDeleted: { $ne: true } };
         const scratchpads = await LRScratchpad.find(query);
         res.status(200).json(scratchpads);
     } catch (err) {
@@ -63,7 +63,7 @@ const getLRScratchpadByDetailsAndId = async (req, res) => {
     try {
         const { leadNo, caseId, id } = req.params;
         const leadName = decodeParam(req.params.leadName);
-        const query = { leadNo: Number(leadNo), description: leadName, caseId, leadReturnId: id, isDeleted: { $ne: true } };
+        const query = { leadNo: Number(leadNo), caseId, leadReturnId: id, isDeleted: { $ne: true } };
         const scratchpads = await LRScratchpad.find(query);
         res.status(200).json(scratchpads);
     } catch (err) {

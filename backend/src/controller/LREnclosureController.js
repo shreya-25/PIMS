@@ -91,7 +91,7 @@ const getLREnclosureByDetails = async (req, res) => {
   try {
     const { leadNo, caseId } = req.params;
     const leadName = decodeParam(req.params.leadName);
-    const query = { leadNo: Number(leadNo), description: leadName, caseId, isDeleted: { $ne: true } };
+    const query = { leadNo: Number(leadNo), caseId, isDeleted: { $ne: true } };
     const lrEnclosures = await LREnclosure.find(query);
     if (lrEnclosures.length === 0) return res.status(200).json([]);
 
@@ -113,7 +113,7 @@ const updateLREnclosure = async (req, res) => {
     const { leadNo, caseId, leadReturnId } = req.params;
     const leadName = decodeParam(req.params.leadName);
 
-    const enc = await LREnclosure.findOne({ leadNo: Number(leadNo), description: leadName, caseId, leadReturnId, isDeleted: { $ne: true } });
+    const enc = await LREnclosure.findOne({ leadNo: Number(leadNo), caseId, leadReturnId, isDeleted: { $ne: true } });
     if (!enc) return res.status(404).json({ message: "Enclosure not found" });
 
     const accessErr = await checkLeadWriteAccess(req, enc.caseNo, leadNo);
@@ -166,7 +166,7 @@ const deleteLREnclosure = async (req, res) => {
     const leadName = decodeParam(req.params.leadName);
 
     const enc = await LREnclosure.findOne({
-      leadNo: Number(leadNo), description: leadName, caseId, leadReturnId,
+      leadNo: Number(leadNo), caseId, leadReturnId,
       isDeleted: { $ne: true }
     });
     if (!enc) return res.status(404).json({ message: "Enclosure not found" });

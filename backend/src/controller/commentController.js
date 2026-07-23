@@ -49,7 +49,7 @@ const createComment = async (req, res) => {
 // Fetch comments using query parameters
 const getComments = async (req, res) => {
   try {
-    const { caseId, leadNo, leadName, tag } = req.query;
+    const { caseId, leadNo, tag } = req.query;
 
     let query = {};
 
@@ -59,10 +59,6 @@ const getComments = async (req, res) => {
 
     if (leadNo) {
       query.leadNo = leadNo;
-    }
-
-    if (leadName) {
-      query.description = { $regex: leadName, $options: "i" };
     }
 
     if (tag) {

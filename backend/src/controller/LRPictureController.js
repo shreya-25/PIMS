@@ -79,7 +79,7 @@ const getLRPictureByDetails = async (req, res) => {
   try {
     const { leadNo, caseId } = req.params;
     const leadName = decodeParam(req.params.leadName);
-    const query = { leadNo: Number(leadNo), description: leadName, caseId, isDeleted: { $ne: true } };
+    const query = { leadNo: Number(leadNo), caseId, isDeleted: { $ne: true } };
     const lrPictures = await LRPicture.find(query);
 
     if (!lrPictures || lrPictures.length === 0) return res.status(200).json([]);
@@ -107,7 +107,7 @@ const updateLRPicture = async (req, res) => {
     const leadName = decodeParam(req.params.leadName);
 
     const pic = await LRPicture.findOne({
-      leadNo: Number(leadNo), description: leadName, caseId, leadReturnId, pictureDescription: decodeParam(oldDesc),
+      leadNo: Number(leadNo), caseId, leadReturnId, pictureDescription: decodeParam(oldDesc),
       isDeleted: { $ne: true },
     });
     if (!pic) return res.status(404).json({ message: "Picture not found" });
@@ -161,7 +161,7 @@ const deleteLRPicture = async (req, res) => {
     const pictureDescription = decodeParam(req.params.pictureDescription);
 
     const pic = await LRPicture.findOne({
-      leadNo: Number(leadNo), description: leadName, caseId, leadReturnId, pictureDescription,
+      leadNo: Number(leadNo), caseId, leadReturnId, pictureDescription,
       isDeleted: { $ne: true }
     });
     if (!pic) return res.status(404).json({ message: "Picture not found" });

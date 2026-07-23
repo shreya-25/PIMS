@@ -335,6 +335,7 @@ const toggleLeadForReport = (leadNo) => {
       await api.put(
         "/api/cases/executive-summary",
         {
+          caseId: selectedCase._id || selectedCase.id,
           caseNo: selectedCase.caseNo,
           caseName: selectedCase.caseName,
           executiveCaseSummary: typedSummary,
@@ -735,7 +736,12 @@ const handleShowLeadsInRange = () => {
         const token = localStorage.getItem("token");
         await api.put(
           "/api/cases/case-summary",
-          { caseNo: selectedCase.caseNo, caseName: selectedCase.caseName, caseSummary },
+          {
+            caseId: selectedCase._id || selectedCase.id,
+            caseNo: selectedCase.caseNo,
+            caseName: selectedCase.caseName,
+            caseSummary,
+          },
           { headers: { Authorization: `Bearer ${token}` } }
         );
       } catch (err) {
