@@ -454,6 +454,50 @@
   border-top: 1px solid #e8eaf0;
 }
 
+.leadInstructionText::first-letter {
+  text-transform: uppercase;
+}
+
+/* Inline label + value on a single row (short, title-like fields) */
+.fieldGroupInline {
+  flex: 1;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.fieldLabelInline {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a2e;
+  font-family: Arial, sans-serif;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.fieldValueInline {
+  font-size: 18px;
+  color: #1a1a2e;
+  font-family: Arial, sans-serif;
+  font-weight: 400;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-transform: capitalize;
+}
+
+.inputFieldInline {
+  flex: 1;
+  min-width: 0;
+  text-transform: capitalize;
+}
+
 /* Editable row: subtle left accent only, no tint */
 /* .formRowEditable {
   border-left: 3px solid #b0b4d8;

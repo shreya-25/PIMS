@@ -32,6 +32,7 @@ export const LeadReview = () => {
   const [pendingRoute, setPendingRoute]   = useState(null);
   const [caseTeam, setCaseTeam] = useState({ detectiveSupervisors: [], caseManagers: [], investigators: [], officers: [] });
   const [originalAssigned, setOriginalAssigned] = useState([]);
+  const [originalDescription, setOriginalDescription] = useState("");
   const signedInOfficer = localStorage.getItem("loggedInUser");
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
@@ -738,8 +739,9 @@ const DeclineReasonModal = ({ open, onCancel, onSubmit, presetReasons }) => {
 
 
 const handleSave = async (updatedOfficers = assignedOfficers, updatedLeadData = leadData) => {
-  if (!(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor")) {
-    setAlertMessage("Unauthorized: Only Case Managers or Detective Supervisors can make changes.");
+  const systemRole = localStorage.getItem("systemRole") || localStorage.getItem("role") || "";
+  if (!(systemRole === "Admin" || selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor")) {
+    setAlertMessage("Unauthorized: Only Admins, Case Managers, or Detective Supervisors can make changes.");
     setAlertOpen(true);
     return;
   }
@@ -833,7 +835,7 @@ const handleSave = async (updatedOfficers = assignedOfficers, updatedLeadData = 
     };
 
     await api.put(
-      `/api/lead/update/${leadData.leadNo}/${safeEncode(leadData.description)}/${leadData.caseId || selectedCase._id || selectedCase.id}`,
+      `/api/lead/update/${leadData.leadNo}/${safeEncode(originalDescription || leadData.description)}/${leadData.caseId || selectedCase._id || selectedCase.id}`,
       processedLeadData,
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -846,6 +848,11 @@ const handleSave = async (updatedOfficers = assignedOfficers, updatedLeadData = 
     }));
 
     setOriginalAssigned(processedAssignedTo.map((x) => x.username));
+
+    if (processedLeadData.description && processedLeadData.description !== originalDescription) {
+      setOriginalDescription(processedLeadData.description);
+      setSelectedLead((prev) => (prev ? { ...prev, leadName: processedLeadData.description } : prev));
+    }
 
     setAlertMessage("Lead updated successfully!");
     setAlertOpen(true);
@@ -1240,6 +1247,7 @@ console.log("SL, SC", selectedLead, selectedCase);
 
   // const assignedUsernames = assignedNorm.map(x => x.username);
   setOriginalAssigned(allUsernames);
+  setOriginalDescription(item.description || "");
   setAssignedOfficers(activeUsernames);
 
   if (item.primaryInvestigator && !activeUsernames.includes(item.primaryInvestigator)) {
@@ -1417,6 +1425,15 @@ const isReadOnly = selectedCase?.role === "Read Only";
 
 
 const canWorkOnReturn = isAssigned ? (myAssignment.status === "accepted") : isManager;
+
+// Lead Instruction / Lead Log Summary: editable by Admin, Case Manager, or Detective
+// Supervisor, only until every currently assigned investigator has accepted the lead.
+const systemRole = localStorage.getItem("systemRole") || localStorage.getItem("role") || "";
+const isAdminUser = systemRole === "Admin";
+const assignedForLock = normalizeAssignedTo(leadData.assignedTo);
+const allAssignedAccepted = assignedForLock.length > 0 && assignedForLock.every(a => a.status === "accepted");
+const canEditLeadText = (isAdminUser || isManager) && !allAssignedAccepted;
+const leadTextLockedByAcceptance = (isAdminUser || isManager) && allAssignedAccepted;
 
 
 useEffect(() => {
@@ -2328,9 +2345,37 @@ const assignmentHoverText = React.useMemo(() => {
 
             <div className={styles.formGrid}>
               <div className={`${styles.formRow} ${styles.formRowHighlight}`}>
+                <div className={styles.fieldGroupInline}>
+                  <span className={styles.fieldLabelInline}>Lead Log Summary</span>
+                  {canEditLeadText ? (
+                    <input
+                      type="text"
+                      className={`${styles.inputField} ${styles.inputFieldInline}`}
+                      value={leadData.description || ""}
+                      onChange={(e) => setLeadData(prev => ({ ...prev, description: e.target.value }))}
+                    />
+                  ) : (
+                    <span className={styles.fieldValueInline} title={leadData.description || ""}>{leadData.description || '—'}</span>
+                  )}
+                </div>
+              </div>
+              <div className={`${styles.formRow} ${styles.formRowHighlight}`}>
                 <div className={styles.fieldGroup}>
-                  <span className={styles.fieldLabel}>Lead Instruction</span>
-                  <div className={styles.leadInstructionText}>{leadData.summary || '—'}</div>
+                  <span
+                    className={styles.fieldLabel}
+                    title={leadTextLockedByAcceptance ? "🔒 Locked — all assigned investigators have accepted this lead." : undefined}
+                  >
+                    Lead Instruction
+                  </span>
+                  {canEditLeadText ? (
+                    <textarea
+                      className={styles.inputField}
+                      value={leadData.summary || ""}
+                      onChange={(e) => setLeadData(prev => ({ ...prev, summary: e.target.value }))}
+                    />
+                  ) : (
+                    <div className={styles.leadInstructionText}>{leadData.summary || '—'}</div>
+                  )}
                 </div>
               </div>
               <div className={`${styles.formRow} ${styles.formRowEditable}`}>
@@ -2533,7 +2578,7 @@ const assignmentHoverText = React.useMemo(() => {
                 </div>
               </div>
             </div>
-            {isEditableByCaseManager("parentLeadNo") && (
+            {(isEditableByCaseManager("parentLeadNo") || canEditLeadText) && (
               <div className={styles.updateLeadBtn}>
                 <button className={styles.saveBtn1} onClick={() => handleSave(assignedOfficers, leadData)}>
                   Save Changes

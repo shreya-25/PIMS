@@ -23,6 +23,31 @@ const LRAudio = require("../models/LRAudio");
 const LRVideo = require("../models/LRVideo");
 const LREnclosure = require("../models/LREnclosure");
 const LRScratchpad = require("../models/LRScratchpad");
+const Comment = require("../models/Comment");
+
+// Best-effort sync of the display-only `description` snapshot carried on a lead's
+// sibling records after a rename. Lookups against these models key off leadNo+caseId
+// (not this text), so a partial failure here is logged and swallowed rather than
+// surfaced — it can never make a record unfindable.
+const DESCRIPTION_SNAPSHOT_MODELS = [
+  LREvidence, LRPerson, LRVehicle, LRTimeline, LRPicture,
+  LRAudio, LRVideo, LREnclosure, LRScratchpad, LeadReturn,
+  LeadReturnResult, Comment,
+];
+
+async function refreshDescriptionSnapshot({ leadNo, caseId, oldDescription, newDescription }) {
+  if (!oldDescription || !newDescription || oldDescription === newDescription) return;
+  await Promise.all(
+    DESCRIPTION_SNAPSHOT_MODELS.map((Model) =>
+      Model.updateMany(
+        { leadNo: Number(leadNo), caseId, description: oldDescription },
+        { $set: { description: newDescription } }
+      ).catch((err) => {
+        console.error(`refreshDescriptionSnapshot: ${Model.modelName} update failed:`, err.message);
+      })
+    )
+  );
+}
 
 // Helper: resolve a username string to a User ObjectId
 async function resolveUserId(username) {
@@ -267,7 +292,6 @@ const getLeadsByCase = async (req, res) => {
         const caseId = await resolveCaseId(req.params.caseId);
         const query = {
             leadNo: leadNo,
-            description: leadName,
             caseId,
         };
         const leads = await Lead.find(query).lean();
@@ -324,7 +348,6 @@ const updateLeadStatus = async (req, res) => {
 
     const lead = await Lead.findOne({
       leadNo: Number(leadNo),
-      description: leadName,
       caseId,
     });
 
@@ -371,16 +394,15 @@ exports.updateLeadLRStatus = async (req, res) => {
 
 const updateLRStatusToPending = async (req, res) => {
   try {
-    const { leadNo, description, caseName, caseNo } = req.body;
+    const { leadNo, caseName, caseNo } = req.body;
 
-    if (!leadNo || !description || !caseName || !caseNo) {
+    if (!leadNo || !caseName || !caseNo) {
       return res.status(400).json({ message: "All fields are required." });
     }
 
     const updatedDoc = await LeadReturn.findOneAndUpdate(
       {
         leadNo,
-        description,
         caseName,
         caseNo,
       },
@@ -488,7 +510,6 @@ const HarddeleteLead = async (req, res) => {
 
     const filter = {
       leadNo: Number(leadNo),
-      description: leadName,
       caseNo,
       caseName,
     };
@@ -534,7 +555,6 @@ const deleteLead = async (req, res) => {
 
     const lead = await Lead.findOne({
       leadNo: Number(leadNo),
-      description: leadName,
       caseId,
     });
     if (!lead) return res.status(404).json({ message: "Lead not found." });
@@ -607,12 +627,12 @@ const deleteLead = async (req, res) => {
 
 const setLeadStatusToInReview = async (req, res) => {
   try {
-    const { leadNo, description, caseId, submittedDate } = req.body;
-    if (!leadNo || !description || !caseId) {
+    const { leadNo, caseId, submittedDate } = req.body;
+    if (!leadNo || !caseId) {
       return res.status(400).json({ message: "All fields are required." });
     }
 
-    const lead = await Lead.findOne({ leadNo, description, caseId });
+    const lead = await Lead.findOne({ leadNo, caseId });
     if (!lead) return res.status(404).json({ message: "Lead not found." });
 
     const actor = req.user?.username || "unknown";
@@ -653,12 +673,12 @@ const setLeadStatusToInReview = async (req, res) => {
 
 const setLeadStatusToComplete = async (req, res) => {
   try {
-    const { leadNo, description, caseId, approvedDate } = req.body;
-    if (!leadNo || !description || !caseId) {
+    const { leadNo, caseId, approvedDate } = req.body;
+    if (!leadNo || !caseId) {
       return res.status(400).json({ message: "All fields are required." });
     }
 
-    const lead = await Lead.findOne({ leadNo, description, caseId });
+    const lead = await Lead.findOne({ leadNo, caseId });
     if (!lead) return res.status(404).json({ message: "Lead not found." });
 
     const actor = req.user?.username || "unknown";
@@ -682,7 +702,7 @@ const setLeadStatusToComplete = async (req, res) => {
     await lead.save();
 
     try {
-      await createSnapshot(leadNo, actor, "Approved", caseNo, caseName);
+      await createSnapshot(leadNo, actor, "Approved", lead.caseNo, lead.caseName);
     } catch (snapshotErr) {
       console.error("Error creating snapshot:", snapshotErr.message);
     }
@@ -696,15 +716,14 @@ const setLeadStatusToComplete = async (req, res) => {
 
 const setLeadStatusToPending = async (req, res) => {
   try {
-    const { leadNo, description, caseId } = req.body;
+    const { leadNo, caseId } = req.body;
 
-    if (!leadNo || !description || !caseId) {
+    if (!leadNo || !caseId) {
       return res.status(400).json({ message: "All fields are required." });
     }
 
     const lead = await Lead.findOne({
       leadNo,
-      description,
       caseId,
     });
 
@@ -724,12 +743,12 @@ const setLeadStatusToPending = async (req, res) => {
 
 const setLeadStatusToReturned = async (req, res) => {
   try {
-    const { leadNo, description, caseId, reason } = req.body;
-    if (!leadNo || !description || !caseId) {
+    const { leadNo, caseId, reason } = req.body;
+    if (!leadNo || !caseId) {
       return res.status(400).json({ message: "All fields are required." });
     }
 
-    const lead = await Lead.findOne({ leadNo, description, caseId });
+    const lead = await Lead.findOne({ leadNo, caseId });
     if (!lead) return res.status(404).json({ message: "Lead not found." });
 
     const actor = req.user?.username || "unknown";
@@ -754,7 +773,7 @@ const setLeadStatusToReturned = async (req, res) => {
     await lead.save();
 
     try {
-      await createSnapshot(leadNo, actor, "Returned", caseNo, caseName);
+      await createSnapshot(leadNo, actor, "Returned", lead.caseNo, lead.caseName);
     } catch (snapshotErr) {
       console.error("Error creating snapshot:", snapshotErr.message);
     }
@@ -769,12 +788,12 @@ const setLeadStatusToReturned = async (req, res) => {
 
 const setLeadStatusToReopened = async (req, res) => {
   try {
-    const { leadNo, description, caseId } = req.body;
-    if (!leadNo || !description || !caseId) {
+    const { leadNo, caseId } = req.body;
+    if (!leadNo || !caseId) {
       return res.status(400).json({ message: "All fields are required." });
     }
 
-    const lead = await Lead.findOne({ leadNo, description, caseId });
+    const lead = await Lead.findOne({ leadNo, caseId });
     if (!lead) return res.status(404).json({ message: "Lead not found." });
 
     const actor = req.user?.username || "unknown";
@@ -798,7 +817,7 @@ const setLeadStatusToReopened = async (req, res) => {
     await lead.save();
 
     try {
-      await createSnapshot(leadNo, actor, "Reopened", caseNo, caseName);
+      await createSnapshot(leadNo, actor, "Reopened", lead.caseNo, lead.caseName);
     } catch (snapshotErr) {
       console.error("Error creating snapshot:", snapshotErr.message);
     }
@@ -818,7 +837,7 @@ const updateLead = async (req, res) => {
     const caseId = req.params.caseId;
     const incoming = req.body;
 
-    const prev = await Lead.findOne({ leadNo: Number(leadNo), description, caseId });
+    const prev = await Lead.findOne({ leadNo: Number(leadNo), caseId });
     if (!prev) return res.status(404).json({ message: "Lead not found" });
 
     const { events: _ignoreEvents, ...incomingNoEvents } = incoming;
@@ -828,6 +847,44 @@ const updateLead = async (req, res) => {
       incomingNoEvents.description = normaliseLeadText(incomingNoEvents.description);
     if (incomingNoEvents.summary != null)
       incomingNoEvents.summary = normaliseLeadText(incomingNoEvents.summary);
+
+    // Lead Instruction (summary) / Lead Log Summary (description) may only be edited by
+    // Admins, Case Managers, or Detective Supervisors, and only before every currently
+    // assigned investigator has accepted the lead.
+    const changingLeadText =
+      (incomingNoEvents.summary != null && incomingNoEvents.summary !== normaliseLeadText(prev.summary)) ||
+      (incomingNoEvents.description != null && incomingNoEvents.description !== normaliseLeadText(prev.description));
+
+    if (changingLeadText) {
+      const role = req.user?.role || "";
+      const userId = req.user?.userId;
+      let authorized = role === "Admin";
+      if (!authorized && userId) {
+        const caseDoc = await Case.findById(caseId)
+          .select("caseManagerUserIds detectiveSupervisorUserId detectiveSupervisorUserIds")
+          .lean();
+        const userObjId = new mongoose.Types.ObjectId(userId);
+        const isCM = (caseDoc?.caseManagerUserIds || []).some((id) => id.equals(userObjId));
+        const allDS = [...(caseDoc?.detectiveSupervisorUserIds || [])];
+        if (caseDoc?.detectiveSupervisorUserId) allDS.push(caseDoc.detectiveSupervisorUserId);
+        const isDS = allDS.some((id) => id.equals(userObjId));
+        authorized = isCM || isDS;
+      }
+      if (!authorized) {
+        return res.status(403).json({
+          message: "Only Admins, Case Managers, or Detective Supervisors can edit the Lead Instruction or Lead Log Summary.",
+        });
+      }
+
+      const allAccepted =
+        (prev.assignedTo || []).length > 0 &&
+        (prev.assignedTo || []).every((a) => a.status === "accepted");
+      if (allAccepted) {
+        return res.status(403).json({
+          message: "This lead has been accepted by all assigned investigators; the Lead Instruction and Lead Log Summary can no longer be edited.",
+        });
+      }
+    }
 
     // normalize assignedTo with userId lookup
     const normalizeAssignedTo = async (arr) => {
@@ -910,10 +967,22 @@ const updateLead = async (req, res) => {
     }
 
     const lead = await Lead.findOneAndUpdate(
-      { leadNo: Number(leadNo), description, caseId },
+      { leadNo: Number(leadNo), caseId },
       updateDoc,
       { new: true }
     );
+
+    // Best-effort only: sibling LR* records are looked up by leadNo+caseId (not by this
+    // text), so a failure here can never make anything unfindable — it only keeps the
+    // displayed "Lead Log Summary" label on those records in sync with the rename.
+    if (lead && prev.description !== lead.description) {
+      await refreshDescriptionSnapshot({
+        leadNo: lead.leadNo,
+        caseId: lead.caseId,
+        oldDescription: prev.description,
+        newDescription: lead.description,
+      });
+    }
 
     return res.status(200).json(lead);
   } catch (err) {
@@ -975,11 +1044,10 @@ const updateAssignedToStatus = async (req, res) => {
 const removeAssignedOfficer = async (req, res) => {
   try {
     const leadNo = req.params.leadNo;
-    const description = decodeURIComponent(req.params.description);
     const { caseId, username } = req.params;
 
     const lead = await Lead.findOneAndUpdate(
-      { leadNo: Number(leadNo), description, caseId },
+      { leadNo: Number(leadNo), caseId },
       { $pull: { assignedTo: { username } } },
       { new: true }
     );
@@ -1018,12 +1086,10 @@ const removeAssignedOfficer = async (req, res) => {
 const getLeadStatus = async (req, res) => {
   try {
     const { leadNo } = req.params;
-    const leadName = decodeURIComponent(req.params.leadName);
     const caseId = await resolveCaseId(req.params.caseId);
 
     const lead = await Lead.findOne({
       leadNo:      Number(leadNo),
-      description: leadName,
       caseId,
       isDeleted:   { $ne: true },
     });
@@ -1063,12 +1129,12 @@ const getLeadStatusByLeadNo = async (req, res) => {
 
 const setLeadStatusToClosed = async (req, res) => {
   try {
-    const { leadNo, description, caseId, reason } = req.body;
-    if (!leadNo || !description || !caseId || !reason) {
+    const { leadNo, caseId, reason } = req.body;
+    if (!leadNo || !caseId || !reason) {
       return res.status(400).json({ message: "All fields (including reason) are required." });
     }
 
-    const lead = await Lead.findOne({ leadNo: Number(leadNo), description, caseId });
+    const lead = await Lead.findOne({ leadNo: Number(leadNo), caseId });
     if (!lead) return res.status(404).json({ message: "Lead not found." });
 
     const actor = req.user?.username || "unknown";
@@ -1104,7 +1170,6 @@ const setLeadStatusToClosed = async (req, res) => {
 const updateLeadFlags = async (req, res) => {
   try {
     const leadNo = req.params.leadNo;
-    const leadName = decodeURIComponent(req.params.leadName);
     const caseId = req.params.caseId;
     const { associatedFlags } = req.body;
 
@@ -1113,7 +1178,7 @@ const updateLeadFlags = async (req, res) => {
     }
 
     const lead = await Lead.findOneAndUpdate(
-      { leadNo: Number(leadNo), description: leadName, caseId },
+      { leadNo: Number(leadNo), caseId },
       { $set: { associatedFlags } },
       { new: true }
     );

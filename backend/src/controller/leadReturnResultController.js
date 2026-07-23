@@ -188,7 +188,6 @@ const getLeadReturnResultByLeadNoandLeadName = async (req, res) => {
     // Include deleted returns so the frontend can display them in red
     const query = {
       leadNo: Number(leadNo),
-      description: leadName,
       caseId,
     };
 

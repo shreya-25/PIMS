@@ -110,7 +110,7 @@ const getLRPersonByDetails = async (req, res) => {
             console.error(`getLRPersonByDetails: invalid caseId param "${caseId}" — likely a routing mismatch`);
             return res.status(200).json([]);
         }
-        const query = { leadNo: Number(leadNo), description: leadName, caseId, isDeleted: { $ne: true } };
+        const query = { leadNo: Number(leadNo), caseId, isDeleted: { $ne: true } };
         const lrPersons = await LRPerson.find(query);
 
         if (lrPersons.length === 0) {
@@ -142,7 +142,7 @@ const getLRPersonByDetailsandid = async (req, res) => {
             console.error(`getLRPersonByDetailsandid: invalid caseId param "${caseId}" — likely a routing mismatch`);
             return res.status(200).json([]);
         }
-        const query = { leadNo: Number(leadNo), description: leadName, caseId, leadReturnId: id, isDeleted: { $ne: true } };
+        const query = { leadNo: Number(leadNo), caseId, leadReturnId: id, isDeleted: { $ne: true } };
         const lrPersons = await LRPerson.find(query);
 
         if (lrPersons.length === 0) {

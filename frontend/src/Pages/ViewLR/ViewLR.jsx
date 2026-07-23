@@ -646,12 +646,16 @@ const sortTimelineEntries = (entries = []) => {
                         persons: [], vehicles: [], enclosures: [], evidence: [], pictures: [], audio: [], videos: [], notes: [], timeline: []
                       };
                       return (
-                        <div key={ret._id || k} className={styles.lrCard}>
+                        <div
+                          key={ret._id || k}
+                          className={`${styles.lrCard} ${ret.isDeleted ? styles.lrCardDeleted : ""}`}
+                        >
                           <div className={styles.lrMeta}>
                             <div className={styles.metaRow}>
                               <div className={styles.metaItem}>
                                 <span className={styles.metaLabel}>Lead Return ID:</span>
                                 <span className={styles.badge}>{toText(k) || "—"}</span>
+                                {ret.isDeleted && <span className={styles.deletedBadge}>Deleted</span>}
                               </div>
                               <div className={styles.metaItem}>
                                 <span className={styles.metaLabel}>Entered By:</span>

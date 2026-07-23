@@ -127,15 +127,14 @@ const getLeadsReturnByOfficer = async (req, res) => {
 
 const updateLRStatusToPending = async (req, res) => {
     try {
-      const { leadNo, description, caseName, caseNo } = req.body;
+      const { leadNo, caseName, caseNo } = req.body;
 
-      if (!leadNo || !description || !caseName || !caseNo) {
+      if (!leadNo || !caseName || !caseNo) {
         return res.status(400).json({ message: "All fields are required." });
       }
 
       const existingDoc = await LeadReturn.findOne({
         leadNo,
-        description,
         caseName,
         caseNo,
       });
@@ -143,7 +142,7 @@ const updateLRStatusToPending = async (req, res) => {
       const oldStatus = existingDoc?.assignedTo?.lRStatus;
 
       const updatedDoc = await LeadReturn.findOneAndUpdate(
-        { leadNo, description, caseName, caseNo },
+        { leadNo, caseName, caseNo },
         { $set: { "assignedTo.lRStatus": "Pending" } },
         { new: true }
       );

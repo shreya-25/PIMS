@@ -60,7 +60,7 @@ const getLRVehicleByDetails = async (req, res) => {
             console.error(`getLRVehicleByDetails: invalid caseId param "${caseId}" — likely a routing mismatch`);
             return res.status(200).json([]);
         }
-        const query = { leadNo: Number(leadNo), description: leadName, caseId, isDeleted: { $ne: true } };
+        const query = { leadNo: Number(leadNo), caseId, isDeleted: { $ne: true } };
         const lrVehicles = await LRVehicle.find(query);
         res.status(200).json(lrVehicles);
     } catch (err) {
@@ -77,7 +77,7 @@ const getLRVehicleByDetailsandid = async (req, res) => {
             console.error(`getLRVehicleByDetailsandid: invalid caseId param "${caseId}" — likely a routing mismatch`);
             return res.status(200).json([]);
         }
-        const query = { leadNo: Number(leadNo), description: leadName, caseId, leadReturnId: id, isDeleted: { $ne: true } };
+        const query = { leadNo: Number(leadNo), caseId, leadReturnId: id, isDeleted: { $ne: true } };
         const lrVehicles = await LRVehicle.find(query);
         res.status(200).json(lrVehicles);
     } catch (err) {
