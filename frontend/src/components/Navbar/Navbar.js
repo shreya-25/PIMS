@@ -55,7 +55,7 @@ const Navbar = () => {
     // Back-fill systemRole for sessions created before the systemRole key was introduced.
     // Only safe when the stored "role" is still a system-level value
     // (case navigation overwrites "role" with case-level values like "Case Manager").
-    const CASE_LEVEL_ROLES = new Set(["Case Manager", "Investigator"]);
+    const CASE_LEVEL_ROLES = new Set(["Case Manager", "Investigator", "Officer", "Read Only"]);
     if (!localStorage.getItem("systemRole")) {
       const storedRole = localStorage.getItem("role");
       if (storedRole && !CASE_LEVEL_ROLES.has(storedRole)) {
