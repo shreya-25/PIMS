@@ -61,7 +61,7 @@ export const AdminCM = () => {
   const navigate = useNavigate();
   const { setSelectedCase } = useContext(CaseContext);
 
-  const systemRole = localStorage.getItem("role");
+  const systemRole = localStorage.getItem("systemRole") || localStorage.getItem("role");
   const isAdminOrDS = systemRole === "Admin" || systemRole === "Detective Supervisor";
 
   const [showAddCase, setShowAddCase]   = useState(false);

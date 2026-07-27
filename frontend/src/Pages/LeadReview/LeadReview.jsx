@@ -740,7 +740,7 @@ const DeclineReasonModal = ({ open, onCancel, onSubmit, presetReasons }) => {
 
 const handleSave = async (updatedOfficers = assignedOfficers, updatedLeadData = leadData) => {
   const systemRole = localStorage.getItem("systemRole") || localStorage.getItem("role") || "";
-  if (!(systemRole === "Admin" || selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor")) {
+  if (!(systemRole === "Admin" || systemRole === "Detective Supervisor" || selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor")) {
     setAlertMessage("Unauthorized: Only Admins, Case Managers, or Detective Supervisors can make changes.");
     setAlertOpen(true);
     return;

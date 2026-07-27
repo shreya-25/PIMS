@@ -21,8 +21,8 @@ export const CaseInformation = () => {
   const caseName = selectedCase?.caseName;
   const role = selectedCase?.role || '';
   const isCMorDS = role === 'Case Manager' || role === 'Detective Supervisor';
-  const systemRole = localStorage.getItem('role') || '';
-  const isDS = role === 'Detective Supervisor' || systemRole === 'Admin';
+  const systemRole = localStorage.getItem('systemRole') || localStorage.getItem('role') || '';
+  const isDS = role === 'Detective Supervisor' || systemRole === 'Admin' || systemRole === 'Detective Supervisor';
   const signedInOfficer = localStorage.getItem('loggedInUser');
   const signedInUserId  = localStorage.getItem('userId');
 
