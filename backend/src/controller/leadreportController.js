@@ -637,12 +637,10 @@ const formatDateLong = (dateString) => {
   if (!dateString) return "";
   const date = new Date(dateString);
   if (isNaN(date)) return "";
-  return date.toLocaleDateString("en-US", {
-    timeZone: "America/New_York",
-    month: "2-digit",
-    day: "2-digit",
-    year: "numeric",
-  });
+  // Date-only field (DOB) stored at UTC midnight — read UTC components directly
+  // instead of converting to a timezone, which would roll the date back a day.
+  return new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
+    .toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" });
 };
 
 function drawStructuredLeadDetails(doc, x, y, lead, userMap = {}) {

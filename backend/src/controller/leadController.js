@@ -858,7 +858,9 @@ const updateLead = async (req, res) => {
     if (changingLeadText) {
       const role = req.user?.role || "";
       const userId = req.user?.userId;
-      let authorized = role === "Admin";
+      // System-wide Admins and Detective Supervisors are authorized for any case,
+      // mirroring the "privileged" treatment used elsewhere (e.g. getAllCases).
+      let authorized = role === "Admin" || role === "Detective Supervisor";
       if (!authorized && userId) {
         const caseDoc = await Case.findById(caseId)
           .select("caseManagerUserIds detectiveSupervisorUserId detectiveSupervisorUserIds")
@@ -876,12 +878,11 @@ const updateLead = async (req, res) => {
         });
       }
 
-      const allAccepted =
-        (prev.assignedTo || []).length > 0 &&
-        (prev.assignedTo || []).every((a) => a.status === "accepted");
-      if (allAccepted) {
+      // Locked once the lead has been submitted, approved, returned, or closed.
+      const LOCKED_LEAD_TEXT_STATUSES = new Set(["In Review", "Completed", "Returned", "Closed"]);
+      if (LOCKED_LEAD_TEXT_STATUSES.has(prev.leadStatus)) {
         return res.status(403).json({
-          message: "This lead has been accepted by all assigned investigators; the Lead Instruction and Lead Log Summary can no longer be edited.",
+          message: "This lead has been submitted, approved, returned, or closed; the Lead Instruction and Lead Log Summary can no longer be edited.",
         });
       }
     }
