@@ -1427,13 +1427,18 @@ const isReadOnly = selectedCase?.role === "Read Only";
 const canWorkOnReturn = isAssigned ? (myAssignment.status === "accepted") : isManager;
 
 // Lead Instruction / Lead Log Summary: editable by Admin, Case Manager, or Detective
-// Supervisor, only until every currently assigned investigator has accepted the lead.
+// Supervisor, only until the lead has been submitted, approved, returned, or closed.
 const systemRole = localStorage.getItem("systemRole") || localStorage.getItem("role") || "";
 const isAdminUser = systemRole === "Admin";
-const assignedForLock = normalizeAssignedTo(leadData.assignedTo);
-const allAssignedAccepted = assignedForLock.length > 0 && assignedForLock.every(a => a.status === "accepted");
-const canEditLeadText = (isAdminUser || isManager) && !allAssignedAccepted;
-const leadTextLockedByAcceptance = (isAdminUser || isManager) && allAssignedAccepted;
+const LOCKED_LEAD_TEXT_STATUSES = new Set([
+  "In Review",   // Submitted
+  "Completed",   // Approved
+  "Returned",
+  "Closed",
+]);
+const isLeadTextLocked = LOCKED_LEAD_TEXT_STATUSES.has(leadData.leadStatus);
+const canEditLeadText = (isAdminUser || isManager) && !isLeadTextLocked;
+const leadTextLockedByAcceptance = (isAdminUser || isManager) && isLeadTextLocked;
 
 
 useEffect(() => {
@@ -2363,7 +2368,7 @@ const assignmentHoverText = React.useMemo(() => {
                 <div className={styles.fieldGroup}>
                   <span
                     className={styles.fieldLabel}
-                    title={leadTextLockedByAcceptance ? "🔒 Locked — all assigned investigators have accepted this lead." : undefined}
+                    title={leadTextLockedByAcceptance ? "🔒 Locked — lead has been submitted, approved, returned, or closed." : undefined}
                   >
                     Lead Instruction
                   </span>
