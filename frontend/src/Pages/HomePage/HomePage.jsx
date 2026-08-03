@@ -573,11 +573,6 @@ export const HomePage = () => {
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      await api.put(
-        `/api/notifications/close/${encodeURIComponent(caseNo)}`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
       setCases((prev) => prev.filter((c) => c.id !== caseNo));
     } catch (err) {
       console.error("Failed to close case:", err);

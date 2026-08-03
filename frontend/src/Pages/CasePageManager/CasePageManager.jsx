@@ -343,11 +343,6 @@ export const CasePageManager = () => {
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      await api.put(
-        `/api/notifications/close/${encodeURIComponent(selectedCase.caseNo)}`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
       setCaseStatus("COMPLETED");
       setAlertMessage("Case has been closed and moved to Closed Cases.");
       setAlertOpen(true);
@@ -1710,9 +1705,13 @@ export const CasePageManager = () => {
                           <td style={{
                             fontWeight: 600,
                             color: isNonNavigable ? 'inherit' : (
-                              ["Assigned", "Accepted", "Approved", "Returned", "Completed", "Reopened"].includes(lead.leadStatus)
+                              ["Approved", "Completed"].includes(lead.leadStatus)
                                 ? "green"
-                                : lead.leadStatus === "In Review" ? "red" : "black"
+                                : ["In Review", "To Reassign"].includes(lead.leadStatus)
+                                ? "red"
+                                : ["Assigned", "Accepted", "Returned", "Reopened"].includes(lead.leadStatus)
+                                ? "#d4a017"
+                                : "black"
                             )
                           }}>
                             {lead.leadStatus === "In Review" ? "Under Review" : lead.leadStatus}

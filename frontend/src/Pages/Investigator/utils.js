@@ -10,12 +10,14 @@ export const isClosedStatus = s => String(s || '').toLowerCase() === 'closed';
 
 /**
  * Returns the CSS color for a lead's status badge.
- * Red for active/unresolved, green for progress/done, black otherwise.
+ * Red for active/unresolved, yellow for in review, green for done, black otherwise.
  */
 export const statusColor = status =>
   ['Assigned', 'Accepted', 'Returned', 'Reopened'].includes(status)
     ? 'red'
-    : ['In Review', 'Approved', 'Completed'].includes(status)
+    : status === 'In Review'
+    ? '#d4a017'
+    : ['Approved', 'Completed'].includes(status)
     ? 'green'
     : 'black';
 
