@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const LRPicture = require("../models/LRPicture");
 const fs = require("fs");
 const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
@@ -103,16 +104,15 @@ const getLRPictureByDetails = async (req, res) => {
 
 const updateLRPicture = async (req, res) => {
   try {
-    const { leadNo, caseId, leadReturnId, pictureDescription: oldDesc } = req.params;
-    const leadName = decodeParam(req.params.leadName);
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid picture id" });
+    }
 
-    const pic = await LRPicture.findOne({
-      leadNo: Number(leadNo), caseId, leadReturnId, pictureDescription: decodeParam(oldDesc),
-      isDeleted: { $ne: true },
-    });
+    const pic = await LRPicture.findOne({ _id: id, isDeleted: { $ne: true } });
     if (!pic) return res.status(404).json({ message: "Picture not found" });
 
-    const accessErr = await checkLeadWriteAccess(req, pic.caseNo, leadNo);
+    const accessErr = await checkLeadWriteAccess(req, pic.caseNo, pic.leadNo);
     if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
 
     const oldPicture = pic.toObject();
@@ -156,17 +156,15 @@ const updateLRPicture = async (req, res) => {
 
 const deleteLRPicture = async (req, res) => {
   try {
-    const { leadNo, caseId, leadReturnId } = req.params;
-    const leadName = decodeParam(req.params.leadName);
-    const pictureDescription = decodeParam(req.params.pictureDescription);
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid picture id" });
+    }
 
-    const pic = await LRPicture.findOne({
-      leadNo: Number(leadNo), caseId, leadReturnId, pictureDescription,
-      isDeleted: { $ne: true }
-    });
+    const pic = await LRPicture.findOne({ _id: id, isDeleted: { $ne: true } });
     if (!pic) return res.status(404).json({ message: "Picture not found" });
 
-    const accessErr = await checkLeadWriteAccess(req, pic.caseNo, leadNo);
+    const accessErr = await checkLeadWriteAccess(req, pic.caseNo, pic.leadNo);
     if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
 
     const oldPicture = pic.toObject();

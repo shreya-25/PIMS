@@ -506,6 +506,7 @@ export const LREnclosures = () => {
     );
 
     const mapped = (data || []).map((enc) => ({
+      id: enc._id,
       dateEntered: formatDate(enc.enteredDate),
       type: enc.type,
       enclosure: enc.enclosureDescription,
@@ -598,14 +599,9 @@ export const LREnclosures = () => {
           },
         ]);
       } else {
-        // UPDATE — put to existing enclosure URL
-        const url =
-          `/api/lrenclosure/${selectedLead.leadNo}/` +
-          `${safeEncode(selectedLead.leadName)}/` +
-          `${selectedCase._id || selectedCase.id}/` +
-          `${enclosureData.returnId}/`;
-
-        await api.put(url, fd, multipartConfig);
+        // UPDATE — keyed by the enclosure's own Mongo _id, not the (non-unique) Narrative Id
+        const enclosureId = enclosures[editIndex]?.id;
+        await api.put(`/api/lrenclosure/${enclosureId}`, fd, multipartConfig);
 
         // Optimistically update the edited row
         setEnclosures((prev) =>
@@ -673,13 +669,7 @@ export const LREnclosures = () => {
     const token = localStorage.getItem('token');
 
     try {
-      const url =
-        `/api/lrenclosure/${selectedLead.leadNo}/` +
-        `${safeEncode(selectedLead.leadName)}/` +
-        `${selectedCase._id || selectedCase.id}/` +
-        `${enc.returnId}/`;
-
-      await api.delete(url, { headers: { Authorization: `Bearer ${token}` } });
+      await api.delete(`/api/lrenclosure/${enc.id}`, { headers: { Authorization: `Bearer ${token}` } });
 
       setEnclosures((list) => list.filter((_, i) => i !== idx));
     } catch (err) {
@@ -697,13 +687,7 @@ export const LREnclosures = () => {
     const token = localStorage.getItem('token');
 
     try {
-      const url =
-        `/api/lrenclosure/${selectedLead.leadNo}/` +
-        `${safeEncode(selectedLead.leadName)}/` +
-        `${selectedCase._id || selectedCase.id}/` +
-        `${enc.returnId}/`;
-
-      await api.put(url, { accessLevel: newAccess }, {
+      await api.put(`/api/lrenclosure/${enc.id}`, { accessLevel: newAccess }, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

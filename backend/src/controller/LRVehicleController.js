@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const LRVehicle = require("../models/LRVehicle");
 const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
-const { resolveLeadReturnRefs, resolveCaseNo } = require("../utils/resolveRefs");
+const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
 const { checkLeadWriteAccess } = require("../utils/leadWriteAccess");
 const { decodeParam } = require("../utils/decodeParam");
 
@@ -88,27 +88,23 @@ const getLRVehicleByDetailsandid = async (req, res) => {
 
 const updateLRVehicle = async (req, res) => {
     try {
-      const { leadNo, leadReturnId, vin } = req.params;
-      const caseNo = await resolveCaseNo(req.params.caseId);
-      if (!caseNo) return res.status(404).json({ message: "Case not found." });
+      const { id } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ message: "Invalid vehicle id" });
+      }
       const updateData = req.body;
-      const actualVin = vin === '-EMPTY-' ? '' : vin;
 
-      const existingVehicle = await LRVehicle.findOne({ leadNo: Number(leadNo), caseNo, leadReturnId, vin: actualVin });
+      const existingVehicle = await LRVehicle.findOne({ _id: id, isDeleted: { $ne: true } });
       if (!existingVehicle) return res.status(404).json({ message: "Vehicle not found." });
 
-      const accessErr = await checkLeadWriteAccess(req, caseNo, leadNo);
+      const accessErr = await checkLeadWriteAccess(req, existingVehicle.caseNo, existingVehicle.leadNo);
       if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
 
-      const updated = await LRVehicle.findOneAndUpdate(
-        { leadNo: Number(leadNo), caseNo, leadReturnId, vin: actualVin },
-        updateData,
-        { new: true, runValidators: true }
-      );
+      const updated = await LRVehicle.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });
 
       await createAuditLog({
-        caseNo, caseName: updated.caseName, leadNo: Number(leadNo), leadName: updated.description,
-        entityType: "LRVehicle", entityId: `${vin}_${leadReturnId}`, action: "UPDATE",
+        caseNo: updated.caseNo, caseName: updated.caseName, leadNo: updated.leadNo, leadName: updated.description,
+        entityType: "LRVehicle", entityId: `${updated.vin}_${updated._id}`, action: "UPDATE",
         performedBy: { username: req.user?.name || "Unknown", role: req.user?.role || "Unknown" },
         oldValue: sanitizeForAudit(existingVehicle.toObject()), newValue: sanitizeForAudit(updated.toObject()),
         metadata: { ip: req.ip || req.connection?.remoteAddress, userAgent: req.get('user-agent'), changedFields: Object.keys(updateData) },
@@ -124,22 +120,22 @@ const updateLRVehicle = async (req, res) => {
 
 const deleteLRVehicle = async (req, res) => {
     try {
-      const { leadNo, leadReturnId, vin } = req.params;
-      const caseNo = await resolveCaseNo(req.params.caseId);
-      if (!caseNo) return res.status(404).json({ message: "Case not found." });
-      const actualVin = vin === '-EMPTY-' ? '' : vin;
+      const { id } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ message: "Invalid vehicle id" });
+      }
 
-      const existingVehicle = await LRVehicle.findOne({ leadNo: Number(leadNo), caseNo, leadReturnId, vin: actualVin });
+      const existingVehicle = await LRVehicle.findOne({ _id: id, isDeleted: { $ne: true } });
       if (!existingVehicle) return res.status(404).json({ message: "Vehicle not found." });
 
-      const accessErr = await checkLeadWriteAccess(req, caseNo, leadNo);
+      const accessErr = await checkLeadWriteAccess(req, existingVehicle.caseNo, existingVehicle.leadNo);
       if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
 
-      await LRVehicle.findOneAndDelete({ leadNo: Number(leadNo), caseNo, leadReturnId, vin: actualVin });
+      await LRVehicle.findByIdAndDelete(id);
 
       await createAuditLog({
-        caseNo, caseName: existingVehicle.caseName, leadNo: Number(leadNo), leadName: existingVehicle.description,
-        entityType: "LRVehicle", entityId: `${vin}_${leadReturnId}`, action: "DELETE",
+        caseNo: existingVehicle.caseNo, caseName: existingVehicle.caseName, leadNo: existingVehicle.leadNo, leadName: existingVehicle.description,
+        entityType: "LRVehicle", entityId: `${existingVehicle.vin}_${existingVehicle._id}`, action: "DELETE",
         performedBy: { username: req.user?.name || "Unknown", role: req.user?.role || "Unknown" },
         oldValue: sanitizeForAudit(existingVehicle.toObject()), newValue: null,
         metadata: { ip: req.ip || req.connection?.remoteAddress, userAgent: req.get('user-agent') },

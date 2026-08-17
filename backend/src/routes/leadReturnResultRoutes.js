@@ -21,11 +21,12 @@ router.get("/", verifyToken, searchCasesAndLeadsByKeyword);
 
 // router.delete("/delete/:leadNo/:leadName/:caseNo/:caseName/:leadReturnId", deleteLeadReturnResult);
 
-// Route to update a lead return result
-router.patch("/update/:leadNo/:caseId/:leadReturnId", verifyToken, updateLeadReturnResult);
+// Update/delete are keyed by the record's own Mongo _id — leadReturnId (Narrative Id)
+// is not guaranteed unique (e.g. a race between concurrent creates), so it must
+// never be used to look up a specific narrative entry.
+router.patch("/update/id/:id", verifyToken, updateLeadReturnResult);
 
-// Route to delete a lead return result
-router.delete("/delete/:leadNo/:caseId/:leadReturnId", verifyToken, deleteLeadReturnResult);
+router.delete("/delete/id/:id", verifyToken, deleteLeadReturnResult);
 
 module.exports = router;
 

@@ -1,5 +1,5 @@
 const express = require("express");
-const { createLRPerson, getLRPersonByDetails, getLRPersonByDetailsandid, updateLRPerson, updateLRPersonById, deleteLRPerson, deleteLRPersonById, uploadPersonPhoto, deletePersonPhoto, searchPersonsByName, getPersonsByCaseNo } = require("../controller/LRPersonController");
+const { createLRPerson, getLRPersonByDetails, getLRPersonByDetailsandid, updateLRPersonById, deleteLRPersonById, uploadPersonPhoto, deletePersonPhoto, searchPersonsByName, getPersonsByCaseNo } = require("../controller/LRPersonController");
 const verifyToken = require("../middleware/authMiddleware");
 const { roleMiddleware } = require("../middleware/roleMiddleware");
 const upload = require("../middleware/upload-disk");
@@ -20,19 +20,8 @@ router.get("/lrperson/:leadNo/:leadName(*)/:caseId/:id", verifyToken, getLRPerso
 
 router.get("/lrperson/:leadNo/:leadName(*)/:caseId", verifyToken, getLRPersonByDetails);
 
-router.put(
-    '/:leadNo/:caseId/:leadReturnId/:firstName',
-    verifyToken,
-    updateLRPerson
-  );
-
-  // DELETE  /api/lrperson/:leadNo/:caseId/:leadReturnId/:firstName
-  router.delete(
-    '/:leadNo/:caseId/:leadReturnId/:firstName',
-    verifyToken,
-    deleteLRPerson
-  );
-
+// Update/delete are keyed by the record's own Mongo _id — leadReturnId + first name
+  // is not guaranteed unique, so it must never be used to look up a specific person.
   // PUT by MongoDB _id  /api/lrperson/id/:id
   router.put(
     '/id/:id',

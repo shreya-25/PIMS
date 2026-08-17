@@ -570,7 +570,8 @@ useEffect(() => {
       enteredBy:    ret.enteredBy,
     });
     setEditMode(true);
-    setEditId(ret.leadReturnId);
+    // Keyed by the record's own Mongo _id, not the (non-unique) Narrative Id
+    setEditId(ret._id);
   };
 
   /** Toggle expand/collapse on a narrative row in the history table. */
@@ -583,8 +584,8 @@ useEffect(() => {
   };
 
   /** Open the confirmation modal before deleting a narrative entry. */
-  const requestDeleteReturn = (leadReturnId) => {
-    setPendingDeleteId(leadReturnId);
+  const requestDeleteReturn = (id) => {
+    setPendingDeleteId(id);
     setConfirmOpen(true);
   };
 
@@ -593,11 +594,12 @@ useEffect(() => {
     if (!pendingDeleteId) return;
     const token = localStorage.getItem('token');
     try {
+      // Keyed by the record's own Mongo _id, not the (non-unique) Narrative Id
       await api.delete(
-        `/api/leadReturnResult/delete/${effectiveLead.leadNo}/${effectiveCase._id || effectiveCase.id}/${pendingDeleteId}`,
+        `/api/leadReturnResult/delete/id/${pendingDeleteId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      const updated = returns.filter((r) => r.leadReturnId !== pendingDeleteId);
+      const updated = returns.filter((r) => r._id !== pendingDeleteId);
       setReturns(updated);
       setLeadReturns(updated);
     } catch (err) {
@@ -614,8 +616,9 @@ useEffect(() => {
     const ret   = returns[idx];
     const token = localStorage.getItem('token');
     try {
+      // Keyed by the record's own Mongo _id, not the (non-unique) Narrative Id
       const { data: updated } = await api.patch(
-        `/api/leadReturnResult/update/${ret.leadNo}/${effectiveCase._id || effectiveCase.id}/${ret.leadReturnId}`,
+        `/api/leadReturnResult/update/id/${ret._id}`,
         { accessLevel: newAccess },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -648,13 +651,13 @@ useEffect(() => {
     const token = localStorage.getItem('token');
     try {
       if (editMode && editId) {
-        // ── Update existing entry ────────────────────────────────────────────
+        // ── Update existing entry — keyed by the record's own Mongo _id ──────
         const { data: updated } = await api.patch(
-          `/api/leadReturnResult/update/${selectedLead.leadNo}/${effectiveCase._id || effectiveCase.id}/${editId}`,
+          `/api/leadReturnResult/update/id/${editId}`,
           { leadReturnResult: returnData.results },
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        setReturns((rs) => rs.map((r) => (r.leadReturnId === editId ? updated : r)));
+        setReturns((rs) => rs.map((r) => (r._id === editId ? updated : r)));
         setEditMode(false);
         setEditId(null);
         setReturnData(buildDefaultForm(officer));
@@ -1090,7 +1093,7 @@ useEffect(() => {
                                     className={styles.editIcon}
                                   />
                                 </button>
-                                <button onClick={() => requestDeleteReturn(ret.leadReturnId)} disabled={disableActions || ret.isDeleted}>
+                                <button onClick={() => requestDeleteReturn(ret._id)} disabled={disableActions || ret.isDeleted}>
                                   <img
                                     src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                                     alt="Delete"

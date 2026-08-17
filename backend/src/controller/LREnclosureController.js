@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const LREnclosure = require("../models/LREnclosure");
 const fs = require("fs");
 const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
@@ -110,13 +111,15 @@ const getLREnclosureByDetails = async (req, res) => {
 
 const updateLREnclosure = async (req, res) => {
   try {
-    const { leadNo, caseId, leadReturnId } = req.params;
-    const leadName = decodeParam(req.params.leadName);
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid enclosure id" });
+    }
 
-    const enc = await LREnclosure.findOne({ leadNo: Number(leadNo), caseId, leadReturnId, isDeleted: { $ne: true } });
+    const enc = await LREnclosure.findOne({ _id: id, isDeleted: { $ne: true } });
     if (!enc) return res.status(404).json({ message: "Enclosure not found" });
 
-    const accessErr = await checkLeadWriteAccess(req, enc.caseNo, leadNo);
+    const accessErr = await checkLeadWriteAccess(req, enc.caseNo, enc.leadNo);
     if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
 
     const oldEnclosure = enc.toObject();
@@ -145,8 +148,8 @@ const updateLREnclosure = async (req, res) => {
     await enc.save();
 
     await createAuditLog({
-      caseNo: enc.caseNo, caseName: enc.caseName, leadNo: Number(leadNo), leadName: enc.description,
-      entityType: "LREnclosure", entityId: `${leadReturnId}_${enc._id}`, action: "UPDATE",
+      caseNo: enc.caseNo, caseName: enc.caseName, leadNo: enc.leadNo, leadName: enc.description,
+      entityType: "LREnclosure", entityId: `${enc.leadReturnId}_${enc._id}`, action: "UPDATE",
       performedBy: { username: req.user?.name || "Unknown", role: req.user?.role || "Unknown" },
       oldValue: sanitizeForAudit(oldEnclosure), newValue: sanitizeForAudit(enc.toObject()),
       metadata: { ip: req.ip || req.connection?.remoteAddress, userAgent: req.get('user-agent'), fileUpdated: !!req.file },
@@ -162,16 +165,15 @@ const updateLREnclosure = async (req, res) => {
 
 const deleteLREnclosure = async (req, res) => {
   try {
-    const { leadNo, caseId, leadReturnId } = req.params;
-    const leadName = decodeParam(req.params.leadName);
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid enclosure id" });
+    }
 
-    const enc = await LREnclosure.findOne({
-      leadNo: Number(leadNo), caseId, leadReturnId,
-      isDeleted: { $ne: true }
-    });
+    const enc = await LREnclosure.findOne({ _id: id, isDeleted: { $ne: true } });
     if (!enc) return res.status(404).json({ message: "Enclosure not found" });
 
-    const accessErr = await checkLeadWriteAccess(req, enc.caseNo, leadNo);
+    const accessErr = await checkLeadWriteAccess(req, enc.caseNo, enc.leadNo);
     if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
 
     const oldValue = enc.toObject();
@@ -182,8 +184,8 @@ const deleteLREnclosure = async (req, res) => {
     await enc.save();
 
     await createAuditLog({
-      caseNo: enc.caseNo, caseName: enc.caseName, leadNo: Number(leadNo), leadName,
-      entityType: "LREnclosure", entityId: `${leadReturnId}_${enc._id}`, action: "DELETE",
+      caseNo: enc.caseNo, caseName: enc.caseName, leadNo: enc.leadNo, leadName: enc.description,
+      entityType: "LREnclosure", entityId: `${enc.leadReturnId}_${enc._id}`, action: "DELETE",
       performedBy: { username: req.user?.name || "Unknown", role: req.user?.role || "Unknown" },
       oldValue: sanitizeForAudit(oldValue), newValue: null,
       metadata: { ip: req.ip || req.connection?.remoteAddress, userAgent: req.get('user-agent') },

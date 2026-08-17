@@ -86,15 +86,17 @@ router.get("/case/:caseNo", verifyToken, getEnclosuresByCaseNo);
 
 router.get("/:leadNo/:leadName(*)/:caseId", verifyToken, getLREnclosureByDetails);
 
+// Update/delete are keyed by the record's own Mongo _id — leadReturnId (Narrative Id)
+// is not unique, so it must never be used to look up a specific enclosure.
 router.put(
-  "/:leadNo/:leadName(*)/:caseId/:leadReturnId",
+  "/:id",
   verifyToken,
   upload.single("file"),
   updateLREnclosure
 );
 
 router.delete(
-  "/:leadNo/:leadName(*)/:caseId/:leadReturnId",
+  "/:id",
   verifyToken,
   deleteLREnclosure
 );

@@ -86,15 +86,17 @@ router.get("/case/:caseNo", verifyToken, getEvidenceByCaseNo);
 
 router.get("/:leadNo/:leadName(*)/:caseId", verifyToken, getLREvidenceByDetails);
 
+// Update/delete are keyed by the record's own Mongo _id — leadReturnId + description
+// is not guaranteed unique, so it must never be used to look up a specific evidence row.
 router.put(
-  "/:leadNo/:leadName(*)/:caseId/:leadReturnId/:evidenceDescription(*)",
+  "/:id",
   verifyToken,
   upload.single("file"),
   updateLREvidence
 );
 
 router.delete(
-  "/:leadNo/:leadName(*)/:caseId/:leadReturnId/:evidenceDescription(*)",
+  "/:id",
   verifyToken,
   deleteLREvidence
 );

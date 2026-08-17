@@ -79,8 +79,11 @@ router.post(
 router.get("/case/:caseNo", verifyToken, getPicturesByCaseNo);
 
 router.get("/:leadNo/:leadName(*)/:caseId", verifyToken, getLRPictureByDetails);
-router.put("/:leadNo/:leadName(*)/:caseId/:leadReturnId/:pictureDescription(*)", verifyToken, upload.single("file"), updateLRPicture);
-router.delete("/:leadNo/:leadName(*)/:caseId/:leadReturnId/:pictureDescription(*)", verifyToken, deleteLRPicture);
+
+// Update/delete are keyed by the record's own Mongo _id — leadReturnId + description
+// is not guaranteed unique, so it must never be used to look up a specific picture.
+router.put("/:id", verifyToken, upload.single("file"), updateLRPicture);
+router.delete("/:id", verifyToken, deleteLRPicture);
 
 
 

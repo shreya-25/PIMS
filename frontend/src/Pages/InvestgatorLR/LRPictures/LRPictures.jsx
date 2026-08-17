@@ -498,12 +498,9 @@ export const LRPictures = () => {
 
     try {
       const token = localStorage.getItem("token");
-      const path  = buildLeadCaseIdPath(
-        selectedLead.leadNo, selectedLead.leadName,
-        selectedCase._id || selectedCase.id
-      );
+      // Keyed by the picture's own Mongo _id, not the (non-unique) Narrative Id + description
       await api.put(
-        `/api/lrpicture/${path}/${pic.returnId}/${encodeURIComponent(pic.description)}`,
+        `/api/lrpicture/${pic.pictureId}`,
         fd,
         { headers: { Authorization: `Bearer ${token}` }, ...multipartConfig }
       );
@@ -530,14 +527,10 @@ export const LRPictures = () => {
 
     const pic   = pictures[idx];
     const token = localStorage.getItem("token");
-    const path  = buildLeadCaseIdPath(
-      selectedLead.leadNo, selectedLead.leadName,
-      selectedCase._id || selectedCase.id
-    );
 
     try {
       await api.delete(
-        `/api/lrpicture/${path}/${pic.returnId}/${encodeURIComponent(pic.description)}`,
+        `/api/lrpicture/${pic.pictureId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setPictures(prev => prev.filter((_, i) => i !== idx));
@@ -559,10 +552,6 @@ export const LRPictures = () => {
   const handleAccessChange = async (idx, newAccessLevel) => {
     const picture = pictures[idx];
     const token   = localStorage.getItem("token");
-    const path    = buildLeadCaseIdPath(
-      selectedLead.leadNo, selectedLead.leadName,
-      selectedCase._id || selectedCase.id
-    );
 
     const fd = new FormData();
     fd.append("leadReturnId",     picture.returnId);
@@ -574,7 +563,7 @@ export const LRPictures = () => {
 
     try {
       await api.put(
-        `/api/lrpicture/${path}/${picture.returnId}/${encodeURIComponent(picture.description)}`,
+        `/api/lrpicture/${picture.pictureId}`,
         fd,
         {
           headers: { Authorization: `Bearer ${token}` },
