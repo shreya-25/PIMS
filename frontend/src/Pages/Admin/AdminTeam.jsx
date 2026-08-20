@@ -6,7 +6,7 @@ import { AddCaseInline } from "../HomePage/AddCaseInline";
 import Filter from "../../components/Filter/Filter";
 import Pagination from "../../components/Pagination/Pagination";
 import { AlertModal } from "../../components/AlertModal/AlertModal";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { CaseContext } from "../CaseContext";
 import api from "../../api";
 
@@ -442,9 +442,10 @@ const statusDisplayLabel = (raw) => {
 
 export const AdminTeam = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { setSelectedCase } = useContext(CaseContext);
 
-  const [showAddCase, setShowAddCase]   = useState(false);
+  const [showAddCase, setShowAddCase]   = useState(location.state?.showAddCase || false);
   const [rawCases, setRawCases]         = useState([]);
   const [allUsers, setAllUsers]         = useState([]);
   const [loading, setLoading]           = useState(true);
