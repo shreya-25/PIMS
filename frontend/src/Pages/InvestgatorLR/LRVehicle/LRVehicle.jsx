@@ -444,12 +444,10 @@ export const LRVehicle = () => {
     try {
       let res;
       if (editIndex !== null) {
-        // UPDATE: encode VIN in URL; use sentinel for empty VINs
-        const old      = rawVehicles[editIndex];
-        const vinParam = old.vin ? encodeURIComponent(old.vin) : encodeURIComponent('-EMPTY-');
+        // UPDATE — keyed by the vehicle's own Mongo _id, not the (non-unique) Narrative Id + VIN
+        const old = rawVehicles[editIndex];
         res = await api.put(
-          `/api/lrvehicle/${selectedLead.leadNo}/${selectedCase._id || selectedCase.id}` +
-          `/${encodeURIComponent(old.leadReturnId)}/${vinParam}`,
+          `/api/lrvehicle/${old._id}`,
           payload,
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -490,15 +488,12 @@ export const LRVehicle = () => {
     );
     if (rawIdx < 0) { showAlert('Could not resolve vehicle. Please refresh.'); return; }
 
-    const r        = rawVehicles[rawIdx];
-    const vinParam = r.vin ? encodeURIComponent(r.vin) : encodeURIComponent('-EMPTY-');
-    const token    = localStorage.getItem('token');
+    const r     = rawVehicles[rawIdx];
+    const token = localStorage.getItem('token');
 
     try {
       await api.delete(
-        `/api/lrvehicle/${encodeURIComponent(String(selectedLead.leadNo))}` +
-        `/${encodeURIComponent(String(selectedCase._id || selectedCase.id))}` +
-        `/${encodeURIComponent(String(r.leadReturnId))}/${vinParam}`,
+        `/api/lrvehicle/${r._id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -523,14 +518,12 @@ export const LRVehicle = () => {
 
     if (rawIdx < 0) { showAlert('Could not find vehicle. Please refresh.'); return; }
 
-    const v        = rawVehicles[rawIdx];
-    const vinParam = v.vin ? encodeURIComponent(v.vin) : encodeURIComponent('-EMPTY-');
-    const token    = localStorage.getItem('token');
+    const v     = rawVehicles[rawIdx];
+    const token = localStorage.getItem('token');
 
     try {
       const { data: updated } = await api.put(
-        `/api/lrvehicle/${selectedLead.leadNo}/${selectedCase._id || selectedCase.id}` +
-        `/${encodeURIComponent(v.leadReturnId)}/${vinParam}`,
+        `/api/lrvehicle/${v._id}`,
         { accessLevel: newAccess },
         { headers: { Authorization: `Bearer ${token}` } }
       );

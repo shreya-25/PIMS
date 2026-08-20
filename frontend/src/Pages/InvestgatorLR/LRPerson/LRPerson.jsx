@@ -331,8 +331,9 @@ export const LRPerson = () => {
     const token = localStorage.getItem('token');
 
     try {
+      // Keyed by the person's own Mongo _id, not the (non-unique) Narrative Id + first name
       const { data: updatedDoc } = await api.put(
-        `/api/lrperson/${selectedLead.leadNo}/${selectedCase._id || selectedCase.id}/${p.leadReturnId}/${p.firstName}`,
+        `/api/lrperson/id/${p._id}`,
         { accessLevel: newAccess },
         { headers: { Authorization: `Bearer ${token}` } }
       );

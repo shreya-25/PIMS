@@ -1,10 +1,11 @@
+const mongoose = require("mongoose");
 const LeadReturnResult = require("../models/leadReturnResult");
 const LeadReturn = require("../models/leadreturn");
 const LRPerson = require("../models/LRPerson");
 const Lead = require("../models/lead");
 const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
 const { createSnapshot } = require("../utils/leadReturnVersioning");
-const { resolveLeadReturnRefs, resolveCaseNo } = require("../utils/resolveRefs");
+const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
 const { decodeParam } = require("../utils/decodeParam");
 
 // Helpers to convert between A...Z strings and numbers
@@ -217,12 +218,15 @@ const getLeadReturnResultByLeadNo = async (req, res) => {
     }
 };
 
-// Update a specific lead return result entry
+// Update a specific lead return result entry — keyed by the record's own Mongo
+// _id, since leadReturnId (Narrative Id) is not guaranteed unique (e.g. a race
+// between two concurrent creates can hand out the same letter).
 const updateLeadReturnResult = async (req, res) => {
     try {
-        const { leadNo, leadReturnId } = req.params;
-        const caseNo = await resolveCaseNo(req.params.caseId);
-        if (!caseNo) return res.status(404).json({ message: "Case not found." });
+        const { id } = req.params;
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ message: "Invalid narrative id" });
+        }
         const updateData = req.body;
 
         // Validate accessLevel if it's being updated
@@ -236,18 +240,14 @@ const updateLeadReturnResult = async (req, res) => {
         }
 
         // First, get the old value before updating
-        const oldResult = await LeadReturnResult.findOne({
-            leadNo: Number(leadNo),
-            caseNo,
-            leadReturnId
-        });
+        const oldResult = await LeadReturnResult.findOne({ _id: id, isDeleted: { $ne: true } });
 
         if (!oldResult) {
             return res.status(404).json({ message: "Lead return result not found." });
         }
 
-        const updatedResult = await LeadReturnResult.findOneAndUpdate(
-            { leadNo: Number(leadNo), caseNo, leadReturnId },
+        const updatedResult = await LeadReturnResult.findByIdAndUpdate(
+            id,
             {
                 ...updateData,
                 lastModifiedDate: new Date(),
@@ -258,12 +258,12 @@ const updateLeadReturnResult = async (req, res) => {
 
         // Log the update in audit log
         await createAuditLog({
-            caseNo,
+            caseNo: oldResult.caseNo,
             caseName: updatedResult.caseName,
-            leadNo: Number(leadNo),
+            leadNo: updatedResult.leadNo,
             leadName: updatedResult.description,
             entityType: "LeadReturnResult",
-            entityId: leadReturnId,
+            entityId: `${updatedResult.leadReturnId}_${updatedResult._id}`,
             action: "UPDATE",
             performedBy: {
                 username: req.user?.username || "Unknown",
@@ -282,13 +282,13 @@ const updateLeadReturnResult = async (req, res) => {
         // Create a snapshot after updating the narrative
         try {
             const snapshot = await createSnapshot(
-                Number(leadNo),
+                oldResult.leadNo,
                 req.user?.username || "Unknown",
                 "Manual Snapshot",
-                caseNo,
+                oldResult.caseNo,
                 oldResult.caseName
             );
-            console.log(`Snapshot ${snapshot.versionId} created after updating narrative ${leadReturnId} for lead ${leadNo} in case ${caseNo}`);
+            console.log(`Snapshot ${snapshot.versionId} created after updating narrative ${oldResult.leadReturnId} for lead ${oldResult.leadNo} in case ${oldResult.caseNo}`);
         } catch (snapshotErr) {
             console.error("Error creating snapshot after narrative update:", snapshotErr.message);
         }
@@ -300,26 +300,24 @@ const updateLeadReturnResult = async (req, res) => {
     }
 };
 
-// Delete a specific lead return result entry (SOFT DELETE)
+// Delete a specific lead return result entry (SOFT DELETE) — keyed by the
+// record's own Mongo _id; see note above updateLeadReturnResult.
 const deleteLeadReturnResult = async (req, res) => {
     try {
-        const { leadNo, leadReturnId } = req.params;
-        const caseNo = await resolveCaseNo(req.params.caseId);
-        if (!caseNo) return res.status(404).json({ message: "Case not found." });
+        const { id } = req.params;
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ message: "Invalid narrative id" });
+        }
 
-        const existingResult = await LeadReturnResult.findOne({
-            leadNo: Number(leadNo),
-            caseNo,
-            leadReturnId
-        });
+        const existingResult = await LeadReturnResult.findOne({ _id: id, isDeleted: { $ne: true } });
 
         if (!existingResult) {
             return res.status(404).json({ message: "Lead return result not found." });
         }
 
         // Perform soft delete
-        const deletedResult = await LeadReturnResult.findOneAndUpdate(
-            { leadNo: Number(leadNo), caseNo, leadReturnId },
+        const deletedResult = await LeadReturnResult.findByIdAndUpdate(
+            id,
             {
                 isDeleted: true,
                 deletedAt: new Date(),
@@ -330,12 +328,12 @@ const deleteLeadReturnResult = async (req, res) => {
 
         // Log the deletion in audit log
         await createAuditLog({
-            caseNo,
+            caseNo: existingResult.caseNo,
             caseName: existingResult.caseName,
-            leadNo: Number(leadNo),
+            leadNo: existingResult.leadNo,
             leadName: existingResult.description,
             entityType: "LeadReturnResult",
-            entityId: leadReturnId,
+            entityId: `${existingResult.leadReturnId}_${existingResult._id}`,
             action: "DELETE",
             performedBy: {
                 username: req.user?.username || "Unknown",
@@ -354,13 +352,13 @@ const deleteLeadReturnResult = async (req, res) => {
         // Create a snapshot after deleting the narrative
         try {
             await createSnapshot(
-                Number(leadNo),
+                existingResult.leadNo,
                 req.user?.username || "Unknown",
                 "Manual Snapshot",
-                caseNo,
+                existingResult.caseNo,
                 existingResult.caseName
             );
-            console.log(`Snapshot created after deleting narrative ${leadReturnId} for lead ${leadNo} in case ${caseNo}`);
+            console.log(`Snapshot created after deleting narrative ${existingResult.leadReturnId} for lead ${existingResult.leadNo} in case ${existingResult.caseNo}`);
         } catch (snapshotErr) {
             console.error("Error creating snapshot after narrative deletion:", snapshotErr.message);
         }

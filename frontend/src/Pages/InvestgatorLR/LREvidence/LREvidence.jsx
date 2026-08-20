@@ -142,7 +142,6 @@ export const LREvidence = () => {
   });
   const [file,         setFile]         = useState(null);
   const [editIndex,    setEditIndex]    = useState(null);
-  const [originalDesc, setOriginalDesc] = useState("");
   const [expandedRows, setExpandedRows] = useState(new Set());
   const [narrativeIds, setNarrativeIds] = useState([]);
   const [leadData,     setLeadData]     = useState({});
@@ -196,7 +195,6 @@ export const LREvidence = () => {
     setEvidenceData(savedForm ? JSON.parse(savedForm) : defaultEvidence());
     setEvidences(savedList ? JSON.parse(savedList) : []);
     setEditIndex(null);
-    setOriginalDesc("");
     setFile(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }, [formKey, listKey]);
@@ -307,6 +305,7 @@ export const LREvidence = () => {
       });
 
       const mapped = res.data.map(enc => ({
+        id:                  enc._id,
         dateEntered:         formatDate(enc.enteredDate),
         type:                enc.type,
         evidenceDescription: enc.evidenceDescription,
@@ -393,7 +392,6 @@ export const LREvidence = () => {
   /** Resets the form and exits edit mode. */
   const resetForm = useCallback(() => {
     setEditIndex(null);
-    setOriginalDesc("");
     setEvidenceData(defaultEvidence());
     setFile(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -404,7 +402,6 @@ export const LREvidence = () => {
     const ev = evidences[idx];
     const hasLink = !!ev.link;
     setEditIndex(idx);
-    setOriginalDesc(ev.evidenceDescription);
     setEvidenceData({
       leadReturnId:        ev.returnId,
       collectionDate:      ev.collectionDate,
@@ -493,13 +490,10 @@ export const LREvidence = () => {
           },
         ]);
       } else {
-        const ev   = evidences[editIndex];
-        const path = buildLeadCaseIdPath(
-          selectedLead.leadNo, selectedLead.leadName,
-          selectedCase._id || selectedCase.id
-        );
+        // UPDATE — keyed by the evidence's own Mongo _id, not the (non-unique) Narrative Id
+        const ev = evidences[editIndex];
         await api.put(
-          `/api/lrevidence/${path}/${ev.returnId}/${encodeURIComponent(originalDesc)}`,
+          `/api/lrevidence/${ev.id}`,
           fd,
           { headers: authHdr, ...multipartConfig }
         );
@@ -549,14 +543,10 @@ export const LREvidence = () => {
 
     const ev    = evidences[idx];
     const token = localStorage.getItem("token");
-    const path  = buildLeadCaseIdPath(
-      selectedLead.leadNo, selectedLead.leadName,
-      selectedCase._id || selectedCase.id
-    );
 
     try {
       await api.delete(
-        `/api/lrevidence/${path}/${ev.returnId}/${encodeURIComponent(ev.evidenceDescription)}`,
+        `/api/lrevidence/${ev.id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setEvidences(prev => prev.filter((_, i) => i !== idx));
@@ -575,14 +565,10 @@ export const LREvidence = () => {
   const handleAccessChange = async (idx, newAccess) => {
     const ev    = evidences[idx];
     const token = localStorage.getItem("token");
-    const path  = buildLeadCaseIdPath(
-      selectedLead.leadNo, selectedLead.leadName,
-      selectedCase._id || selectedCase.id
-    );
 
     try {
       await api.put(
-        `/api/lrevidence/${path}/${ev.returnId}/${encodeURIComponent(ev.evidenceDescription)}`,
+        `/api/lrevidence/${ev.id}`,
         { accessLevel: newAccess },
         { headers: { Authorization: `Bearer ${token}` } }
       );

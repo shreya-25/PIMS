@@ -32,7 +32,7 @@ export const HomePage = () => {
   const [caseToClose, setCaseToClose] = useState({ caseNo: null, caseName: "" });
 
   // Controls Add Case slide-bar visibility
-  const [showAddCase, setShowAddCase] = useState(false);
+  const [showAddCase, setShowAddCase] = useState(location.state?.showAddCase || false);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);

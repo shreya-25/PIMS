@@ -417,7 +417,7 @@ setViewMode("leads");
   };
 
   const location = useLocation();
-  const { caseDetails } = location.state || {};
+  const { caseDetails, origin, isDS: originIsDS } = location.state || {};
 
   const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
   const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
@@ -805,7 +805,28 @@ const { uniqueCasesCount, totalLeadsCount } = useMemo(() => {
     <div className={styles['searchlead-container']}>
       <Navbar />
       <div className={styles['main-container']}>
-        <SideBar activePage="SearchLead" />
+        {origin === "home" ? (
+          <SideBar
+            variant="home"
+            activeTab={null}
+            setActiveTab={(tab) => navigate("/HomePage", { state: { activeTab: tab } })}
+            onShowCaseSelector={(show) => {
+              if (show) navigate("/HomePage", { state: { activeTab: "cases", showAddCase: true } });
+            }}
+            isDS={originIsDS}
+            showAddCase={false}
+          />
+        ) : origin === "admin" ? (
+          <SideBar
+            variant="admin"
+            onShowCaseSelector={(show) => {
+              if (show) navigate("/AdminTeam", { state: { showAddCase: true } });
+            }}
+            showAddCase={false}
+          />
+        ) : (
+          <SideBar activePage="SearchLead" />
+        )}
         <div className={styles['main-content-searchlead']}>
             <div className={styles['case-header']}>
               <div className={styles['cp-head']}>

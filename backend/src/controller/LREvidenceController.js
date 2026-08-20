@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const LREvidence = require("../models/LREvidence");
 const fs = require("fs");
 const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
@@ -130,21 +131,15 @@ const getLREvidenceByDetails = async (req, res) => {
 
 const updateLREvidence = async (req, res) => {
   try {
-    const { leadNo, caseId, leadReturnId } = req.params;
-    const leadName = decodeParam(req.params.leadName || "");
-    const oldDesc = decodeParam(req.params.evidenceDescription || "");
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid evidence id" });
+    }
 
-    const ev = await LREvidence.findOne({
-      leadNo: Number(leadNo),
-      caseId,
-      leadReturnId,
-      evidenceDescription: oldDesc,
-      isDeleted: { $ne: true },
-    });
-
+    const ev = await LREvidence.findOne({ _id: id, isDeleted: { $ne: true } });
     if (!ev) return res.status(404).json({ message: "Evidence not found" });
 
-    const accessErr = await checkLeadWriteAccess(req, ev.caseNo, leadNo);
+    const accessErr = await checkLeadWriteAccess(req, ev.caseNo, ev.leadNo);
     if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
 
     const oldEvidence = ev.toObject();
@@ -221,21 +216,15 @@ const updateLREvidence = async (req, res) => {
 
 const deleteLREvidence = async (req, res) => {
   try {
-    const { leadNo, caseId, leadReturnId } = req.params;
-    const leadName = decodeParam(req.params.leadName || "");
-    const evidenceDescription = decodeParam(req.params.evidenceDescription || "");
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid evidence id" });
+    }
 
-    const ev = await LREvidence.findOne({
-      leadNo: Number(leadNo),
-      caseId,
-      leadReturnId,
-      evidenceDescription,
-      isDeleted: { $ne: true },
-    });
-
+    const ev = await LREvidence.findOne({ _id: id, isDeleted: { $ne: true } });
     if (!ev) return res.status(404).json({ message: "Evidence not found" });
 
-    const accessErr = await checkLeadWriteAccess(req, ev.caseNo, leadNo);
+    const accessErr = await checkLeadWriteAccess(req, ev.caseNo, ev.leadNo);
     if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
 
     const oldEvidence = ev.toObject();

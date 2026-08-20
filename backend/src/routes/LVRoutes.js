@@ -17,16 +17,19 @@ router.get("/lrvehicle/:leadNo/:leadName(*)/:caseId/:id", verifyToken, getLRVehi
 
 router.get("/lrvehicle/:leadNo/:leadName(*)/:caseId", verifyToken, getLRVehicleByDetails);
 
-// PUT   /api/lrvehicle/:leadNo/:caseId/:leadReturnId/:vin
+// Update/delete are keyed by the record's own Mongo _id — leadReturnId + VIN
+// is not guaranteed unique (VIN can be blank/duplicate), so it must never be
+// used to look up a specific vehicle.
+// PUT   /api/lrvehicle/:id
 router.put(
-    "/:leadNo/:caseId/:leadReturnId/:vin",
+    "/:id",
     verifyToken,
     updateLRVehicle
   );
 
-  // DELETE   /api/lrvehicle/:leadNo/:caseId/:leadReturnId/:vin
+  // DELETE   /api/lrvehicle/:id
   router.delete(
-    "/:leadNo/:caseId/:leadReturnId/:vin",
+    "/:id",
     verifyToken,
     deleteLRVehicle
   );

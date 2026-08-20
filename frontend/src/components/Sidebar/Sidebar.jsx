@@ -279,6 +279,13 @@ export const SideBar = ({
             <img src={folderIcon} className="sidebar-icon" alt="" />
             <span>Agency Management</span>
           </li>
+          <li
+            className={`sidebar-item ${location.pathname === "/SearchLead" && !showAddCase ? "active" : ""}`}
+            onClick={() => { onShowCaseSelector?.(false); navigate("/SearchLead", { state: { origin: "admin" } }); }}
+          >
+            <img src={searchIcon} className="sidebar-icon" alt="" />
+            <span>Advanced Search</span>
+          </li>
         </ul>
       </aside>
     );
@@ -312,6 +319,14 @@ export const SideBar = ({
           >
             <img src={folderIcon} className="sidebar-icon" alt="" />
             <span>Case Management</span>
+          </li>
+
+          <li
+            className={`sidebar-item ${location.pathname === "/SearchLead" ? "active" : ""}`}
+            onClick={() => navigate("/SearchLead", { state: { origin: "home", activeTab, isDS: isDSProp } })}
+          >
+            <img src={searchIcon} className="sidebar-icon" alt="" />
+            <span>Advanced Search</span>
           </li>
 
           {systemRole !== ROLES.CASE_SPECIFIC && (
@@ -491,7 +506,7 @@ export const SideBar = ({
         {selectedCase?.role !== "Read Only" && (
           <li
             className={`sidebar-item ${activePage === "SearchLead" ? "active" : ""}`}
-            onClick={() => navigate("/SearchLead", { state: { caseDetails } })}
+            onClick={() => navigate("/SearchLead", { state: { origin: "case", caseDetails } })}
           >
             <img src={searchIcon} className="sidebar-icon" alt="" />
             <span>Advanced Search </span>

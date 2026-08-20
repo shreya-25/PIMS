@@ -3,7 +3,7 @@ const LRPerson = require("../models/LRPerson");
 const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
 const fs = require("fs");
 const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
-const { resolveLeadReturnRefs, resolveCaseNo } = require("../utils/resolveRefs");
+const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
 const { checkLeadWriteAccess } = require("../utils/leadWriteAccess");
 const { decodeParam } = require("../utils/decodeParam");
 
@@ -166,54 +166,18 @@ const getLRPersonByDetailsandid = async (req, res) => {
     }
 };
 
-const updateLRPerson = async (req, res) => {
-    try {
-      const { leadNo, leadReturnId, firstName } = req.params;
-      const caseNo = await resolveCaseNo(req.params.caseId);
-      if (!caseNo) return res.status(404).json({ message: "Case not found." });
-      const updateData = req.body;
-
-      if (!isPersonRecordValid(updateData)) {
-        return res.status(400).json({ message: "Cannot save an empty record. Please fill in at least one field." });
-      }
-
-      const existingPerson = await LRPerson.findOne({ leadNo: Number(leadNo), caseNo, leadReturnId, firstName });
-      if (!existingPerson) {
-        return res.status(404).json({ message: "Person not found." });
-      }
-
-      const accessErr = await checkLeadWriteAccess(req, caseNo, leadNo);
-      if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
-
-      const updated = await LRPerson.findOneAndUpdate(
-        { leadNo: Number(leadNo), caseNo, leadReturnId, firstName },
-        updateData,
-        { new: true, runValidators: true }
-      );
-
-      await createAuditLog({
-        caseNo, caseName: updated.caseName, leadNo: Number(leadNo), leadName: updated.description,
-        entityType: "LRPerson", entityId: `${firstName}_${leadReturnId}`, action: "UPDATE",
-        performedBy: { username: req.user?.name || "Unknown", role: req.user?.role || "Unknown" },
-        oldValue: sanitizeForAudit(existingPerson.toObject()),
-        newValue: sanitizeForAudit(updated.toObject()),
-        metadata: { ip: req.ip || req.connection?.remoteAddress, userAgent: req.get('user-agent'), changedFields: Object.keys(updateData) },
-        accessLevel: updated.accessLevel || "Everyone"
-      });
-
-      res.status(200).json(updated);
-    } catch (err) {
-      console.error("Error updating person:", err);
-      res.status(500).json({ message: "Something went wrong." });
-    }
-};
-
 const updateLRPersonById = async (req, res) => {
     try {
       const { id } = req.params;
       const updateData = req.body;
 
-      if (!isPersonRecordValid(updateData)) {
+      // An accessLevel-only change (from the table's access dropdown) isn't a
+      // full-form save, so it's exempt from the "non-empty record" check below.
+      const isAccessLevelOnly =
+        Object.keys(updateData).length === 1 &&
+        Object.prototype.hasOwnProperty.call(updateData, "accessLevel");
+
+      if (!isAccessLevelOnly && !isPersonRecordValid(updateData)) {
         return res.status(400).json({ message: "Cannot save an empty record. Please fill in at least one field." });
       }
 
@@ -241,38 +205,6 @@ const updateLRPersonById = async (req, res) => {
       res.status(200).json(updated);
     } catch (err) {
       console.error("Error updating person by id:", err);
-      res.status(500).json({ message: "Something went wrong." });
-    }
-};
-
-const deleteLRPerson = async (req, res) => {
-    try {
-      const { leadNo, leadReturnId, firstName } = req.params;
-      const caseNo = await resolveCaseNo(req.params.caseId);
-      if (!caseNo) return res.status(404).json({ message: "Case not found." });
-
-      const existingPerson = await LRPerson.findOne({ leadNo: Number(leadNo), caseNo, leadReturnId, firstName });
-      if (!existingPerson) {
-        return res.status(404).json({ message: "Person not found." });
-      }
-
-      const accessErr = await checkLeadWriteAccess(req, caseNo, leadNo);
-      if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
-
-      await LRPerson.findOneAndDelete({ leadNo: Number(leadNo), caseNo, leadReturnId, firstName });
-
-      await createAuditLog({
-        caseNo, caseName: existingPerson.caseName, leadNo: Number(leadNo), leadName: existingPerson.description,
-        entityType: "LRPerson", entityId: `${firstName}_${leadReturnId}`, action: "DELETE",
-        performedBy: { username: req.user?.name || "Unknown", role: req.user?.role || "Unknown" },
-        oldValue: sanitizeForAudit(existingPerson.toObject()), newValue: null,
-        metadata: { ip: req.ip || req.connection?.remoteAddress, userAgent: req.get('user-agent') },
-        accessLevel: existingPerson.accessLevel || "Everyone"
-      });
-
-      res.status(200).json({ message: "Person deleted successfully." });
-    } catch (err) {
-      console.error("Error deleting person:", err);
       res.status(500).json({ message: "Something went wrong." });
     }
 };
@@ -448,4 +380,4 @@ const getPersonsByCaseNo = async (req, res) => {
     }
 };
 
-module.exports = { createLRPerson, getLRPersonByDetails, getLRPersonByDetailsandid, updateLRPerson, updateLRPersonById, deleteLRPerson, deleteLRPersonById, uploadPersonPhoto, deletePersonPhoto, searchPersonsByName, getPersonsByCaseNo };
+module.exports = { createLRPerson, getLRPersonByDetails, getLRPersonByDetailsandid, updateLRPersonById, deleteLRPersonById, uploadPersonPhoto, deletePersonPhoto, searchPersonsByName, getPersonsByCaseNo };
