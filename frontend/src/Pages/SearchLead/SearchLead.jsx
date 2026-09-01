@@ -66,7 +66,7 @@ export const SearchLead = () => {
         const { data } = await api.get("/api/users/usernames", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setAllUsers(Array.isArray(data) ? data : []);
+        setAllUsers(Array.isArray(data?.users) ? data.users : (Array.isArray(data) ? data : []));
       } catch (err) {
         console.warn("Failed to fetch users:", err);
       }
@@ -362,7 +362,7 @@ console.log("Flat combined search results:", combinedResults);
 setLeadsData(combinedWithOfficers);
 setTotalEntries(combinedWithOfficers.length);
 setCurrentPage(1);
-setViewMode("leads");
+setViewMode("cases");
   } catch (error) {
     console.error("❌ Error in handleSearch:", error);
     setLeadsData([]);
@@ -422,8 +422,8 @@ setViewMode("leads");
   const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
   const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
-  const [searchMode, setSearchMode] = useState("keyword"); // "keyword" | "person"
-  const [viewMode, setViewMode] = useState("leads"); // "leads" | "cases"
+  const [searchMode, setSearchMode] = useState("keyword"); // "keyword" | "person" | "officer"
+  const [viewMode, setViewMode] = useState("cases"); // "leads" | "cases"
 
   // ── Person search ──────────────────────────────────────────────────────────
   const [personSearchTerm, setPersonSearchTerm] = useState("");
@@ -515,7 +515,7 @@ setViewMode("leads");
       setLeadsData(results);
       setTotalEntries(results.length);
       setCurrentPage(1);
-      setViewMode("leads");
+      setViewMode("cases");
     } catch (err) {
       console.error("Person search failed:", err);
     }
@@ -527,6 +527,90 @@ setViewMode("leads");
     setPersonSuggestions([]);
     setShowPersonSuggestions(false);
     handlePersonSearch(fullName);
+  };
+
+  // ── Officer search ──────────────────────────────────────────────────────────
+  // Finds every case (by role) and every lead assigned to a chosen officer,
+  // across all cases — not just the currently selected one.
+  const [officerSearchTerm, setOfficerSearchTerm] = useState("");
+  const [officerSuggestions, setOfficerSuggestions] = useState([]);
+  const [showOfficerSuggestions, setShowOfficerSuggestions] = useState(false);
+  const [officerCasesData, setOfficerCasesData] = useState([]);
+  const officerSearchRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (officerSearchRef.current && !officerSearchRef.current.contains(e.target)) {
+        setShowOfficerSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const officerDisplayName = (u) =>
+    [u.firstName, u.lastName].filter(Boolean).join(" ").trim() || u.username;
+
+  const handleOfficerInputChange = (e) => {
+    const val = e.target.value;
+    setOfficerSearchTerm(val);
+    if (val.trim()) {
+      const q = val.trim().toLowerCase();
+      const matches = allUsers
+        .filter((u) => officerDisplayName(u).toLowerCase().includes(q) || (u.username || "").toLowerCase().includes(q))
+        .slice(0, 15);
+      setOfficerSuggestions(matches);
+      setShowOfficerSuggestions(true);
+    } else {
+      setOfficerSuggestions([]);
+      setShowOfficerSuggestions(false);
+    }
+  };
+
+  const handleOfficerSearch = async (overrideUser) => {
+    const term = officerSearchTerm.trim().toLowerCase();
+    const user =
+      overrideUser ||
+      allUsers.find((u) => officerDisplayName(u).toLowerCase() === term || u.username?.toLowerCase() === term);
+
+    if (!user) return; // no matching officer selected yet
+
+    try {
+      const token = localStorage.getItem("token");
+      const resp = await api.get("/api/lead/by-officer", {
+        params: { userId: user._id, username: user.username },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const leadsResult = Array.isArray(resp.data?.leads) ? resp.data.leads : [];
+      const casesResult = Array.isArray(resp.data?.cases) ? resp.data.cases : [];
+
+      setLeadsData(leadsResult);
+      setOfficerCasesData(casesResult);
+      setTotalEntries(leadsResult.length);
+      setCurrentPage(1);
+      setViewMode("cases");
+    } catch (err) {
+      console.error("Officer search failed:", err);
+      setLeadsData([]);
+      setOfficerCasesData([]);
+      setTotalEntries(0);
+    }
+  };
+
+  const handleOfficerSuggestionClick = (user) => {
+    setOfficerSearchTerm(officerDisplayName(user));
+    setOfficerSuggestions([]);
+    setShowOfficerSuggestions(false);
+    handleOfficerSearch(user);
+  };
+
+  // Clears stale results when switching between Keyword / Person / Officer modes
+  const resetSearchResults = () => {
+    setLeadsData([]);
+    setOfficerCasesData([]);
+    setTotalEntries(0);
+    setCurrentPage(1);
+    setViewMode("cases");
   };
 
   const onShowCaseSelector = (route) => {
@@ -764,19 +848,21 @@ const sortedFilteredLeads = useMemo(() => {
 }, [leadsData, filterConfig, sortConfig]);
 
 
-  // Unique cases for "Cases" view
+  // Unique cases for "Cases" view. Officer search already returns the case list
+  // (including cases where the officer has a role but no leads there yet).
   const uniqueCasesData = useMemo(() => {
+    if (searchMode === "officer") return officerCasesData;
     const caseMap = new Map();
     sortedFilteredLeads.forEach((lead) => {
       const key = String(lead.caseNo);
       if (!caseMap.has(key)) {
-        caseMap.set(key, { caseNo: lead.caseNo, caseName: lead.caseName, leadsCount: 1 });
+        caseMap.set(key, { caseNo: lead.caseNo, caseName: lead.caseName, leadsCount: 1, role: "—" });
       } else {
         caseMap.get(key).leadsCount++;
       }
     });
     return Array.from(caseMap.values());
-  }, [sortedFilteredLeads]);
+  }, [sortedFilteredLeads, searchMode, officerCasesData]);
 
   // optional: slice for pagination
   const pagedLeads = useMemo(() => {
@@ -788,6 +874,9 @@ const sortedFilteredLeads = useMemo(() => {
 
   // Summary stats: unique cases & total leads for current search results
 const { uniqueCasesCount, totalLeadsCount } = useMemo(() => {
+  if (searchMode === "officer") {
+    return { uniqueCasesCount: officerCasesData.length, totalLeadsCount: leadsData.length };
+  }
   const caseSet = new Set();
   leadsData.forEach((lead) => {
     if (lead.caseNo != null) {
@@ -798,7 +887,7 @@ const { uniqueCasesCount, totalLeadsCount } = useMemo(() => {
     uniqueCasesCount: caseSet.size,
     totalLeadsCount: leadsData.length,
   };
-}, [leadsData]);
+}, [leadsData, searchMode, officerCasesData]);
 
 
   return (
@@ -842,15 +931,31 @@ const { uniqueCasesCount, totalLeadsCount } = useMemo(() => {
                 <div className={styles['search-mode-toggle']}>
                   <button
                     className={`${styles['mode-btn']} ${searchMode === "keyword" ? styles['mode-btn-active'] : ""}`}
-                    onClick={() => { setSearchMode("keyword"); setShowPersonSuggestions(false); }}
+                    onClick={() => {
+                      if (searchMode !== "keyword") { setSearchMode("keyword"); resetSearchResults(); }
+                      setShowPersonSuggestions(false);
+                      setShowOfficerSuggestions(false);
+                    }}
                   >
                     Keyword
                   </button>
                   <button
                     className={`${styles['mode-btn']} ${searchMode === "person" ? styles['mode-btn-active'] : ""}`}
-                    onClick={() => setSearchMode("person")}
+                    onClick={() => {
+                      if (searchMode !== "person") { setSearchMode("person"); resetSearchResults(); }
+                      setShowOfficerSuggestions(false);
+                    }}
                   >
                     Person
+                  </button>
+                  <button
+                    className={`${styles['mode-btn']} ${searchMode === "officer" ? styles['mode-btn-active'] : ""}`}
+                    onClick={() => {
+                      if (searchMode !== "officer") { setSearchMode("officer"); resetSearchResults(); }
+                      setShowPersonSuggestions(false);
+                    }}
+                  >
+                    Officer
                   </button>
                 </div>
 
@@ -868,7 +973,7 @@ const { uniqueCasesCount, totalLeadsCount } = useMemo(() => {
                       />
                       <button className={styles['search-btn']} onClick={handleSearch}>Search</button>
                     </div>
-                  ) : (
+                  ) : searchMode === "person" ? (
                     <div className={styles['person-search-wrapper']} ref={personSearchRef}>
                       <div className={styles['search-container1']}>
                         <i className="fa-solid fa-user"></i>
@@ -917,6 +1022,55 @@ const { uniqueCasesCount, totalLeadsCount } = useMemo(() => {
                               </li>
                             );
                           })}
+                        </ul>
+                      )}
+                    </div>
+                  ) : (
+                    <div className={styles['person-search-wrapper']} ref={officerSearchRef}>
+                      <div className={styles['search-container1']}>
+                        <i className="fa-solid fa-user-shield"></i>
+                        <input
+                          type="text"
+                          className={styles['search-input1']}
+                          placeholder="Search by officer name or username..."
+                          value={officerSearchTerm}
+                          onChange={handleOfficerInputChange}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") { setShowOfficerSuggestions(false); handleOfficerSearch(); }
+                            if (e.key === "Escape") setShowOfficerSuggestions(false);
+                          }}
+                          onFocus={() => { if (officerSuggestions.length > 0) setShowOfficerSuggestions(true); }}
+                        />
+                        {officerSearchTerm && (
+                          <button
+                            className={styles['person-clear-btn']}
+                            onClick={() => { setOfficerSearchTerm(""); setOfficerSuggestions([]); setShowOfficerSuggestions(false); }}
+                            title="Clear"
+                          >
+                            ✕
+                          </button>
+                        )}
+                        <button
+                          className={styles['search-btn']}
+                          onClick={() => { setShowOfficerSuggestions(false); handleOfficerSearch(); }}
+                        >
+                          Search
+                        </button>
+                      </div>
+
+                      {showOfficerSuggestions && officerSuggestions.length > 0 && (
+                        <ul className={styles['person-suggestions-list']}>
+                          {officerSuggestions.map((u) => (
+                            <li
+                              key={u._id || u.username}
+                              className={styles['person-suggestion-item']}
+                              onMouseDown={() => handleOfficerSuggestionClick(u)}
+                            >
+                              <span className={styles['suggestion-name']}>{officerDisplayName(u)}</span>
+                              <span className={styles['suggestion-alias']}>({u.username})</span>
+                              {u.title && <span className={styles['suggestion-type']}>{u.title}</span>}
+                            </li>
+                          ))}
                         </ul>
                       )}
                     </div>
@@ -1130,7 +1284,7 @@ const { uniqueCasesCount, totalLeadsCount } = useMemo(() => {
       </span>
     </div>
   )} */}
-  {leadsData.length > 0 && (
+  {(leadsData.length > 0 || uniqueCasesData.length > 0) && (
   <div className={styles['results-summary']}>
     <div
       className={`${styles['stat-card']} ${viewMode === "cases" ? styles['stat-card-active'] : ""}`}
@@ -1160,10 +1314,11 @@ const { uniqueCasesCount, totalLeadsCount } = useMemo(() => {
                   <>
                     <thead>
                       <tr>
-                        <th style={{ width: "14%" }}>Case No.</th>
-                        <th style={{ width: "55%" }}>Case Name</th>
+                        <th style={{ width: "12%" }}>Case No.</th>
+                        <th style={{ width: "40%" }}>Case Name</th>
+                        {searchMode === "officer" && <th style={{ width: "18%" }}>Role</th>}
                         <th style={{ width: "16%", textAlign: "center" }}>Leads Involved</th>
-                        <th style={{ width: "15%" }}>Actions</th>
+                        <th style={{ width: "14%" }}>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1172,6 +1327,7 @@ const { uniqueCasesCount, totalLeadsCount } = useMemo(() => {
                           <tr key={idx}>
                             <td>{c.caseNo || "NA"}</td>
                             <td>{c.caseName || "NA"}</td>
+                            {searchMode === "officer" && <td>{c.role || "—"}</td>}
                             <td style={{ textAlign: "center" }}>{c.leadsCount}</td>
                             <td>
                               <button
@@ -1187,7 +1343,7 @@ const { uniqueCasesCount, totalLeadsCount } = useMemo(() => {
                           </tr>
                         ))
                       ) : (
-                        <tr><td colSpan="4" style={{ textAlign: "center", color: "#aaa" }}>No matching cases</td></tr>
+                        <tr><td colSpan={searchMode === "officer" ? "5" : "4"} style={{ textAlign: "center", color: "#aaa" }}>No matching cases</td></tr>
                       )}
                     </tbody>
                   </>

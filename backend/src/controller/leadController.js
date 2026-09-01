@@ -487,6 +487,101 @@ const searchLeadsByKeyword = async (req, res) => {
   }
 };
 
+// Find every case (by role) and every lead assigned to a given officer, across all cases.
+const getLeadsAndCasesByOfficer = async (req, res) => {
+  try {
+    const { userId, username } = req.query;
+    const validUserId = userId && mongoose.isValidObjectId(userId) ? userId : null;
+
+    if (!validUserId && !username) {
+      return res.status(400).json({ message: "userId or username is required." });
+    }
+
+    const leadOrConds = [];
+    if (validUserId) leadOrConds.push({ "assignedTo.userId": validUserId });
+    if (username) leadOrConds.push({ "assignedTo.username": username });
+
+    const leads = await Lead.find({ isDeleted: { $ne: true }, $or: leadOrConds })
+      .select("-events")
+      .lean();
+
+    let cases = [];
+    if (validUserId) {
+      cases = await Case.find({
+        isDeleted: { $ne: true },
+        $or: [
+          { caseManagerUserIds: validUserId },
+          { assignedCaseManagerUserId: validUserId },
+          { investigatorUserIds: validUserId },
+          { officerUserIds: validUserId },
+          { readOnlyUserIds: validUserId },
+          { detectiveSupervisorUserId: validUserId },
+          { detectiveSupervisorUserIds: validUserId },
+        ],
+      }).lean();
+    }
+
+    const roleForCase = (c) => {
+      const has = (arr) => Array.isArray(arr) && arr.some((id) => String(id) === String(validUserId));
+      if ((c.detectiveSupervisorUserId && String(c.detectiveSupervisorUserId) === String(validUserId)) || has(c.detectiveSupervisorUserIds)) {
+        return "Detective Supervisor";
+      }
+      if (has(c.caseManagerUserIds) || (c.assignedCaseManagerUserId && String(c.assignedCaseManagerUserId) === String(validUserId))) {
+        return "Case Manager";
+      }
+      if (has(c.investigatorUserIds)) return "Investigator";
+      if (has(c.officerUserIds)) return "Officer";
+      if (has(c.readOnlyUserIds)) return "Read Only";
+      return "—";
+    };
+
+    const leadCountByCase = {};
+    leads.forEach((l) => {
+      leadCountByCase[l.caseNo] = (leadCountByCase[l.caseNo] || 0) + 1;
+    });
+
+    const caseResults = cases.map((c) => ({
+      caseNo: c.caseNo,
+      caseName: c.caseName,
+      status: c.status,
+      role: roleForCase(c),
+      leadsCount: leadCountByCase[c.caseNo] || 0,
+    }));
+
+    // A lead's case might not surface via the role query above (e.g. access was
+    // since revoked) — still show it under Cases so the lead isn't orphaned.
+    const knownCaseNos = new Set(caseResults.map((c) => c.caseNo));
+    leads.forEach((l) => {
+      if (!knownCaseNos.has(l.caseNo)) {
+        knownCaseNos.add(l.caseNo);
+        caseResults.push({
+          caseNo: l.caseNo,
+          caseName: l.caseName,
+          status: null,
+          role: "—",
+          leadsCount: leadCountByCase[l.caseNo] || 0,
+        });
+      }
+    });
+
+    const leadResults = leads.map((l) => ({
+      caseNo: l.caseNo,
+      caseName: l.caseName,
+      leadNo: l.leadNo,
+      description: l.description,
+      leadStatus: l.leadStatus,
+      priority: l.priority,
+      dueDate: l.dueDate,
+      assignedOfficers: (l.assignedTo || []).map((a) => a.username).filter(Boolean),
+    }));
+
+    res.status(200).json({ leads: leadResults, cases: caseResults });
+  } catch (err) {
+    console.error("Error fetching leads/cases by officer:", err.message);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
 const HarddeleteLead = async (req, res) => {
   const { leadNo, caseNo, caseName } = req.params;
   const leadName = decodeParam(req.params.leadName);
@@ -1222,5 +1317,5 @@ const getCaseAllLeadsWithFlags = async (req, res) => {
 
 module.exports = { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName , getLeadsforHierarchy, updateLeadStatus, getAssociatedSubCategories, updateLRStatusToPending, searchLeadsByKeyword , setLeadStatusToInReview,
   setLeadStatusToComplete, setLeadStatusToPending, updateLead, updateAssignedToStatus, removeAssignedOfficer, getAssignedLeadsForOfficer, getLRForCM, getLeadStatus, getLeadStatusByLeadNo, setLeadStatusToClosed,  deleteLead, setLeadStatusToReturned, setLeadStatusToReopened,
-  updateLeadFlags, getCaseFlaggedLeads, getCaseAllLeadsWithFlags
+  updateLeadFlags, getCaseFlaggedLeads, getCaseAllLeadsWithFlags, getLeadsAndCasesByOfficer
 };

@@ -2,7 +2,7 @@ const express = require("express");
 const { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName, getLeadsforHierarchy, updateLeadStatus, getAssociatedSubCategories, searchLeadsByKeyword, setLeadStatusToInReview,
   updateLead, removeAssignedOfficer, getAssignedLeadsForOfficer, deleteLead,setLeadStatusToReturned,setLeadStatusToReopened,
   setLeadStatusToComplete, setLeadStatusToPending, updateAssignedToStatus, getLRForCM, getLeadStatus, getLeadStatusByLeadNo, setLeadStatusToClosed,
-  updateLeadFlags, getCaseFlaggedLeads, getCaseAllLeadsWithFlags
+  updateLeadFlags, getCaseFlaggedLeads, getCaseAllLeadsWithFlags, getLeadsAndCasesByOfficer
  } = require("../controller/leadController");
 const verifyToken = require("../middleware/authMiddleware");
 const { roleMiddleware } = require("../middleware/roleMiddleware");
@@ -47,6 +47,8 @@ router.put('/:leadNo/:leadName/:caseId', verifyToken, updateLeadStatus);
 router.get('/associatedSubCategories/:caseId', getAssociatedSubCategories);
 
 router.get("/search", verifyToken, searchLeadsByKeyword);
+
+router.get("/by-officer", verifyToken, getLeadsAndCasesByOfficer);
 
 router.put("/status/in-review", verifyToken, setLeadStatusToInReview);
 

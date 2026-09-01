@@ -283,6 +283,14 @@
   box-shadow: 0 2px 8px rgba(41, 41, 139, 0.12);
 }
 
+.stat-card:hover .stat-count {
+  color: #29298b;
+}
+
+.stat-card:hover .stat-label {
+  color: #000;
+}
+
 .stat-card-active {
   background-color: #29298b;
   border-left-color: #1a1a6e;
