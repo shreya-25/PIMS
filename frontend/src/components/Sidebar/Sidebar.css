@@ -82,3 +82,89 @@ html, body, #root { height: 100%; margin: 0; }
   justify-content: space-between;
   width: 100%;
 }
+
+/* ---- Mobile hamburger toggle (hidden on desktop; shown below the drawer breakpoint) ---- */
+.sidebar-hamburger{
+  display: none;
+  position: fixed;
+  top: calc((var(--nav-h) - 42px) / 2);
+  left: 12px;
+  z-index: 1150;
+  width: 42px;
+  height: 42px;
+  background: rgba(255,255,255,0.15);
+  border: none;
+  border-radius: 8px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.sidebar-hamburger span{
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: #fff;
+  border-radius: 2px;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.sidebar-hamburger-open span:nth-child(1){ transform: translateY(7px) rotate(45deg); }
+.sidebar-hamburger-open span:nth-child(2){ opacity: 0; }
+.sidebar-hamburger-open span:nth-child(3){ transform: translateY(-7px) rotate(-45deg); }
+
+.sidebar-backdrop{
+  display: none;
+}
+
+/* ---- Tablet: keep the sidebar persistent, just give it a sane fixed width
+   instead of a 15% sliver ---- */
+@media (max-width: 1100px){
+  :root{
+    --sidebar-w: 230px;
+  }
+}
+
+/* ---- iPad portrait / phones: sidebar becomes an off-canvas drawer,
+   opened via the hamburger button, so page content gets the full width ---- */
+@media (max-width: 820px){
+  :root{
+    --sidebar-w: 0px;
+  }
+
+  .sidebar-hamburger{
+    display: flex;
+  }
+
+  .sidebar{
+    width: min(300px, 82vw);
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    box-shadow: 4px 0 16px rgba(0,0,0,0.18);
+  }
+
+  .sidebar.sidebar-open{
+    transform: translateX(0);
+  }
+
+  .sidebar-backdrop{
+    display: block;
+    position: fixed;
+    top: var(--nav-h);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.35);
+    z-index: 1055;
+  }
+}
+
+@media (max-width: 480px){
+  .sidebar-item{
+    font-size: 16px;
+    padding: 11px 10px;
+  }
+}

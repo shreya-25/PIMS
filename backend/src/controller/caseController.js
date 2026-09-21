@@ -882,3 +882,300 @@ exports.addTimelineFlag = async (req, res) => {
     return res.status(500).json({ message: 'Server error' });
   }
 };
+
+// Officer workload for the Officer Assignment dashboard: assigned leads (includes completed —
+// i.e. every lead ever assigned to the officer), completed leads, ongoing cases, how many
+// cases each officer is Case Manager on, and a per-case breakdown (the officer's role(s) on
+// that case, plus that case's total/pending lead counts) — all optionally scoped to a
+// [from, to] date range (each metric filtered by its own relevant date; see comments below).
+// Visible to Admins/Detective Supervisors, and to any user who is a Case Manager on at least one case.
+exports.getOfficerWorkload = async (req, res) => {
+  try {
+    const { userId, role } = req.user;
+    const isPrivileged = role === "Admin" || role === "Detective Supervisor";
+
+    if (!isPrivileged) {
+      const uid = new mongoose.Types.ObjectId(userId);
+      const isCaseManagerSomewhere = await Case.exists({
+        isDeleted: { $ne: true },
+        caseManagerUserIds: uid,
+      });
+      if (!isCaseManagerSomewhere) {
+        return res.status(403).json({
+          message: "Only Admins, Detective Supervisors, and Case Managers can view officer workload.",
+        });
+      }
+    }
+
+    // Optional inclusive date range (YYYY-MM-DD from an <input type="date">). A date-only
+    // string like "2026-05-11" parses as UTC midnight per the JS spec, so both ends are
+    // anchored with the UTC setters here — never plain setHours(), which would instead use
+    // whatever timezone the server process happens to be running in and desync the two ends
+    // of the range from each other.
+    const fromDate = req.query.from ? new Date(req.query.from) : null;
+    if (fromDate) fromDate.setUTCHours(0, 0, 0, 0);
+    const toDate = req.query.to ? new Date(req.query.to) : null;
+    if (toDate) toDate.setUTCHours(23, 59, 59, 999);
+    const hasRange = !!(fromDate || toDate);
+
+    const [cases, leads, officers] = await Promise.all([
+      Case.find(
+        { isDeleted: { $ne: true } },
+        "caseNo caseName status createdAt caseManagerUserIds assignedCaseManagerUserId investigatorUserIds officerUserIds detectiveSupervisorUserId detectiveSupervisorUserIds blockedUserIds"
+      ).lean(),
+      Lead.find(
+        { isDeleted: { $ne: true } },
+        "caseId leadStatus assignedTo"
+      ).lean(),
+      User.find(
+        { role: { $in: ["Detective", "Detective Supervisor", "Case Specific"] } },
+        "username firstName lastName displayName title role"
+      ).lean(),
+    ]);
+
+    const usernameToId = {};
+    officers.forEach((u) => {
+      if (u.username) usernameToId[u.username] = String(u._id);
+    });
+
+    const stats = {};
+    officers.forEach((u) => {
+      stats[String(u._id)] = {
+        user: u,
+        assignedLeads: 0, // every lead ever assigned to this officer, in any leadStatus at all
+        completedLeads: 0, // leadStatus "Completed"
+        pendingLeads: 0, // any leadStatus except "Completed" or "Closed"
+        ongoingCases: 0,
+        caseManagerCases: 0,
+        caseIds: new Set(), // cases this officer touches (any role) within the date range, for the case breakdown
+        caseRoles: {}, // caseId -> Set of role labels this officer holds on that case
+        leadsByCase: {}, // caseId -> { count, pending, completed } for THIS officer's own leads on that case
+      };
+    });
+
+    const caseById = new Map(cases.map((c) => [String(c._id), c]));
+
+    // Whether a case counts for the selected window — the single rule used everywhere on
+    // this page (the officer table, the per-officer case breakdown, and the header stats
+    // below) so they all agree under a date filter. With no range, every case counts. With
+    // one, a case counts only if it was OPENED (createdAt) within that window — regardless
+    // of its current status (ONGOING, SUBMITTED, COMPLETED, or ARCHIVED). This is a plain
+    // "created between these two dates" filter, not an "was it open at some point" overlap
+    // check — a case created before the window doesn't count even if it's still open today.
+    const caseOverlapsRange = (c) => {
+      if (!hasRange) return true;
+      if (!c.createdAt) return false;
+      const createdAt = new Date(c.createdAt).getTime();
+      if (fromDate && createdAt < fromDate.getTime()) return false;
+      if (toDate && createdAt > toDate.getTime()) return false;
+      return true;
+    };
+
+    cases.forEach((c) => {
+      const blocked = new Set((c.blockedUserIds || []).map((id) => String(id)));
+      if (!caseOverlapsRange(c)) return;
+      const cid = String(c._id);
+
+      const roleAssignments = [
+        ...(c.caseManagerUserIds || []).map((id) => [String(id), "Case Manager"]),
+        ...(c.assignedCaseManagerUserId ? [[String(c.assignedCaseManagerUserId), "Assigned Case Manager"]] : []),
+        ...(c.investigatorUserIds || []).map((id) => [String(id), "Investigator"]),
+        ...(c.officerUserIds || []).map((id) => [String(id), "Officer"]),
+        ...(c.detectiveSupervisorUserIds || []).map((id) => [String(id), "Detective Supervisor"]),
+        ...(c.detectiveSupervisorUserId ? [[String(c.detectiveSupervisorUserId), "Detective Supervisor"]] : []),
+      ];
+
+      const involvedUserIds = new Set();
+      roleAssignments.forEach(([uid, roleLabel]) => {
+        if (blocked.has(uid)) return;
+        const entry = stats[uid];
+        if (!entry) return;
+        entry.caseIds.add(cid);
+        if (!entry.caseRoles[cid]) entry.caseRoles[cid] = new Set();
+        entry.caseRoles[cid].add(roleLabel);
+        involvedUserIds.add(uid);
+      });
+
+      involvedUserIds.forEach((uid) => {
+        if (c.status === "ONGOING") stats[uid].ongoingCases += 1;
+      });
+
+      // Case Manager (Cases): every case-manager assignment among the filtered cases
+      // (caseOverlapsRange already gated this above), regardless of that case's status —
+      // not narrowed to ONGOING only.
+      (c.caseManagerUserIds || []).forEach((id) => {
+        const uid = String(id);
+        if (blocked.has(uid)) return;
+        const entry = stats[uid];
+        if (entry) entry.caseManagerCases += 1;
+      });
+    });
+
+    // Two page-wide figures for the header (not per-officer), built on the same
+    // caseOverlapsRange rule as the per-officer Case Manager (Cases) count above: "Total
+    // Cases" is every case that overlaps the window (or every case, with no filter) and
+    // "Ongoing Cases" narrows that to the subset still ONGOING today.
+    let totalCasesInRange = 0;
+    let ongoingCasesCount = 0;
+
+    cases.forEach((c) => {
+      if (!caseOverlapsRange(c)) return;
+      totalCasesInRange += 1;
+      if (c.status === "ONGOING") ongoingCasesCount += 1;
+    });
+
+    // Leads: "assigned" is every lead ever assigned to the officer, in ANY leadStatus at all
+    // (Created, Assigned, Accepted, To Reassign, Rejected, In Review, Approved, Returned,
+    // Completed, Closed, Reopened, or even the leadStatus "Deleted" workflow value — distinct
+    // from the isDeleted soft-delete flag already excluded by the query above). "Completed"
+    // is the subset with leadStatus "Completed"; "pending" is every lead that ISN'T
+    // "Completed" or "Closed" (not a narrower allow-list — everything else still counts as
+    // pending). A lead is scoped to the date range through its CASE, not its own
+    // assignedDate: it counts if the case it belongs to overlaps the window (the same
+    // caseOverlapsRange rule as Total/Ongoing Cases and Case Manager (Cases) above), so
+    // "out of those cases" reads the same everywhere on this page.
+    const isPendingLeadStatus = (status) => status !== "Completed" && status !== "Closed";
+
+    leads.forEach((l) => {
+      const leadCase = caseById.get(String(l.caseId));
+      if (!leadCase || !caseOverlapsRange(leadCase)) return;
+
+      const isCompleted = l.leadStatus === "Completed";
+      const isPending = isPendingLeadStatus(l.leadStatus);
+      const cid = String(l.caseId);
+
+      (l.assignedTo || []).forEach((a) => {
+        const uid = a.userId ? String(a.userId) : a.username ? usernameToId[a.username] : null;
+        const entry = uid ? stats[uid] : null;
+        if (!entry) return;
+        entry.assignedLeads += 1;
+        if (isCompleted) entry.completedLeads += 1;
+        if (isPending) entry.pendingLeads += 1;
+
+        // Per-case breakdown (the "View More" popup) shows THIS officer's own lead counts on
+        // that case, not the case's totals across every officer assigned to it.
+        if (!entry.leadsByCase[cid]) entry.leadsByCase[cid] = { count: 0, pending: 0, completed: 0 };
+        entry.leadsByCase[cid].count += 1;
+        if (isCompleted) entry.leadsByCase[cid].completed += 1;
+        if (isPending) entry.leadsByCase[cid].pending += 1;
+      });
+    });
+
+    const result = Object.values(stats)
+      .map(({ caseIds, caseRoles, leadsByCase, user, ...rest }) => {
+        const casesBreakdown = Array.from(caseIds)
+          .map((cid) => {
+            const c = caseById.get(cid);
+            const ownLeads = leadsByCase[cid] || { count: 0, pending: 0, completed: 0 };
+            return {
+              caseId: cid,
+              caseNo: c?.caseNo || "—",
+              caseName: c?.caseName || "",
+              status: c?.status || "",
+              roles: Array.from(caseRoles[cid] || []),
+              leadCount: ownLeads.count, // this officer's own leads on this case, not the case total
+              leadsPending: ownLeads.pending,
+              leadsCompleted: ownLeads.completed,
+            };
+          })
+          .sort((a, b) => b.leadsPending - a.leadsPending || a.caseNo.localeCompare(b.caseNo));
+
+        return { user, ...rest, cases: casesBreakdown };
+      })
+      .sort((a, b) => {
+        if (b.assignedLeads !== a.assignedLeads) return b.assignedLeads - a.assignedLeads;
+        const nameA = `${a.user.lastName || ""} ${a.user.firstName || ""}`.trim();
+        const nameB = `${b.user.lastName || ""} ${b.user.firstName || ""}`.trim();
+        return nameA.localeCompare(nameB);
+      });
+
+    res.status(200).json({
+      officers: result,
+      ongoingCasesCount,
+      totalCasesInRange,
+      range: {
+        from: fromDate ? fromDate.toISOString() : null,
+        to: toDate ? toDate.toISOString() : null,
+      },
+    });
+  } catch (err) {
+    console.error("Error fetching officer workload:", err);
+    res.status(500).json({ message: "Error fetching officer workload", error: err.message });
+  }
+};
+
+// GET /api/cases/officer-lead-summary
+// Lightweight per-officer lead totals (assigned / completed / pending) for ONGOING cases,
+// used by the Add Case screen's officer workload panel. Any authenticated user can call
+// this (that panel already shows every officer's case counts to whoever can add a case),
+// but the case set it's computed over uses the same visibility rule as getAllCases, so it
+// never surfaces leads from cases the caller couldn't already see.
+exports.getOfficerLeadSummary = async (req, res) => {
+  try {
+    const { userId, role } = req.user;
+    const isPrivileged = role === "Admin" || role === "Detective Supervisor";
+
+    const caseQuery = { isDeleted: { $ne: true }, status: "ONGOING" };
+    if (!isPrivileged && userId) {
+      const uid = new mongoose.Types.ObjectId(userId);
+      caseQuery.$or = [
+        { caseManagerUserIds: uid },
+        { detectiveSupervisorUserId: uid },
+        { detectiveSupervisorUserIds: uid },
+        { investigatorUserIds: uid },
+        { officerUserIds: uid },
+        { readOnlyUserIds: uid },
+      ];
+      caseQuery.blockedUserIds = { $ne: uid };
+    }
+
+    const [cases, officers] = await Promise.all([
+      Case.find(caseQuery, "_id").lean(),
+      User.find(
+        { role: { $in: ["Detective", "Detective Supervisor", "Case Specific"] } },
+        "username"
+      ).lean(),
+    ]);
+
+    const usernameToId = {};
+    officers.forEach((u) => {
+      if (u.username) usernameToId[u.username] = String(u._id);
+    });
+    const idToUsername = {};
+    officers.forEach((u) => {
+      idToUsername[String(u._id)] = u.username;
+    });
+
+    const caseIds = cases.map((c) => c._id);
+    const leads = await Lead.find(
+      { caseId: { $in: caseIds }, isDeleted: { $ne: true } },
+      "leadStatus assignedTo"
+    ).lean();
+
+    // Same lead-counting rules as getOfficerWorkload: "assigned" is every lead in any
+    // leadStatus at all (the leadStatus "Deleted" workflow value included — distinct from
+    // the isDeleted soft-delete flag already excluded by the query above), "completed" is
+    // leadStatus "Completed", and "pending" is every lead that ISN'T "Completed" or "Closed".
+    const isPendingLeadStatus = (status) => status !== "Completed" && status !== "Closed";
+
+    const counts = {}; // username -> { assignedLeads, completedLeads, pendingLeads }
+    leads.forEach((l) => {
+      const isCompleted = l.leadStatus === "Completed";
+      const isPending = isPendingLeadStatus(l.leadStatus);
+
+      (l.assignedTo || []).forEach((a) => {
+        const uname = a.username || (a.userId ? idToUsername[String(a.userId)] : null);
+        if (!uname || !usernameToId[uname]) return;
+        if (!counts[uname]) counts[uname] = { assignedLeads: 0, completedLeads: 0, pendingLeads: 0 };
+        counts[uname].assignedLeads += 1;
+        if (isCompleted) counts[uname].completedLeads += 1;
+        if (isPending) counts[uname].pendingLeads += 1;
+      });
+    });
+
+    res.status(200).json({ officers: counts });
+  } catch (err) {
+    console.error("Error fetching officer lead summary:", err);
+    res.status(500).json({ message: "Error fetching officer lead summary", error: err.message });
+  }
+};

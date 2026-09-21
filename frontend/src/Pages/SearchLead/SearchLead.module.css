@@ -560,13 +560,143 @@
 }
 
 /* ─── Responsive ─────────────────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .main-content-searchlead {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+}
+
 @media (max-width: 768px) {
+  .main-content-searchlead {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .case-header,
+  .cp-head,
+  .sl-head,
+  .search-lead-portion,
+  .search-table,
+  .results-section {
+    width: 100%;
+  }
+
+  .case-header h2 {
+    font-size: 20px;
+  }
+
   .search-lead-portion {
     flex-direction: column;
     align-items: flex-start;
   }
+
   .search-lead-head {
     width: 100%;
+  }
+
+  .search-mode-toggle {
+    width: 100%;
+  }
+
+  .mode-btn {
+    flex: 1;
+    text-align: center;
+    padding: 7px 10px;
+  }
+
+  .search-container1 {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 8px 10px;
+  }
+
+  .search-btn {
+    font-size: 15px;
+    padding: 7px 14px;
+  }
+
+  .results-summary {
+    flex-wrap: wrap;
+  }
+
+  .stat-card {
+    flex: 1 1 140px;
+    min-width: 130px;
+    padding: 10px 16px;
+  }
+
+  .stat-count {
+    font-size: 24px;
+  }
+
+  .table-scroll-container {
+    max-height: calc(100dvh - 260px);
+  }
+
+  .results-table th,
+  .results-table td,
+  .search-table th,
+  .search-table td {
+    font-size: 14px;
+    padding: 8px 6px;
+  }
+
+  .header-title {
+    font-size: 14px;
+  }
+
+  .view-btn1 {
+    font-size: 14px;
+    padding: 6px 12px;
+  }
+
+  .search-table select,
+  .search-table input {
+    width: 100%;
+  }
+
+  .searchlead-btns-container {
+    flex-wrap: wrap;
+  }
+
+  /* Below this width, cramming every column into 100% just wraps every cell
+     into an unreadable stack — a horizontal scroll of naturally-sized
+     columns reads far better on a phone. */
+  .results-table {
+    table-layout: auto;
+    min-width: 640px;
+  }
+}
+
+@media (max-width: 480px) {
+  .case-header h2 {
+    font-size: 18px;
+  }
+
+  .stat-card {
+    min-width: 110px;
+    padding: 8px 12px;
+  }
+
+  .stat-count {
+    font-size: 21px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+  }
+
+  .results-table th,
+  .results-table td,
+  .search-table th,
+  .search-table td {
+    font-size: 13px;
+    padding: 6px 5px;
+  }
+
+  .person-suggestions-list {
+    max-height: 200px;
   }
 }
 

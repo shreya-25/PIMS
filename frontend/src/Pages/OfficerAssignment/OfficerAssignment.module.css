@@ -1,0 +1,496 @@
+/* ─── Layout ────────────────────────────────────────────────────────────── */
+.officer-assignment-page {
+  display: flex;
+  flex-direction: column;
+  font-family: Arial, sans-serif;
+  height: 100%;
+  background-color: #f9f9f9;
+}
+
+.main-container {
+  display: flex;
+}
+
+.left-content {
+  display: flex;
+  flex-direction: column;
+  margin-top: 110px;
+  align-items: center;
+  height: auto;
+  width: calc(100% - var(--sidebar-w));
+  box-sizing: border-box;
+  margin-left: var(--sidebar-w);
+  padding-left: 32px;
+  padding-right: 32px;
+  padding-bottom: 40px;
+}
+
+.page-header {
+  width: 95%;
+}
+
+.page-header h2 {
+  margin: 8px 0 16px;
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+  text-align: center;
+  width: 100%;
+}
+
+.statusMessage {
+  width: 95%;
+  text-align: center;
+  color: #6b7280;
+  font-size: 18px;
+  padding: 60px 0;
+}
+
+.content {
+  width: 95%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ─── Ongoing Cases (page-wide, not per-officer) ───────────────────────────── */
+.statsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.ongoingCasesStat {
+  align-self: flex-start;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 18px;
+}
+
+.ongoingCasesNumber {
+  font-size: 24px;
+  font-weight: 800;
+  color: #29298b;
+  line-height: 1;
+}
+
+.ongoingCasesLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: #52514e;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+/* ─── Controls ──────────────────────────────────────────────────────────── */
+.controlsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.officerSearch {
+  flex: 1;
+  min-width: 240px;
+  padding: 9px 12px;
+  font-size: 18px;
+  border: 1px solid #cfcfcf;
+  border-radius: 6px;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+  color: #111;
+  background: #fff;
+  transition: border-color 0.15s;
+}
+
+.officerSearch:focus {
+  outline: none;
+  border-color: #29298b;
+  box-shadow: 0 0 0 3px rgba(41, 41, 139, 0.08);
+}
+
+.dateRange {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.dateField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #52514e;
+  font-family: Arial, sans-serif;
+}
+
+.dateField input[type="date"] {
+  padding: 7px 10px;
+  font-size: 18px;
+  border: 1px solid #cfcfcf;
+  border-radius: 6px;
+  font-family: Arial, sans-serif;
+  color: #111;
+  background: #fff;
+}
+
+.dateField input[type="date"]:focus {
+  outline: none;
+  border-color: #29298b;
+  box-shadow: 0 0 0 3px rgba(41, 41, 139, 0.08);
+}
+
+.clearRangeBtn {
+  border: 1px solid #cfcfcf;
+  background: #fff;
+  color: #374151;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 7px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  height: 36px;
+}
+
+.clearRangeBtn:hover {
+  border-color: #29298b;
+  color: #29298b;
+}
+
+.noOfficers {
+  width: 100%;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 16px;
+  font-family: Arial, sans-serif;
+  padding: 40px 0;
+}
+
+.officerSystemRole {
+  font-size: 13px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+/* ─── Officer table (matches the HomePage cases/leads table) ───────────────── */
+.officerTableWrap {
+  width: 100%;
+  overflow-x: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.officerTableWrap::-webkit-scrollbar {
+  width: 6px;
+}
+
+.officerTableWrap::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 4px;
+}
+
+.officerTableWrap::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 4px;
+}
+
+.officerTable {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.officerTable thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #fff;
+}
+
+.officerTable th {
+  background-color: #fff;
+  font-weight: 700;
+  color: #000;
+  font-size: 18px;
+  font-family: Arial, sans-serif;
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+  border-right: 1px solid #e2e8f0;
+  white-space: normal;
+}
+
+.officerTable th:last-child {
+  border-right: none;
+}
+
+.officerTable td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+  border-right: 1px solid #e2e8f0;
+  font-size: 18px;
+  font-family: Arial, sans-serif;
+  color: #000;
+  vertical-align: middle;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.officerTable td:last-child {
+  border-right: none;
+}
+
+.officerTable tbody tr:nth-child(even) {
+  background-color: #f8fafc;
+}
+
+.officerTable tbody tr:hover {
+  background-color: #eff6ff;
+}
+
+.officerNameCell {
+  word-break: break-word;
+}
+
+.statCell {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.viewMoreCell {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.viewMoreBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: Arial, sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+  line-height: 1.4;
+  border: none;
+  color: #fff;
+  background: #1a73e8;
+  transition: background 0.2s ease;
+  box-sizing: border-box;
+}
+
+.viewMoreBtn:hover {
+  background: #1558b0;
+}
+
+/* Below this width the HomePage tables collapse into stacked cards driven by
+   each <td>'s data-label attribute — mirrored here for the same behavior. */
+@media (max-width: 700px) {
+  .officerTableWrap {
+    border: none;
+    border-radius: 0;
+    overflow-x: visible;
+  }
+
+  .officerTable {
+    display: block;
+  }
+
+  .officerTable thead {
+    display: none;
+  }
+
+  .officerTable tbody {
+    display: block;
+  }
+
+  .officerTable tbody tr {
+    display: block;
+    width: auto;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    padding: 4px 12px;
+    margin: 0 0 12px;
+  }
+
+  .officerTable tbody tr:nth-child(even),
+  .officerTable tbody tr:hover {
+    background-color: #fff;
+  }
+
+  .officerTable td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 0;
+    border-right: none;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 15px;
+    text-align: right;
+  }
+
+  .officerTable td:last-child {
+    border-bottom: none;
+  }
+
+  .officerTable td::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    padding-right: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #64748b;
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .officerTable td[data-label="Actions"] {
+    justify-content: flex-end;
+    padding-top: 12px;
+  }
+
+  .officerTable td[data-label="Actions"]::before {
+    content: none;
+  }
+}
+
+/* ─── Modal ─────────────────────────────────────────────────────────────── */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.4);
+  z-index: 1300; /* above Navbar (max 1200) and Sidebar (max 1150) so the popup is never clipped */
+  padding: 24px;
+}
+
+.modalBox {
+  position: relative;
+  background: #fff;
+  border-radius: 14px;
+  width: 760px;
+  max-width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+  padding: 24px 28px 28px;
+  font-family: Arial, sans-serif;
+  box-sizing: border-box;
+}
+
+.modalCloseBtn {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  border: none;
+  background: none;
+  font-size: 26px;
+  line-height: 1;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.modalCloseBtn:hover {
+  color: #111827;
+}
+
+.modalHeader {
+  margin-bottom: 16px;
+  padding-right: 24px;
+}
+
+.modalOfficerName {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.modalSummaryRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 18px;
+}
+
+.modalSummaryStat {
+  flex: 1;
+  min-width: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.modalSummaryNumber {
+  font-size: 24px;
+  font-weight: 800;
+  color: #29298b;
+}
+
+.modalSummaryLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #52514e;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin-top: 2px;
+}
+
+.modalCasesWrap {
+  overflow-x: auto;
+}
+
+.noCasesDetail {
+  color: #9ca3af;
+  font-size: 14px;
+  padding: 12px 0;
+  text-align: center;
+}
+
+.cases-detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 560px;
+}
+
+.cases-detail-table th,
+.cases-detail-table td {
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 14px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.cases-detail-table th {
+  color: #52514e;
+  font-weight: 700;
+  background: #f2f2f2;
+  white-space: nowrap;
+}
+
+.numCell {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}

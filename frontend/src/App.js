@@ -44,6 +44,7 @@ import { ChainOfCustody } from './Pages/ChainOfCustody/ChainOfCustody';
 import { GlobalErrorProvider } from './GlobalErrorProvider';
 import { DocumentReview } from './Pages/DocumentReview/DocumentReview';
 import { ClosedCase } from './Pages/ClosedCase/ClosedCase';
+import { OfficerAssignment } from './Pages/OfficerAssignment/OfficerAssignment';
 import { LeadVersionHistory } from './Pages/LeadVersionHistory/LeadVersionHistory';
 import { GenerateReport } from './Pages/GenerateReport/GenerateReport';
 import { CaseInformation } from './Pages/CaseInformation/CaseInformation';
@@ -120,6 +121,7 @@ const { showExpiryWarning, dismissWarning } = useTokenExpiryRedirect(token);
         <Route path="/ChainOfCustody" element= {<ProtectedLayout>  <ChainOfCustody /> </ProtectedLayout> } />
         <Route path="/DocumentReview" element={<ProtectedLayout><DocumentReview /></ProtectedLayout>} />
         <Route path="/ClosedCase" element={<ProtectedLayout><ClosedCase /></ProtectedLayout>} />
+        <Route path="/OfficerAssignment" element={<ProtectedLayout><OfficerAssignment /></ProtectedLayout>} />
         <Route path="/LeadVersionHistory" element={<ProtectedLayout><LeadVersionHistory /></ProtectedLayout>} />
         <Route path="/CaseInformation" element={<ProtectedLayout><CaseInformation /></ProtectedLayout>} />
         <Route path="/setup-account" element={<SetupAccount />} />

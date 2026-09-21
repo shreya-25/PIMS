@@ -1018,9 +1018,9 @@ export const HomePage = () => {
                           {paginatedCases.length > 0 ? (
                             paginatedCases.map((c, index) => (
                               <tr key={c.id}>
-                                <td>{c.id}</td>
-                                <td>{c.title}</td>
-                                <td>
+                                <td data-label="Case No.">{c.id}</td>
+                                <td data-label="Case Name">{c.title}</td>
+                                <td data-label="Created At">
                                   {formatDate(c.createdAt)}
                                   {c.createdAt && (() => {
                                     const now = new Date();
@@ -1035,13 +1035,13 @@ export const HomePage = () => {
                                     );
                                   })()}
                                 </td>
-                                <td>{c.assignedCaseManager || "—"}</td>
-                                <td style={{ textAlign: "center" }}>
+                                <td data-label="Assigned To">{c.assignedCaseManager || "—"}</td>
+                                <td data-label="Status" style={{ textAlign: "center" }}>
                                   <span className={`${styles["status-badge"]} ${c.status === "SUBMITTED" ? styles["status-submitted"] : styles["status-ongoing"]}`}>
                                     {c.status === "SUBMITTED" ? "Submitted" : "Open"}
                                   </span>
                                 </td>
-                                <td style={{ textAlign: "left" }}>
+                                <td data-label="Actions" style={{ textAlign: "left" }}>
                                   <div className={styles["btn-sec-HP"]}>
                                     {treatAsDS ? (
                                       <>
@@ -1140,11 +1140,11 @@ export const HomePage = () => {
                             {paginatedLeads.length > 0 ? (
                               paginatedLeads.map((lead) => (
                                 <tr key={lead.id}>
-                                  <td>{lead.id}</td>
-                                  <td>{lead.description}</td>
-                                  <td>{lead.caseName}</td>
-                                  <td>{lead.assignedOfficers.map((u) => formatUserDisplay(u, userMap)).join(", ")}</td>
-                                  <td style={{ textAlign: "center" }}>
+                                  <td data-label="Lead No.">{lead.id}</td>
+                                  <td data-label="Lead Name">{lead.description}</td>
+                                  <td data-label="Case Name">{lead.caseName}</td>
+                                  <td data-label="Assigned Officers">{lead.assignedOfficers.map((u) => formatUserDisplay(u, userMap)).join(", ")}</td>
+                                  <td data-label="Actions" style={{ textAlign: "center" }}>
                                     <button
                                       className={styles["view-btn1"]}
                                       onClick={() => handleViewAssignedLead(lead)}
@@ -1254,10 +1254,10 @@ export const HomePage = () => {
                             {paginatedPendingReturns.length > 0 ? (
                               paginatedPendingReturns.map((lead) => (
                                 <tr key={lead.id}>
-                                  <td>{lead.id}</td>
-                                  <td>{lead.description}</td>
-                                  <td>{lead.caseName}</td>
-                                  <td style={{ textAlign: "center" }}>
+                                  <td data-label="Lead No.">{lead.id}</td>
+                                  <td data-label="Lead Name">{lead.description}</td>
+                                  <td data-label="Case Name">{lead.caseName}</td>
+                                  <td data-label="Actions" style={{ textAlign: "center" }}>
                                     <button
                                       className={styles["continue-btn"]}
                                       onClick={() => handleLRClick(lead)}
@@ -1280,13 +1280,15 @@ export const HomePage = () => {
                     </div>
                   )}
 
-                  <Pagination
-                    currentPage={currentPage}
-                    totalEntries={totalEntries}
-                    onPageChange={setCurrentPage}
-                    pageSize={pageSize}
-                    onPageSizeChange={setPageSize}
-                  />
+                  <div className={styles["pagination-slot"]}>
+                    <Pagination
+                      currentPage={currentPage}
+                      totalEntries={totalEntries}
+                      onPageChange={setCurrentPage}
+                      pageSize={pageSize}
+                      onPageSizeChange={setPageSize}
+                    />
+                  </div>
                 </div>
               </div>
             </>

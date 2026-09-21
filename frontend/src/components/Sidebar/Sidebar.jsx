@@ -35,12 +35,47 @@ export const SideBar = ({
   const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
   const [caseList, setCaseList] = useState(initialCases);
 
+  // Mobile/tablet off-canvas drawer state (sidebar is a fixed rail on desktop,
+  // a slide-in drawer below the --sidebar-w collapse breakpoint on small screens)
+  const [mobileOpen, setMobileOpen] = useState(false);
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
+
+  const mobileToggleBtn = (
+    <button
+      type="button"
+      className={`sidebar-hamburger${mobileOpen ? " sidebar-hamburger-open" : ""}`}
+      aria-label={mobileOpen ? "Close menu" : "Open menu"}
+      aria-expanded={mobileOpen}
+      onClick={() => setMobileOpen((o) => !o)}
+    >
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+  );
+
+  const mobileBackdrop = mobileOpen ? (
+    <div className="sidebar-backdrop" onClick={() => setMobileOpen(false)} />
+  ) : null;
+
   // True if user is a Detective Supervisor either by system role or by case-level role in any case
   const isUserDS = useMemo(
     () =>
       isDetectiveSupervisor(systemRole) ||
       caseList.some((c) => c.role === CASE_ROLES.DETECTIVE_SUPERVISOR),
     [systemRole, caseList]
+  );
+
+  // Officer Assignment dashboard: visible to Admins, Detective Supervisors, and anyone
+  // who is a Case Manager on at least one case.
+  const canViewOfficerAssignment = useMemo(
+    () =>
+      systemRole === ROLES.ADMIN ||
+      isUserDS ||
+      caseList.some((c) => c.role === CASE_ROLES.CASE_MANAGER),
+    [systemRole, isUserDS, caseList]
   );
 
   // Investigator-only: assigned leads for badge counts
@@ -57,6 +92,7 @@ export const SideBar = ({
   const printIcon   = `${process.env.PUBLIC_URL}/Materials/print.png`;
   const bellIcon    = `${process.env.PUBLIC_URL}/Materials/notification.png`;
    const searchIcon    = `${process.env.PUBLIC_URL}/Materials/search1.png`;
+   const officerIcon   = `${process.env.PUBLIC_URL}/Materials/user.png`;
 
   const handleCreateLead = () => {
     navigate("/createlead", {
@@ -236,8 +272,11 @@ export const SideBar = ({
   // Admin variant
   if (variant === "admin") {
     return (
-      <aside className="sidebar">
-        <ul className="sidebar-list">
+      <>
+        {mobileToggleBtn}
+        {mobileBackdrop}
+        <aside className={`sidebar${mobileOpen ? " sidebar-open" : ""}`}>
+        <ul className="sidebar-list" onClick={() => setMobileOpen(false)}>
           <li
             className={`sidebar-item ${location.pathname === "/AdminTeam" && !showAddCase ? "active" : ""}`}
             onClick={() => {
@@ -286,8 +325,18 @@ export const SideBar = ({
             <img src={searchIcon} className="sidebar-icon" alt="" />
             <span>Advanced Search</span>
           </li>
+          {canViewOfficerAssignment && (
+            <li
+              className={`sidebar-item ${location.pathname === "/OfficerAssignment" ? "active" : ""}`}
+              onClick={() => { onShowCaseSelector?.(false); navigate("/OfficerAssignment"); }}
+            >
+              <img src={officerIcon} className="sidebar-icon" alt="" />
+              <span>Officer Assignment</span>
+            </li>
+          )}
         </ul>
-      </aside>
+        </aside>
+      </>
     );
   }
 
@@ -300,8 +349,11 @@ export const SideBar = ({
       (isDSProp !== null ? isDSProp : isUserDS);
     const showArchivedTab = canViewClosedCases;
     return (
-      <aside className="sidebar">
-        <ul className="sidebar-list">
+      <>
+        {mobileToggleBtn}
+        {mobileBackdrop}
+        <aside className={`sidebar${mobileOpen ? " sidebar-open" : ""}`}>
+        <ul className="sidebar-list" onClick={() => setMobileOpen(false)}>
           <li
             className={`sidebar-item ${activeTab === "notifications" ? "active" : ""}`}
             onClick={() => setActiveTab?.("notifications")}
@@ -352,16 +404,30 @@ export const SideBar = ({
               <span>Closed Cases</span>
             </li>
           )}
+
+          {canViewOfficerAssignment && (
+            <li
+              className={`sidebar-item ${location.pathname === "/OfficerAssignment" ? "active" : ""}`}
+              onClick={() => navigate("/OfficerAssignment")}
+            >
+              <img src={officerIcon} className="sidebar-icon" alt="" />
+              <span>Officer Assignment</span>
+            </li>
+          )}
         </ul>
-      </aside>
+        </aside>
+      </>
     );
   }
 
   // Officer variant — Home + Case page + Other Open Cases
   if (selectedCase?.role === "Officer") {
     return (
-      <aside className="sidebar">
-        <ul className="sidebar-list">
+      <>
+        {mobileToggleBtn}
+        {mobileBackdrop}
+        <aside className={`sidebar${mobileOpen ? " sidebar-open" : ""}`}>
+        <ul className="sidebar-list" onClick={() => setMobileOpen(false)}>
           <li
             className={`sidebar-item ${activePage === "HomePage" || activePage === "AdminTeam" ? "active" : ""}`}
             onClick={() =>
@@ -382,7 +448,7 @@ export const SideBar = ({
           </li>
 
           {/* Other Open Cases */}
-          <li className="sidebar-item" onClick={() => setCaseDropdownOpen((o) => !o)}>
+          <li className="sidebar-item" onClick={(e) => { e.stopPropagation(); setCaseDropdownOpen((o) => !o); }}>
             <img src={folderIcon} className="sidebar-icon" alt="" />
             <span>Open Cases {caseDropdownOpen ? "▲" : "▼"}</span>
           </li>
@@ -409,14 +475,18 @@ export const SideBar = ({
             </ul>
           )}
         </ul>
-      </aside>
+        </aside>
+      </>
     );
   }
 
   // Default variant
   return (
-    <aside className="sidebar">
-      <ul className="sidebar-list">
+    <>
+      {mobileToggleBtn}
+      {mobileBackdrop}
+      <aside className={`sidebar${mobileOpen ? " sidebar-open" : ""}`}>
+      <ul className="sidebar-list" onClick={() => setMobileOpen(false)}>
         <li
           className={`sidebar-item ${activePage === "HomePage" || activePage === "AdminCM" || activePage === "AdminTeam" ? "active" : ""}`}
           onClick={() =>
@@ -515,7 +585,7 @@ export const SideBar = ({
 
         {/* Other Open Cases */}
         {systemRole !== "Admin" && (
-          <li className="sidebar-item" onClick={() => setCaseDropdownOpen((o) => !o)}>
+          <li className="sidebar-item" onClick={(e) => { e.stopPropagation(); setCaseDropdownOpen((o) => !o); }}>
             <img src={folderIcon} className="sidebar-icon" alt="" />
             <span>Open Cases {caseDropdownOpen ? "▲" : "▼"}</span>
           </li>
@@ -572,6 +642,7 @@ export const SideBar = ({
           </li>
         )} */}
       </ul>
-    </aside>
+      </aside>
+    </>
   );
 };

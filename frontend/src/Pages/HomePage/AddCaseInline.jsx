@@ -43,6 +43,7 @@ export const AddCaseInline = ({ allUsers, onAddCase }) => {
   const assignedToSearchRef = useRef(null);
 
   const [rawCases, setRawCases] = useState([]);
+  const [officerLeadCounts, setOfficerLeadCounts] = useState({});
   const [officerSearch, setOfficerSearch] = useState("");
 
   useEffect(() => {
@@ -53,6 +54,13 @@ export const AddCaseInline = ({ allUsers, onAddCase }) => {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then(({ data }) => setRawCases(data || []))
+      .catch(() => {});
+
+    api
+      .get("/api/cases/officer-lead-summary", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then(({ data }) => setOfficerLeadCounts(data.officers || {}))
       .catch(() => {});
   }, []);
 
@@ -149,12 +157,15 @@ const matches = (u, q) =>
     });
 
     return Object.values(counts)
-      .sort((a, b) => {
-        if (b.assignedTo !== a.assignedTo) return b.assignedTo - a.assignedTo;
-        return toDisplay(a.user).localeCompare(toDisplay(b.user));
+      .map(({ caseIds, ...rest }) => {
+        const leadCounts = officerLeadCounts[rest.user.username] || { pendingLeads: 0 };
+        return { ...rest, total: caseIds.size, pendingLeads: leadCounts.pendingLeads };
       })
-      .map(({ caseIds, ...rest }) => ({ ...rest, total: caseIds.size }));
-  }, [allUsers, rawCases]);
+      .sort((a, b) => {
+        if (b.pendingLeads !== a.pendingLeads) return b.pendingLeads - a.pendingLeads;
+        return toDisplay(a.user).localeCompare(toDisplay(b.user));
+      });
+  }, [allUsers, rawCases, officerLeadCounts]);
 
   const filteredOfficerWorkload = useMemo(() => {
     if (!officerSearch.trim()) return officerWorkload;
@@ -603,7 +614,7 @@ const matches = (u, q) =>
               <div key={o.user.username} className={styles.officerCard}>
                 <div className={styles.officerName}>{toDisplay(o.user)}</div>
                 <div className={styles.officerSystemRole}>{o.user.role}</div>
-                <div className={styles.assignedCount}>Assigned To: {o.assignedTo} {o.assignedTo === 1 ? "case" : "cases"} &nbsp;·&nbsp; Total: {o.total} {o.total === 1 ? "case" : "cases"}</div>
+                <div className={styles.assignedCount}>Assigned To: {o.assignedTo} {o.assignedTo === 1 ? "case" : "cases"} &nbsp;·&nbsp; Total Pending Leads: {o.pendingLeads}</div>
                 <div className={styles.officerCounts}>
                   <span className={`${styles.countBadge} ${styles.cmBadge}`}>Case Manager: {o.caseManager}</span>
                   <span className={`${styles.countBadge} ${styles.invBadge}`}>Investigator: {o.investigator}</span>

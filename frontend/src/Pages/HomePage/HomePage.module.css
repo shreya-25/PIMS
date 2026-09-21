@@ -371,3 +371,122 @@
   font-size: 20px;
 }
 
+/* ─── Responsive ──────────────────────────────────────────────────────────────
+   Below this width a scrollable table is still hard to read (tiny cramped
+   columns or sideways scrolling through a grid). Instead each row becomes its
+   own card: the header row hides and each cell shows its own label — driven
+   by the data-label attribute set on each <td> — stacked as "Label   Value". */
+@media (max-width: 700px) {
+  .main-container {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .stats-bar {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .hoverable {
+    font-size: 14px;
+    flex: 1 1 auto;
+  }
+
+  /* Pagination normally sits after the results; on mobile the card list can
+     run long, so pull it up to right after the stats bar (.content-section
+     is already display:flex/column — see base rule above) instead of making
+     people scroll past every card to reach the page controls. */
+  .pagination-slot {
+    order: -1;
+    margin-bottom: 10px;
+  }
+
+  .table-scroll-container {
+    border: none;
+    border-radius: 0;
+    overflow-x: visible;
+  }
+
+  .leads-table {
+    display: block;
+  }
+
+  .leads-table thead {
+    display: none;
+  }
+
+  .leads-table tbody {
+    display: block;
+  }
+
+  .leads-table tbody tr {
+    display: block;
+    width: auto;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    padding: 4px 12px;
+    margin: 0 10px 12px;
+  }
+
+  .leads-table tbody tr:nth-child(even),
+  .leads-table tbody tr:hover {
+    background-color: #fff;
+  }
+
+  .leads-table td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 0;
+    border-right: none;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 15px;
+    text-align: right;
+  }
+
+  .leads-table td:last-child {
+    border-bottom: none;
+  }
+
+  /* Field name, pulled from the data-label attribute set in HomePage.jsx */
+  .leads-table td::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    padding-right: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #64748b;
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  /* Action buttons read better right-aligned with no redundant "Actions" label */
+  .leads-table td[data-label="Actions"] {
+    justify-content: flex-end;
+    padding-top: 12px;
+  }
+
+  .leads-table td[data-label="Actions"]::before {
+    content: none;
+  }
+
+  .btn-sec-HP {
+    justify-content: flex-end;
+  }
+
+  /* "No results" rows use colspan and have no data-label — let the message
+     take the full card width instead of splitting into a label/value row */
+  .leads-table td[colspan] {
+    display: block;
+    text-align: center;
+  }
+
+  .leads-table td[colspan]::before {
+    content: none;
+  }
+}
+
