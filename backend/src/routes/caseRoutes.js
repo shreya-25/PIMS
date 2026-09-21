@@ -25,6 +25,18 @@ router.get(
   getCasesByOfficer
 );
 
+router.get(
+  "/officer-workload",
+  verifyToken,
+  caseController.getOfficerWorkload
+);
+
+router.get(
+  "/officer-lead-summary",
+  verifyToken,
+  caseController.getOfficerLeadSummary
+);
+
 // Get all cases (Authenticated)
 router.get("/", verifyToken, async (req, res) => {
     try {

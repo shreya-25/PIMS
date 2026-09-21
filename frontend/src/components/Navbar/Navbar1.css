@@ -299,3 +299,103 @@ h1 {
   white-space: nowrap;
   font-size: 18px;
 }
+
+/* ─── Responsive ──────────────────────────────────────────────────────────────
+   Mobile layout: [ hamburger gutter ] — PIMS (centered) — [ 3 icons, evenly
+   spaced ]. The logo image and the user-name/role chip are dropped entirely
+   so the row stays uncluttered and the remaining elements can be sized for
+   easy reading/tapping instead of being crushed smaller and smaller. ──────── */
+@media (max-width: 820px){
+  .NavbarItems{
+    padding: 0 14px 0 62px; /* left gutter matches the sidebar hamburger button */
+  }
+
+  .navbar-left{
+    flex: 1;
+    justify-content: center;
+    gap: 0;
+  }
+
+  .brand-badge{
+    display: none;
+  }
+
+  .brand-copy{
+    align-items: center;
+  }
+
+  .brand-title{
+    font-size: 22px;
+  }
+
+  .brand-subtitle{
+    display: none;
+  }
+
+  /* The name/role chip is dropped on mobile — just the 3 action icons remain,
+     evenly spaced and sized to be easy to read and tap. */
+  .user-profile{
+    display: none;
+  }
+
+  .profile{
+    gap: 0;
+  }
+
+  .profile ul{
+    gap: 0;
+    justify-content: space-evenly;
+    width: 34vw;
+    max-width: 220px;
+    min-width: 150px;
+  }
+
+  .profile ul li i{
+    font-size: 24px;
+  }
+
+  .icon-img{
+    width: 24px;
+    height: 24px;
+  }
+
+  .badge{
+    width: 17px;
+    height: 17px;
+    font-size: 0.65rem;
+    top: -8px;
+    right: -8px;
+  }
+
+  .dropdown-list{
+    width: min(360px, 92vw);
+  }
+}
+
+@media (max-width: 380px){
+  .NavbarItems{
+    padding: 0 10px 0 58px;
+  }
+
+  .brand-title{
+    font-size: 18px;
+  }
+
+  .profile ul{
+    width: 32vw;
+    min-width: 130px;
+  }
+
+  .profile ul li i{
+    font-size: 21px;
+  }
+
+  .icon-img{
+    width: 21px;
+    height: 21px;
+  }
+
+  .dropdown-list{
+    width: 94vw;
+  }
+}
